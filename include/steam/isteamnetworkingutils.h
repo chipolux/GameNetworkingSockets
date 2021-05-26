@@ -279,6 +279,9 @@ public:
 	virtual bool SetConfigValue( ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj,
 		ESteamNetworkingConfigDataType eDataType, const void *pArg ) = 0;
 
+    virtual AppId_t GetAppID() = 0;
+    virtual void SetAppID( AppId_t nAppID ) = 0;
+
 	/// Set a configuration value, using a struct to pass the value.
 	/// (This is just a convenience shortcut; see below for the implementation and
 	/// a little insight into how SteamNetworkingConfigValue_t is used when
