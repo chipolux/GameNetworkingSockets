@@ -29,6 +29,9 @@ CMakeFiles
 Makefile
 cmake_install.cmake
 
+# Ignore Qt Creator CMake config
+CMakeLists.txt.user
+
 # Ignore outputs from "perf record"
 perf.data
 perf.data.old
