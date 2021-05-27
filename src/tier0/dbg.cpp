@@ -10,7 +10,7 @@
 
 #ifdef STEAMNETWORKINGSOCKETS_FOREXPORT
 #include "../steamnetworkingsockets/clientlib/steamnetworkingsockets_lowlevel.h"
-using namespace SteamNetworkingSocketsLib;
+using namespace GameNetworkingSocketsLib;
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -98,7 +98,7 @@ void AssertMsgImplementationV( bool _bFatal, bool bFmt, const char* pstrFile, un
 	++s_ThreadLocalAssertMsgGuardStatic;
 
 	#ifdef STEAMNETWORKINGSOCKETS_FOREXPORT
-		(*g_pfnPreFormatSpewHandler)( k_ESteamNetworkingSocketsDebugOutputType_Bug, bFmt, pstrFile, nLine, pMsg, ap );
+		(*g_pfnPreFormatSpewHandler)( k_EGameNetworkingSocketsDebugOutputType_Bug, bFmt, pstrFile, nLine, pMsg, ap );
 	#else
 		fflush(stdout);
 		if ( pstrFile )

@@ -21,7 +21,7 @@
 #endif
 
 // Internal stuff goes in a private namespace
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 /// Certificates are granted limited authority.  A CertAuthParameter is a
 /// list items of items of a certain type (AppID, PopID, etc) that are

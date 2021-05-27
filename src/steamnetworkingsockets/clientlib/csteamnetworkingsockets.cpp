@@ -24,11 +24,11 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ISteamNetworkingSockets::~ISteamNetworkingSockets() {}
+IGameNetworkingSockets::~IGameNetworkingSockets() {}
 IGameNetworkingUtils::~IGameNetworkingUtils() {}
 
 // Put everything in a namespace, so we don't violate the one definition rule
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -68,7 +68,7 @@ DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int64, ConnectionUserData, -1 ); // no limit
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, SendRateMin, 128*1024, 1024, 0x10000000 );
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, SendRateMax, 1024*1024, 1024, 0x10000000 );
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, NagleTime, 5000, 0, 20000 );
-DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, MTU_PacketSize, 1300, k_cbSteamNetworkingSocketsMinMTUPacketSize, k_cbSteamNetworkingSocketsMaxUDPMsgLen );
+DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, MTU_PacketSize, 1300, k_cbGameNetworkingSocketsMinMTUPacketSize, k_cbGameNetworkingSocketsMaxUDPMsgLen );
 #ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
 	// We don't have a trusted third party, so allow this by default,
 	// and don't warn about it
@@ -79,11 +79,11 @@ DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, MTU_PacketSize, 1300, k_cbSteamNetwor
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, Unencrypted, 0, 0, 3 );
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, SymmetricConnect, 0, 0, 1 );
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LocalVirtualPort, -1, -1, 65535 );
-DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_AckRTT, k_ESteamNetworkingSocketsDebugOutputType_Warning, k_ESteamNetworkingSocketsDebugOutputType_Error, k_ESteamNetworkingSocketsDebugOutputType_Everything );
-DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_PacketDecode, k_ESteamNetworkingSocketsDebugOutputType_Warning, k_ESteamNetworkingSocketsDebugOutputType_Error, k_ESteamNetworkingSocketsDebugOutputType_Everything );
-DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_Message, k_ESteamNetworkingSocketsDebugOutputType_Warning, k_ESteamNetworkingSocketsDebugOutputType_Error, k_ESteamNetworkingSocketsDebugOutputType_Everything );
-DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_PacketGaps, k_ESteamNetworkingSocketsDebugOutputType_Warning, k_ESteamNetworkingSocketsDebugOutputType_Error, k_ESteamNetworkingSocketsDebugOutputType_Everything );
-DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_P2PRendezvous, k_ESteamNetworkingSocketsDebugOutputType_Warning, k_ESteamNetworkingSocketsDebugOutputType_Error, k_ESteamNetworkingSocketsDebugOutputType_Everything );
+DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_AckRTT, k_EGameNetworkingSocketsDebugOutputType_Warning, k_EGameNetworkingSocketsDebugOutputType_Error, k_EGameNetworkingSocketsDebugOutputType_Everything );
+DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_PacketDecode, k_EGameNetworkingSocketsDebugOutputType_Warning, k_EGameNetworkingSocketsDebugOutputType_Error, k_EGameNetworkingSocketsDebugOutputType_Everything );
+DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_Message, k_EGameNetworkingSocketsDebugOutputType_Warning, k_EGameNetworkingSocketsDebugOutputType_Error, k_EGameNetworkingSocketsDebugOutputType_Everything );
+DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_PacketGaps, k_EGameNetworkingSocketsDebugOutputType_Warning, k_EGameNetworkingSocketsDebugOutputType_Error, k_EGameNetworkingSocketsDebugOutputType_Everything );
+DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, LogLevel_P2PRendezvous, k_EGameNetworkingSocketsDebugOutputType_Warning, k_EGameNetworkingSocketsDebugOutputType_Error, k_EGameNetworkingSocketsDebugOutputType_Everything );
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( void *, Callback_ConnectionStatusChanged, nullptr );
 
 #ifdef STEAMNETWORKINGSOCKETS_ENABLE_ICE
@@ -364,16 +364,16 @@ CSteamNetworkPollGroup *GetPollGroupByHandle( HSteamNetPollGroup hPollGroup, Pol
 //
 /////////////////////////////////////////////////////////////////////////////
 
-std::vector<CSteamNetworkingSockets *> CSteamNetworkingSockets::s_vecSteamNetworkingSocketsInstances;
+std::vector<CGameNetworkingSockets *> CGameNetworkingSockets::s_vecGameNetworkingSocketsInstances;
 
-CSteamNetworkingSockets::CSteamNetworkingSockets( CGameNetworkingUtils *pGameNetworkingUtils )
+CGameNetworkingSockets::CGameNetworkingSockets( CGameNetworkingUtils *pGameNetworkingUtils )
 : m_bHaveLowLevelRef( false )
 , m_pGameNetworkingUtils( pGameNetworkingUtils )
 , m_pSteamNetworkingMessages( nullptr )
 , m_bEverTriedToGetCert( false )
 , m_bEverGotCert( false )
 #ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
-, m_scheduleCheckRenewCert( this, &CSteamNetworkingSockets::CheckAuthenticationPrerequisites )
+, m_scheduleCheckRenewCert( this, &CGameNetworkingSockets::CheckAuthenticationPrerequisites )
 #endif
 , m_mutexPendingCallbacks( "pending_callbacks" )
 {
@@ -381,7 +381,7 @@ CSteamNetworkingSockets::CSteamNetworkingSockets( CGameNetworkingUtils *pGameNet
 	InternalInitIdentity();
 }
 
-void CSteamNetworkingSockets::InternalInitIdentity()
+void CGameNetworkingSockets::InternalInitIdentity()
 {
 	m_identity.Clear();
 	m_msgSignedCert.Clear();
@@ -400,14 +400,14 @@ void CSteamNetworkingSockets::InternalInitIdentity()
 	m_bEverGotCert = false;
 }
 
-CSteamNetworkingSockets::~CSteamNetworkingSockets()
+CGameNetworkingSockets::~CGameNetworkingSockets()
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 	Assert( !m_bHaveLowLevelRef ); // Called destructor directly?  Use Destroy()!
 }
 
 #ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
-bool CSteamNetworkingSockets::BInitGameNetworkingSockets( const SteamNetworkingIdentity *pIdentity, SteamDatagramErrMsg &errMsg )
+bool CGameNetworkingSockets::BInitGameNetworkingSockets( const SteamNetworkingIdentity *pIdentity, SteamDatagramErrMsg &errMsg )
 {
 	AssertMsg( !m_bHaveLowLevelRef, "Initted interface twice?" );
 
@@ -424,24 +424,24 @@ bool CSteamNetworkingSockets::BInitGameNetworkingSockets( const SteamNetworkingI
 }
 #endif
 
-bool CSteamNetworkingSockets::BInitLowLevel( SteamNetworkingErrMsg &errMsg )
+bool CGameNetworkingSockets::BInitLowLevel( SteamNetworkingErrMsg &errMsg )
 {
 	if ( m_bHaveLowLevelRef )
 		return true;
-	if ( !BSteamNetworkingSocketsLowLevelAddRef( errMsg) )
+	if ( !BGameNetworkingSocketsLowLevelAddRef( errMsg) )
 		return false;
 
 	// Add us to list of extant instances only after we have done some initialization
-	if ( !has_element( s_vecSteamNetworkingSocketsInstances, this ) )
-		s_vecSteamNetworkingSocketsInstances.push_back( this );
+	if ( !has_element( s_vecGameNetworkingSocketsInstances, this ) )
+		s_vecGameNetworkingSocketsInstances.push_back( this );
 
 	m_bHaveLowLevelRef = true;
 	return true;
 }
 
-void CSteamNetworkingSockets::KillConnections()
+void CGameNetworkingSockets::KillConnections()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingSockets::KillConnections" );
+	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingSockets::KillConnections" );
 	TableScopeLock tableScopeLock( g_tables_lock );
 
 	// Warn messages interface that it needs to clean up.  We need to do this
@@ -456,7 +456,7 @@ void CSteamNetworkingSockets::KillConnections()
 	FOR_EACH_HASHMAP( g_mapConnections, idx )
 	{
 		CSteamNetworkConnectionBase *pConn = g_mapConnections[idx];
-		if ( pConn->m_pSteamNetworkingSocketsInterface == this )
+		if ( pConn->m_pGameNetworkingSocketsInterface == this )
 		{
 			ConnectionScopeLock connectionLock( *pConn );
 			pConn->ConnectionQueueDestroy();
@@ -468,7 +468,7 @@ void CSteamNetworkingSockets::KillConnections()
 	FOR_EACH_HASHMAP( g_mapListenSockets, idx )
 	{
 		CSteamNetworkListenSocketBase *pSock = g_mapListenSockets[idx];
-		if ( pSock->m_pSteamNetworkingSocketsInterface == this )
+		if ( pSock->m_pGameNetworkingSocketsInterface == this )
 		{
 			DbgVerify( CloseListenSocket( pSock->m_hListenSocketSelf ) );
 			Assert( !g_mapListenSockets.IsValidIndex( idx ) );
@@ -479,7 +479,7 @@ void CSteamNetworkingSockets::KillConnections()
 	FOR_EACH_HASHMAP( g_mapPollGroups, idx )
 	{
 		CSteamNetworkPollGroup *pPollGroup = g_mapPollGroups[idx];
-		if ( pPollGroup->m_pSteamNetworkingSocketsInterface == this )
+		if ( pPollGroup->m_pGameNetworkingSocketsInterface == this )
 		{
 			DbgVerify( DestroyPollGroup( pPollGroup->m_hPollGroupSelf ) );
 			Assert( !g_mapPollGroups.IsValidIndex( idx ) );
@@ -487,9 +487,9 @@ void CSteamNetworkingSockets::KillConnections()
 	}
 }
 
-void CSteamNetworkingSockets::Destroy()
+void CGameNetworkingSockets::Destroy()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingSockets::Destroy" );
+	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingSockets::Destroy" );
 
 	FreeResources();
 
@@ -504,12 +504,12 @@ void CSteamNetworkingSockets::Destroy()
 	#endif
 
 	// Remove from list of extant instances, if we are there
-	find_and_remove_element( s_vecSteamNetworkingSocketsInstances, this );
+	find_and_remove_element( s_vecGameNetworkingSocketsInstances, this );
 
 	delete this;
 }
 
-void CSteamNetworkingSockets::FreeResources()
+void CGameNetworkingSockets::FreeResources()
 {
 
 	KillConnections();
@@ -522,33 +522,33 @@ void CSteamNetworkingSockets::FreeResources()
 	if ( m_bHaveLowLevelRef )
 	{
 		m_bHaveLowLevelRef = false;
-		SteamNetworkingSocketsLowLevelDecRef();
+		GameNetworkingSocketsLowLevelDecRef();
 	}
 }
 
-bool CSteamNetworkingSockets::BHasAnyConnections() const
+bool CGameNetworkingSockets::BHasAnyConnections() const
 {
 	TableScopeLock tableScopeLock( g_tables_lock );
 	for ( CSteamNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
 	{
-		if ( pConn->m_pSteamNetworkingSocketsInterface == this )
+		if ( pConn->m_pGameNetworkingSocketsInterface == this )
 			return true;
 	}
 	return false;
 }
 
-bool CSteamNetworkingSockets::BHasAnyListenSockets() const
+bool CGameNetworkingSockets::BHasAnyListenSockets() const
 {
 	TableScopeLock tableScopeLock( g_tables_lock );
 	for ( CSteamNetworkListenSocketBase *pSock: g_mapListenSockets.IterValues() )
 	{
-		if ( pSock->m_pSteamNetworkingSocketsInterface == this )
+		if ( pSock->m_pGameNetworkingSocketsInterface == this )
 			return true;
 	}
 	return false;
 }
 
-bool CSteamNetworkingSockets::GetIdentity( SteamNetworkingIdentity *pIdentity )
+bool CGameNetworkingSockets::GetIdentity( SteamNetworkingIdentity *pIdentity )
 {
 	SteamNetworkingGlobalLock scopeLock( "GetIdentity" );
 	InternalGetIdentity();
@@ -557,7 +557,7 @@ bool CSteamNetworkingSockets::GetIdentity( SteamNetworkingIdentity *pIdentity )
 	return !m_identity.IsInvalid();
 }
 
-int CSteamNetworkingSockets::GetSecondsUntilCertExpiry() const
+int CGameNetworkingSockets::GetSecondsUntilCertExpiry() const
 {
 	if ( !m_msgSignedCert.has_cert() )
 		return INT_MIN;
@@ -570,7 +570,7 @@ int CSteamNetworkingSockets::GetSecondsUntilCertExpiry() const
 	return nSeconduntilExpiry;
 }
 
-bool CSteamNetworkingSockets::GetCertificateRequest( int *pcbBlob, void *pBlob, SteamNetworkingErrMsg &errMsg )
+bool CGameNetworkingSockets::GetCertificateRequest( int *pcbBlob, void *pBlob, SteamNetworkingErrMsg &errMsg )
 {
 	SteamNetworkingGlobalLock scopeLock( "GetCertificateRequest" );
 
@@ -620,7 +620,7 @@ bool CSteamNetworkingSockets::GetCertificateRequest( int *pcbBlob, void *pBlob, 
 	return true;
 }
 
-bool CSteamNetworkingSockets::SetCertificate( const void *pCertificate, int cbCertificate, SteamNetworkingErrMsg &errMsg )
+bool CGameNetworkingSockets::SetCertificate( const void *pCertificate, int cbCertificate, SteamNetworkingErrMsg &errMsg )
 {
 	// Crack the blob
 	CMsgSteamDatagramCertificateSigned msgCertSigned;
@@ -741,7 +741,7 @@ bool CSteamNetworkingSockets::SetCertificate( const void *pCertificate, int cbCe
 	return true;
 }
 
-void CSteamNetworkingSockets::ResetIdentity( const SteamNetworkingIdentity *pIdentity )
+void CGameNetworkingSockets::ResetIdentity( const SteamNetworkingIdentity *pIdentity )
 {
 #ifdef STEAMNETWORKINGSOCKETS_STEAM
 	Assert( !"Not supported on steam" );
@@ -753,7 +753,7 @@ void CSteamNetworkingSockets::ResetIdentity( const SteamNetworkingIdentity *pIde
 #endif
 }
 
-ESteamNetworkingAvailability CSteamNetworkingSockets::InitAuthentication()
+ESteamNetworkingAvailability CGameNetworkingSockets::InitAuthentication()
 {
 	SteamNetworkingGlobalLock scopeLock( "InitAuthentication" );
 
@@ -764,7 +764,7 @@ ESteamNetworkingAvailability CSteamNetworkingSockets::InitAuthentication()
 	return m_AuthenticationStatus.m_eAvail;
 }
 
-void CSteamNetworkingSockets::CheckAuthenticationPrerequisites( SteamNetworkingMicroseconds usecNow )
+void CGameNetworkingSockets::CheckAuthenticationPrerequisites( SteamNetworkingMicroseconds usecNow )
 {
 #ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
@@ -831,7 +831,7 @@ void CSteamNetworkingSockets::CheckAuthenticationPrerequisites( SteamNetworkingM
 #endif
 }
 
-void CSteamNetworkingSockets::SetCertStatus( ESteamNetworkingAvailability eAvail, const char *pszFmt, ... )
+void CGameNetworkingSockets::SetCertStatus( ESteamNetworkingAvailability eAvail, const char *pszFmt, ... )
 {
 	char msg[ sizeof(m_CertStatus.m_debugMsg) ];
 	va_list ap;
@@ -861,14 +861,14 @@ void CSteamNetworkingSockets::SetCertStatus( ESteamNetworkingAvailability eAvail
 	DeduceAuthenticationStatus();
 }
 
-void CSteamNetworkingSockets::DeduceAuthenticationStatus()
+void CGameNetworkingSockets::DeduceAuthenticationStatus()
 {
 	// For the base class, the overall authentication status is identical to the status of
 	// our cert.  (Derived classes may add additional criteria)
 	SetAuthenticationStatus( m_CertStatus );
 }
 
-void CSteamNetworkingSockets::SetAuthenticationStatus( const SteamNetAuthenticationStatus_t &newStatus )
+void CGameNetworkingSockets::SetAuthenticationStatus( const SteamNetAuthenticationStatus_t &newStatus )
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 
@@ -897,7 +897,7 @@ void CSteamNetworkingSockets::SetAuthenticationStatus( const SteamNetAuthenticat
 }
 
 #ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
-void CSteamNetworkingSockets::AsyncCertRequestFinished()
+void CGameNetworkingSockets::AsyncCertRequestFinished()
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "AsyncCertRequestFinished" );
 
@@ -908,12 +908,12 @@ void CSteamNetworkingSockets::AsyncCertRequestFinished()
 	TableScopeLock tableScopeLock( g_tables_lock );
 	for ( CSteamNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
 	{
-		if ( pConn->m_pSteamNetworkingSocketsInterface == this )
+		if ( pConn->m_pGameNetworkingSocketsInterface == this )
 			pConn->InterfaceGotCert();
 	}
 }
 
-void CSteamNetworkingSockets::CertRequestFailed( ESteamNetworkingAvailability eCertAvail, ESteamNetConnectionEnd nConnectionEndReason, const char *pszMsg )
+void CGameNetworkingSockets::CertRequestFailed( ESteamNetworkingAvailability eCertAvail, ESteamNetConnectionEnd nConnectionEndReason, const char *pszMsg )
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CertRequestFailed" );
 
@@ -923,7 +923,7 @@ void CSteamNetworkingSockets::CertRequestFailed( ESteamNetworkingAvailability eC
 	// we may end up retrying sooner.  If we don't have any active connections, spamming
 	// retries way too frequently may be really bad; we might end up DoS-ing ourselves.
 	// Do we need to make this configurable?
-	m_scheduleCheckRenewCert.Schedule( SteamNetworkingSockets_GetLocalTimestamp() + k_nMillion*30 );
+	m_scheduleCheckRenewCert.Schedule( GameNetworkingSockets_GetLocalTimestamp() + k_nMillion*30 );
 
 	if ( m_msgSignedCert.has_cert() )
 	{
@@ -938,7 +938,7 @@ void CSteamNetworkingSockets::CertRequestFailed( ESteamNetworkingAvailability eC
 	TableScopeLock tableScopeLock( g_tables_lock );
 	for ( CSteamNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
 	{
-		if ( pConn->m_pSteamNetworkingSocketsInterface == this )
+		if ( pConn->m_pGameNetworkingSocketsInterface == this )
 			pConn->CertRequestFailed( nConnectionEndReason, pszMsg );
 	}
 
@@ -946,7 +946,7 @@ void CSteamNetworkingSockets::CertRequestFailed( ESteamNetworkingAvailability eC
 }
 #endif
 
-ESteamNetworkingAvailability CSteamNetworkingSockets::GetAuthenticationStatus( SteamNetAuthenticationStatus_t *pDetails )
+ESteamNetworkingAvailability CGameNetworkingSockets::GetAuthenticationStatus( SteamNetAuthenticationStatus_t *pDetails )
 {
 	SteamNetworkingGlobalLock scopeLock; // !SPEED! We could protect this with a more tightly scoped lock, if we think this is eomthing people might be polling
 
@@ -958,7 +958,7 @@ ESteamNetworkingAvailability CSteamNetworkingSockets::GetAuthenticationStatus( S
 	return m_AuthenticationStatus.m_eAvail;
 }
 
-HSteamListenSocket CSteamNetworkingSockets::CreateListenSocketIP( const SteamNetworkingIPAddr &localAddr, int nOptions, const SteamNetworkingConfigValue_t *pOptions )
+HSteamListenSocket CGameNetworkingSockets::CreateListenSocketIP( const SteamNetworkingIPAddr &localAddr, int nOptions, const SteamNetworkingConfigValue_t *pOptions )
 {
 	SteamNetworkingGlobalLock scopeLock( "CreateListenSocketIP" );
 	SteamDatagramErrMsg errMsg;
@@ -976,7 +976,7 @@ HSteamListenSocket CSteamNetworkingSockets::CreateListenSocketIP( const SteamNet
 	return pSock->m_hListenSocketSelf;
 }
 
-HSteamNetConnection CSteamNetworkingSockets::ConnectByIPAddress( const SteamNetworkingIPAddr &address, int nOptions, const SteamNetworkingConfigValue_t *pOptions )
+HSteamNetConnection CGameNetworkingSockets::ConnectByIPAddress( const SteamNetworkingIPAddr &address, int nOptions, const SteamNetworkingConfigValue_t *pOptions )
 {
 	SteamNetworkingGlobalLock scopeLock( "ConnectByIPAddress" );
 	ConnectionScopeLock connectionLock;
@@ -995,7 +995,7 @@ HSteamNetConnection CSteamNetworkingSockets::ConnectByIPAddress( const SteamNetw
 }
 
 
-EResult CSteamNetworkingSockets::AcceptConnection( HSteamNetConnection hConn )
+EResult CGameNetworkingSockets::AcceptConnection( HSteamNetConnection hConn )
 {
 	SteamNetworkingGlobalLock scopeLock( "AcceptConnection" ); // Take global lock, since this will lead to connection state transition
 	ConnectionScopeLock connectionLock;
@@ -1010,7 +1010,7 @@ EResult CSteamNetworkingSockets::AcceptConnection( HSteamNetConnection hConn )
 	return pConn->APIAcceptConnection();
 }
 
-bool CSteamNetworkingSockets::CloseConnection( HSteamNetConnection hConn, int nReason, const char *pszDebug, bool bEnableLinger )
+bool CGameNetworkingSockets::CloseConnection( HSteamNetConnection hConn, int nReason, const char *pszDebug, bool bEnableLinger )
 {
 	SteamNetworkingGlobalLock scopeLock( "CloseConnection" ); // Take global lock, we are going to change connection state and/or destroy objects
 	ConnectionScopeLock connectionLock;
@@ -1023,7 +1023,7 @@ bool CSteamNetworkingSockets::CloseConnection( HSteamNetConnection hConn, int nR
 	return true;
 }
 
-bool CSteamNetworkingSockets::CloseListenSocket( HSteamListenSocket hSocket )
+bool CGameNetworkingSockets::CloseListenSocket( HSteamListenSocket hSocket )
 {
 	SteamNetworkingGlobalLock scopeLock( "CloseListenSocket" ); // Take global lock, we are going to destroy objects
 	CSteamNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
@@ -1036,7 +1036,7 @@ bool CSteamNetworkingSockets::CloseListenSocket( HSteamListenSocket hSocket )
 	return true;
 }
 
-bool CSteamNetworkingSockets::SetConnectionUserData( HSteamNetConnection hPeer, int64 nUserData )
+bool CGameNetworkingSockets::SetConnectionUserData( HSteamNetConnection hPeer, int64 nUserData )
 {
 	//SteamNetworkingGlobalLock scopeLock( "SetConnectionUserData" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
@@ -1047,7 +1047,7 @@ bool CSteamNetworkingSockets::SetConnectionUserData( HSteamNetConnection hPeer, 
 	return true;
 }
 
-int64 CSteamNetworkingSockets::GetConnectionUserData( HSteamNetConnection hPeer )
+int64 CGameNetworkingSockets::GetConnectionUserData( HSteamNetConnection hPeer )
 {
 	//SteamNetworkingGlobalLock scopeLock( "GetConnectionUserData" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
@@ -1057,7 +1057,7 @@ int64 CSteamNetworkingSockets::GetConnectionUserData( HSteamNetConnection hPeer 
 	return pConn->GetUserData();
 }
 
-void CSteamNetworkingSockets::SetConnectionName( HSteamNetConnection hPeer, const char *pszName )
+void CGameNetworkingSockets::SetConnectionName( HSteamNetConnection hPeer, const char *pszName )
 {
 	SteamNetworkingGlobalLock scopeLock( "SetConnectionName" ); // NOTE: Yes, we must take global lock for this.  See CSteamNetworkConnectionBase::SetDescription
 	ConnectionScopeLock connectionLock;
@@ -1067,7 +1067,7 @@ void CSteamNetworkingSockets::SetConnectionName( HSteamNetConnection hPeer, cons
 	pConn->SetAppName( pszName );
 }
 
-bool CSteamNetworkingSockets::GetConnectionName( HSteamNetConnection hPeer, char *pszName, int nMaxLen )
+bool CGameNetworkingSockets::GetConnectionName( HSteamNetConnection hPeer, char *pszName, int nMaxLen )
 {
 	//SteamNetworkingGlobalLock scopeLock( "GetConnectionName" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
@@ -1078,7 +1078,7 @@ bool CSteamNetworkingSockets::GetConnectionName( HSteamNetConnection hPeer, char
 	return true;
 }
 
-EResult CSteamNetworkingSockets::SendMessageToConnection( HSteamNetConnection hConn, const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber )
+EResult CGameNetworkingSockets::SendMessageToConnection( HSteamNetConnection hConn, const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber )
 {
 	//SteamNetworkingGlobalLock scopeLock( "SendMessageToConnection" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
@@ -1088,7 +1088,7 @@ EResult CSteamNetworkingSockets::SendMessageToConnection( HSteamNetConnection hC
 	return pConn->APISendMessageToConnection( pData, cbData, nSendFlags, pOutMessageNumber );
 }
 
-void CSteamNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult )
+void CGameNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult )
 {
 
 	// Get list of messages, grouped by connection.
@@ -1142,7 +1142,7 @@ void CSteamNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessag
 	// OK, we are ready to begin
 
 	// SteamNetworkingGlobalLock scopeLock( "SendMessages" ); // NO, not necessary!
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	CSteamNetworkConnectionBase *pConn = nullptr;
 	HSteamNetConnection hConn = k_HSteamNetConnection_Invalid;
@@ -1198,7 +1198,7 @@ void CSteamNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessag
 		pConn->CheckConnectionStateOrScheduleWakeUp( usecNow );
 }
 
-EResult CSteamNetworkingSockets::FlushMessagesOnConnection( HSteamNetConnection hConn )
+EResult CGameNetworkingSockets::FlushMessagesOnConnection( HSteamNetConnection hConn )
 {
 	//SteamNetworkingGlobalLock scopeLock( "FlushMessagesOnConnection" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
@@ -1208,7 +1208,7 @@ EResult CSteamNetworkingSockets::FlushMessagesOnConnection( HSteamNetConnection 
 	return pConn->APIFlushMessageOnConnection();
 }
 
-int CSteamNetworkingSockets::ReceiveMessagesOnConnection( HSteamNetConnection hConn, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
+int CGameNetworkingSockets::ReceiveMessagesOnConnection( HSteamNetConnection hConn, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
 {
 	//SteamNetworkingGlobalLock scopeLock( "ReceiveMessagesOnConnection" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
@@ -1218,7 +1218,7 @@ int CSteamNetworkingSockets::ReceiveMessagesOnConnection( HSteamNetConnection hC
 	return pConn->APIReceiveMessages( ppOutMessages, nMaxMessages );
 }
 
-HSteamNetPollGroup CSteamNetworkingSockets::CreatePollGroup()
+HSteamNetPollGroup CGameNetworkingSockets::CreatePollGroup()
 {
 	SteamNetworkingGlobalLock scopeLock( "CreatePollGroup" ); // Take global lock, because we will be creating objects
 	PollGroupScopeLock pollGroupScopeLock;
@@ -1226,7 +1226,7 @@ HSteamNetPollGroup CSteamNetworkingSockets::CreatePollGroup()
 	return pPollGroup->m_hPollGroupSelf;
 }
 
-CSteamNetworkPollGroup *CSteamNetworkingSockets::InternalCreatePollGroup( PollGroupScopeLock &scopeLock )
+CSteamNetworkPollGroup *CGameNetworkingSockets::InternalCreatePollGroup( PollGroupScopeLock &scopeLock )
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 	TableScopeLock tableScopeLock( g_tables_lock );
@@ -1236,7 +1236,7 @@ CSteamNetworkPollGroup *CSteamNetworkingSockets::InternalCreatePollGroup( PollGr
 	return pPollGroup;
 }
 
-bool CSteamNetworkingSockets::DestroyPollGroup( HSteamNetPollGroup hPollGroup )
+bool CGameNetworkingSockets::DestroyPollGroup( HSteamNetPollGroup hPollGroup )
 {
 	SteamNetworkingGlobalLock scopeLock( "DestroyPollGroup" ); // Take global lock, since we'll be destroying objects
 	TableScopeLock tableScopeLock( g_tables_lock ); // We'll need to be able to remove the poll group from the tables list
@@ -1249,7 +1249,7 @@ bool CSteamNetworkingSockets::DestroyPollGroup( HSteamNetPollGroup hPollGroup )
 	return true;
 }
 
-bool CSteamNetworkingSockets::SetConnectionPollGroup( HSteamNetConnection hConn, HSteamNetPollGroup hPollGroup )
+bool CGameNetworkingSockets::SetConnectionPollGroup( HSteamNetConnection hConn, HSteamNetPollGroup hPollGroup )
 {
 	SteamNetworkingGlobalLock scopeLock( "SetConnectionPollGroup" ); // Take global lock, since we'll need to take multiple object locks
 	ConnectionScopeLock connectionLock;
@@ -1278,7 +1278,7 @@ bool CSteamNetworkingSockets::SetConnectionPollGroup( HSteamNetConnection hConn,
 	return true;
 }
 
-int CSteamNetworkingSockets::ReceiveMessagesOnPollGroup( HSteamNetPollGroup hPollGroup, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
+int CGameNetworkingSockets::ReceiveMessagesOnPollGroup( HSteamNetPollGroup hPollGroup, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
 {
 	//SteamNetworkingGlobalLock scopeLock( "ReceiveMessagesOnPollGroup" ); // NO, not necessary!
 	PollGroupScopeLock pollGroupLock;
@@ -1292,7 +1292,7 @@ int CSteamNetworkingSockets::ReceiveMessagesOnPollGroup( HSteamNetPollGroup hPol
 }
 
 #ifdef STEAMNETWORKINGSOCKETS_STEAMCLIENT
-int CSteamNetworkingSockets::ReceiveMessagesOnListenSocketLegacyPollGroup( HSteamListenSocket hSocket, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
+int CGameNetworkingSockets::ReceiveMessagesOnListenSocketLegacyPollGroup( HSteamListenSocket hSocket, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
 {
 	SteamNetworkingGlobalLock scopeLock( "ReceiveMessagesOnListenSocket" );
 	CSteamNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
@@ -1305,7 +1305,7 @@ int CSteamNetworkingSockets::ReceiveMessagesOnListenSocketLegacyPollGroup( HStea
 }
 #endif
 
-bool CSteamNetworkingSockets::GetConnectionInfo( HSteamNetConnection hConn, SteamNetConnectionInfo_t *pInfo )
+bool CGameNetworkingSockets::GetConnectionInfo( HSteamNetConnection hConn, SteamNetConnectionInfo_t *pInfo )
 {
 	//SteamNetworkingGlobalLock scopeLock( "GetConnectionInfo" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
@@ -1317,7 +1317,7 @@ bool CSteamNetworkingSockets::GetConnectionInfo( HSteamNetConnection hConn, Stea
 	return true;
 }
 
-bool CSteamNetworkingSockets::GetQuickConnectionStatus( HSteamNetConnection hConn, SteamNetworkingQuickConnectionStatus *pStats )
+bool CGameNetworkingSockets::GetQuickConnectionStatus( HSteamNetConnection hConn, SteamNetworkingQuickConnectionStatus *pStats )
 {
 	//SteamNetworkingGlobalLock scopeLock( "GetQuickConnectionStatus" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
@@ -1329,7 +1329,7 @@ bool CSteamNetworkingSockets::GetQuickConnectionStatus( HSteamNetConnection hCon
 	return true;
 }
 
-int CSteamNetworkingSockets::GetDetailedConnectionStatus( HSteamNetConnection hConn, char *pszBuf, int cbBuf )
+int CGameNetworkingSockets::GetDetailedConnectionStatus( HSteamNetConnection hConn, char *pszBuf, int cbBuf )
 {
 	SteamNetworkingDetailedConnectionStatus stats;
 
@@ -1341,7 +1341,7 @@ int CSteamNetworkingSockets::GetDetailedConnectionStatus( HSteamNetConnection hC
 		if ( !pConn )
 			return -1;
 
-		pConn->APIGetDetailedConnectionStatus( stats, SteamNetworkingSockets_GetLocalTimestamp() );
+		pConn->APIGetDetailedConnectionStatus( stats, GameNetworkingSockets_GetLocalTimestamp() );
 
 	} // Release lock.  We don't need it, and printing can take a while!
 	int r = stats.Print( pszBuf, cbBuf );
@@ -1353,7 +1353,7 @@ int CSteamNetworkingSockets::GetDetailedConnectionStatus( HSteamNetConnection hC
 	return r;
 }
 
-bool CSteamNetworkingSockets::GetListenSocketAddress( HSteamListenSocket hSocket, SteamNetworkingIPAddr *pAddress )
+bool CGameNetworkingSockets::GetListenSocketAddress( HSteamListenSocket hSocket, SteamNetworkingIPAddr *pAddress )
 {
 	SteamNetworkingGlobalLock scopeLock( "GetListenSocketAddress" );
 	CSteamNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
@@ -1362,7 +1362,7 @@ bool CSteamNetworkingSockets::GetListenSocketAddress( HSteamListenSocket hSocket
 	return pSock->APIGetAddress( pAddress );
 }
 
-bool CSteamNetworkingSockets::CreateSocketPair( HSteamNetConnection *pOutConnection1, HSteamNetConnection *pOutConnection2, bool bUseNetworkLoopback, const SteamNetworkingIdentity *pIdentity1, const SteamNetworkingIdentity *pIdentity2 )
+bool CGameNetworkingSockets::CreateSocketPair( HSteamNetConnection *pOutConnection1, HSteamNetConnection *pOutConnection2, bool bUseNetworkLoopback, const SteamNetworkingIdentity *pIdentity1, const SteamNetworkingIdentity *pIdentity2 )
 {
 	SteamNetworkingGlobalLock scopeLock( "CreateSocketPair" );
 
@@ -1405,7 +1405,7 @@ bool CSteamNetworkingSockets::CreateSocketPair( HSteamNetConnection *pOutConnect
 	return true;
 }
 
-bool CSteamNetworkingSockets::BCertHasIdentity() const
+bool CGameNetworkingSockets::BCertHasIdentity() const
 {
 	// We should actually have a cert, otherwise this question cannot be answered
 	Assert( m_msgSignedCert.has_cert() );
@@ -1414,7 +1414,7 @@ bool CSteamNetworkingSockets::BCertHasIdentity() const
 }
 
 
-bool CSteamNetworkingSockets::SetCertificateAndPrivateKey( const void *pCert, int cbCert, void *pPrivateKey, int cbPrivateKey )
+bool CGameNetworkingSockets::SetCertificateAndPrivateKey( const void *pCert, int cbCert, void *pPrivateKey, int cbPrivateKey )
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "SetCertificateAndPrivateKey" );
 
@@ -1477,7 +1477,7 @@ bool CSteamNetworkingSockets::SetCertificateAndPrivateKey( const void *pCert, in
 	return true;
 }
 
-int CSteamNetworkingSockets::GetP2P_Transport_ICE_Enable( const SteamNetworkingIdentity &identityRemote, int *pOutUserFlags )
+int CGameNetworkingSockets::GetP2P_Transport_ICE_Enable( const SteamNetworkingIdentity &identityRemote, int *pOutUserFlags )
 {
 	// We really shouldn't get here, because this is only a question that makes sense
 	// to ask if we have also overridden this function in a derived class, or slammed
@@ -1488,7 +1488,7 @@ int CSteamNetworkingSockets::GetP2P_Transport_ICE_Enable( const SteamNetworkingI
 	return k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Disable;
 }
 
-void CSteamNetworkingSockets::RunCallbacks()
+void CGameNetworkingSockets::RunCallbacks()
 {
 
 	// Swap into a temp, so that we only hold lock for
@@ -1531,7 +1531,7 @@ void CSteamNetworkingSockets::RunCallbacks()
 	}
 }
 
-void CSteamNetworkingSockets::InternalQueueCallback( int nCallback, int cbCallback, const void *pvCallback, void *fnRegisteredFunctionPtr )
+void CGameNetworkingSockets::InternalQueueCallback( int nCallback, int cbCallback, const void *pvCallback, void *fnRegisteredFunctionPtr )
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 
@@ -1567,12 +1567,12 @@ SteamNetworkingMessage_t *CGameNetworkingUtils::AllocateMessage( int cbAllocateB
 
 SteamNetworkingMicroseconds CGameNetworkingUtils::GetLocalTimestamp()
 {
-	return SteamNetworkingSockets_GetLocalTimestamp();
+	return GameNetworkingSockets_GetLocalTimestamp();
 }
 
-void CGameNetworkingUtils::SetDebugOutputFunction( ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc )
+void CGameNetworkingUtils::SetDebugOutputFunction( EGameNetworkingSocketsDebugOutputType eDetailLevel, FGameNetworkingSocketsDebugOutput pfnFunc )
 {
-	SteamNetworkingSockets_SetDebugOutputFunction( eDetailLevel, pfnFunc );
+	GameNetworkingSockets_SetDebugOutputFunction( eDetailLevel, pfnFunc );
 }
 
 
@@ -1601,7 +1601,7 @@ static ConfigValue<T> *EvaluateScopeConfigValue( GlobalConfigValueEntry *pEntry,
 
 		case k_ESteamNetworkingConfig_SocketsInterface:
 		{
-			CSteamNetworkingSockets *pInterface = (CSteamNetworkingSockets *)scopeObj;
+			CGameNetworkingSockets *pInterface = (CGameNetworkingSockets *)scopeObj;
 			if ( pEntry->m_eScope == k_ESteamNetworkingConfig_Connection )
 			{
 				return GetConnectionVar<T>( pEntry, &pInterface->m_connectionConfig );
@@ -1994,7 +1994,7 @@ ESteamNetworkingGetConfigValueResult CGameNetworkingUtils::GetConfigValue(
 		if ( rFetch < 0 )
 			return rFetch;
 
-		int32 MTU_DataSize = std::max( 0, MTU_packetsize - k_cbSteamNetworkingSocketsNoFragmentHeaderReserve );
+		int32 MTU_DataSize = std::max( 0, MTU_packetsize - k_cbGameNetworkingSocketsNoFragmentHeaderReserve );
 		ESteamNetworkingGetConfigValueResult rStore = ReturnConfigValueTyped<int32>( MTU_DataSize, pResult, cbResult );
 		if ( rStore != k_ESteamNetworkingGetConfigValue_OK )
 			return rStore;
@@ -2196,8 +2196,8 @@ const char *CGameNetworkingUtils::GetPlatformString()
 	#endif
 }
 
-} // namespace SteamNetworkingSocketsLib
-using namespace SteamNetworkingSocketsLib;
+} // namespace GameNetworkingSocketsLib
+using namespace GameNetworkingSocketsLib;
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -2207,44 +2207,44 @@ using namespace SteamNetworkingSocketsLib;
 
 #ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
 
-static CSteamNetworkingSockets *s_pSteamNetworkingSockets = nullptr;
+static CGameNetworkingSockets *s_pGameNetworkingSockets = nullptr;
 
 STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingSockets_Init( const SteamNetworkingIdentity *pIdentity, SteamNetworkingErrMsg &errMsg )
 {
 	SteamNetworkingGlobalLock lock( "GameNetworkingSockets_Init" );
 
 	// Already initted?
-	if ( s_pSteamNetworkingSockets )
+	if ( s_pGameNetworkingSockets )
 	{
 		AssertMsg( false, "GameNetworkingSockets_init called multiple times?" );
 		return true;
 	}
 
 	// Init basic functionality
-	CSteamNetworkingSockets *pSteamNetworkingSockets = new CSteamNetworkingSockets( ( CGameNetworkingUtils *)GameNetworkingUtils() );
-	if ( !pSteamNetworkingSockets->BInitGameNetworkingSockets( pIdentity, errMsg ) )
+	CGameNetworkingSockets *pGameNetworkingSockets = new CGameNetworkingSockets( ( CGameNetworkingUtils *)GameNetworkingUtils() );
+	if ( !pGameNetworkingSockets->BInitGameNetworkingSockets( pIdentity, errMsg ) )
 	{
-		pSteamNetworkingSockets->Destroy();
+		pGameNetworkingSockets->Destroy();
 		return false;
 	}
 
-	s_pSteamNetworkingSockets = pSteamNetworkingSockets;
+	s_pGameNetworkingSockets = pGameNetworkingSockets;
 	return true;
 }
 
 STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_Kill()
 {
 	SteamNetworkingGlobalLock lock( "GameNetworkingSockets_Kill" );
-	if ( s_pSteamNetworkingSockets )
+	if ( s_pGameNetworkingSockets )
 	{
-		s_pSteamNetworkingSockets->Destroy();
-		s_pSteamNetworkingSockets = nullptr;
+		s_pGameNetworkingSockets->Destroy();
+		s_pGameNetworkingSockets = nullptr;
 	}
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingSockets *SteamNetworkingSockets_LibV9()
+STEAMNETWORKINGSOCKETS_INTERFACE IGameNetworkingSockets *GameNetworkingSockets_LibV9()
 {
-	return s_pSteamNetworkingSockets;
+	return s_pGameNetworkingSockets;
 }
 
 STEAMNETWORKINGSOCKETS_INTERFACE IGameNetworkingUtils *GameNetworkingUtils_LibV3()

@@ -7,7 +7,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 struct SNPAckSerializerHelper
 {
@@ -203,7 +203,7 @@ void CSteamNetworkConnectionBase::SNP_InitializeConnection( SteamNetworkingMicro
 	* (rev-02) clarifies the use of RFC 3390 with regard to the above formula.
 	*/
 	Assert( usecPing > 0 );
-	int64 w_init = Clamp( 4380, 2 * k_cbSteamNetworkingSocketsMaxEncryptedPayloadSend, 4 * k_cbSteamNetworkingSocketsMaxEncryptedPayloadSend );
+	int64 w_init = Clamp( 4380, 2 * k_cbGameNetworkingSocketsMaxEncryptedPayloadSend, 4 * k_cbGameNetworkingSocketsMaxEncryptedPayloadSend );
 	m_sendRateData.m_nCurrentSendRateEstimate = int( k_nMillion * w_init / usecPing );
 
 	// Go ahead and clamp it now
@@ -1059,7 +1059,7 @@ bool CSteamNetworkConnectionBase::ProcessPlainTextDataChunk( int usecTimeSinceLa
 				m_senderState.RemoveAckedReliableMessageFromUnackedList();
 
 				// Spew where we think the peer is decoding the reliable stream
-				if ( nLogLevelPacketDecode >= k_ESteamNetworkingSocketsDebugOutputType_Debug )
+				if ( nLogLevelPacketDecode >= k_EGameNetworkingSocketsDebugOutputType_Debug )
 				{
 
 					int64 nPeerReliablePos = m_senderState.m_nReliableStreamPos;
@@ -1289,7 +1289,7 @@ struct EncodedSegment
 	inline void SetupReliable( CSteamNetworkingMessage *pMsg, int64 nBegin, int64 nEnd, int64 nLastReliableStreamPosEnd )
 	{
 		Assert( nBegin < nEnd );
-		//Assert( nBegin + k_cbSteamNetworkingSocketsMaxReliableMessageSegment >= nEnd ); // Max sure we don't exceed max segment size
+		//Assert( nBegin + k_cbGameNetworkingSocketsMaxReliableMessageSegment >= nEnd ); // Max sure we don't exceed max segment size
 		Assert( pMsg->SNPSend_IsReliable() );
 
 		// Start filling out the header with the top three bits = 010,
@@ -1444,7 +1444,7 @@ bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTranspo
 	int cbMaxPlaintextPayload = std::max( 0, ctx.m_cbMaxEncryptedPayload-k_cbSteamNetwokingSocketsEncrytionTagSize );
 	cbMaxPlaintextPayload = std::min( cbMaxPlaintextPayload, m_cbMaxPlaintextPayloadSend );
 
-	uint8 payload[ k_cbSteamNetworkingSocketsMaxPlaintextPayloadSend ];
+	uint8 payload[ k_cbGameNetworkingSocketsMaxPlaintextPayloadSend ];
 	uint8 *pPayloadEnd = payload + cbMaxPlaintextPayload;
 	uint8 *pPayloadPtr = payload;
 
@@ -1899,7 +1899,7 @@ bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTranspo
 			AssertMsg1( false, "Bogus cipher %d", m_eNegotiatedCipher );
 			break;
 
-		case k_ESteamNetworkingSocketsCipher_NULL:
+		case k_EGameNetworkingSocketsCipher_NULL:
 		{
 
 			// No encryption!
@@ -1908,7 +1908,7 @@ bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTranspo
 		}
 		break;
 
-		case k_ESteamNetworkingSocketsCipher_AES_256_GCM:
+		case k_EGameNetworkingSocketsCipher_AES_256_GCM:
 		{
 
 			Assert( m_bCryptKeysValid );
@@ -1917,7 +1917,7 @@ bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTranspo
 			*(uint64 *)&m_cryptIVSend.m_buf += LittleQWord( m_statsEndToEnd.m_nNextSendSequenceNumber );
 
 			// Encrypt the chunk
-			uint8 arEncryptedChunk[ k_cbSteamNetworkingSocketsMaxEncryptedPayloadSend + 64 ]; // Should not need pad
+			uint8 arEncryptedChunk[ k_cbGameNetworkingSocketsMaxEncryptedPayloadSend + 64 ]; // Should not need pad
 			uint32 cbEncrypted = sizeof(arEncryptedChunk);
 			DbgVerify( m_cryptContextSend.Encrypt(
 				payload, cbPlainText, // plaintext
@@ -1937,7 +1937,7 @@ bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTranspo
 			*(uint64 *)&m_cryptIVSend.m_buf -= LittleQWord( m_statsEndToEnd.m_nNextSendSequenceNumber );
 
 			Assert( (int)cbEncrypted >= cbPlainText );
-			Assert( (int)cbEncrypted <= k_cbSteamNetworkingSocketsMaxEncryptedPayloadSend ); // confirm that pad above was not necessary and we never exceed k_nMaxSteamDatagramTransportPayload, even after encrypting
+			Assert( (int)cbEncrypted <= k_cbGameNetworkingSocketsMaxEncryptedPayloadSend ); // confirm that pad above was not necessary and we never exceed k_nMaxSteamDatagramTransportPayload, even after encrypting
 
 			// Ask current transport to deliver it
 			nBytesSent = pTransport->SendEncryptedDataChunk( arEncryptedChunk, cbEncrypted, ctx );
@@ -3559,4 +3559,4 @@ void CSteamNetworkConnectionBase::SNP_PopulateQuickStats( SteamNetworkingQuickCo
 	}
 }
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib

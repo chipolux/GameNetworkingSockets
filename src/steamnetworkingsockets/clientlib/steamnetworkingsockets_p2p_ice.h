@@ -12,9 +12,9 @@
 
 #include "../../external/steamwebrtc/ice_session.h"
 
-extern "C" CreateICESession_t g_SteamNetworkingSockets_CreateICESessionFunc;
+extern "C" CreateICESession_t g_GameNetworkingSockets_CreateICESessionFunc;
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 constexpr int k_nMinPingTimeLocalTolerance = 5;
 
@@ -85,7 +85,7 @@ private:
 	virtual void RecvValidUDPDataPacket( UDPRecvPacketContext_t &ctx ) override;
 };
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // #ifdef STEAMNETWORKINGSOCKETS_ENABLE_ICE
 

@@ -15,9 +15,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define EVNTAPI __stdcall
-#define EventRegister EventRegister_SteamNetworkingSocketsHack
-#define EventWrite EventWrite_SteamNetworkingSocketsHack
-#define EventUnregister EventUnregister_SteamNetworkingSocketsHack
+#define EventRegister EventRegister_GameNetworkingSocketsHack
+#define EventWrite EventWrite_GameNetworkingSocketsHack
+#define EventUnregister EventUnregister_GameNetworkingSocketsHack
 #include <evntprov.h>
 
 // Typedefs for use with GetProcAddress
@@ -65,7 +65,7 @@ ULONG EVNTAPI EventUnregister( REGHANDLE RegHandle )
 //
 /////////////////////////////////////////////////////////////////////////////
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 void ETW_Init()
 {
@@ -79,14 +79,14 @@ void ETW_Init()
 		s_pEventWrite = ( tEventWrite )GetProcAddress( pAdvapiDLL, "EventWrite" );
 		s_pEventUnregister = ( tEventUnregister )GetProcAddress( pAdvapiDLL, "EventUnregister" );
 
-		EventRegisterValve_SteamNetworkingSockets();
+		EventRegisterValve_GameNetworkingSockets();
 	}
 }
 
 void ETW_Kill()
 {
 	// Unregister our providers.
-	EventUnregisterValve_SteamNetworkingSockets();
+	EventUnregisterValve_GameNetworkingSockets();
 }
 
 void ETW_LongOp( const char *opName, SteamNetworkingMicroseconds usec, const char *pszInfo )

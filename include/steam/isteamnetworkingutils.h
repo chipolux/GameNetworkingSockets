@@ -25,7 +25,7 @@ public:
 	//
 
 	/// Allocate and initialize a message object.  Usually the reason
-	/// you call this is to pass it to ISteamNetworkingSockets::SendMessages.
+	/// you call this is to pass it to IGameNetworkingSockets::SendMessages.
 	/// The returned object will have all of the relevant fields cleared to zero.
 	///
 	/// Optionally you can also request that this system allocate space to
@@ -230,8 +230,8 @@ public:
 	/// detail level for various subsystems (perhaps only for certain connections) by
 	/// adjusting the configuration values k_ESteamNetworkingConfig_LogLevel_Xxxxx.
 	///
-	/// Except when debugging, you should only use k_ESteamNetworkingSocketsDebugOutputType_Msg
-	/// or k_ESteamNetworkingSocketsDebugOutputType_Warning.  For best performance, do NOT
+	/// Except when debugging, you should only use k_EGameNetworkingSocketsDebugOutputType_Msg
+	/// or k_EGameNetworkingSocketsDebugOutputType_Warning.  For best performance, do NOT
 	/// request a high detail level and then filter out messages in your callback.  This incurs
 	/// all of the expense of formatting the messages, which are then discarded.  Setting a high
 	/// priority value (low numeric value) here allows the library to avoid doing this work.
@@ -239,7 +239,7 @@ public:
 	/// IMPORTANT: This may be called from a service thread, while we own a mutex, etc.
 	/// Your output function must be threadsafe and fast!  Do not make any other
 	/// Steamworks calls from within the handler.
-	virtual void SetDebugOutputFunction( ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc ) = 0;
+	virtual void SetDebugOutputFunction( EGameNetworkingSocketsDebugOutputType eDetailLevel, FGameNetworkingSocketsDebugOutput pfnFunc ) = 0;
 
 	//
 	// Set and get configuration values, see ESteamNetworkingConfigValue for individual descriptions.
@@ -258,7 +258,7 @@ public:
 	// Set global callbacks.  If you do not want to use Steam's callback dispatch mechanism and you
 	// want to use the same callback on all (or most) listen sockets and connections, then
 	// simply install these callbacks first thing, and you are good to go.
-	// See ISteamNetworkingSockets::RunCallbacks
+	// See IGameNetworkingSockets::RunCallbacks
 	//
 	bool SetGlobalCallback_SteamNetConnectionStatusChanged( FnSteamNetConnectionStatusChanged fnCallback );
 	bool SetGlobalCallback_SteamNetAuthenticationStatusChanged( FnSteamNetAuthenticationStatusChanged fnCallback );

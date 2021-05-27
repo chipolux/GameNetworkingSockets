@@ -23,7 +23,7 @@
 
 #define MsgOrOK( s ) ( (s).empty() ? "OK" : (s).c_str() )
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 template <typename T, T kInvalidItem >
 void CertAuthParameter<T,kInvalidItem>::SetIntersection( const CertAuthParameter<T,kInvalidItem> &a, const CertAuthParameter<T,kInvalidItem> &b )
@@ -787,4 +787,4 @@ void CertStore_ValidateStatics( CValidator &validator )
 }
 #endif
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib

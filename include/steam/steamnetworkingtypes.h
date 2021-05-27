@@ -14,7 +14,7 @@
 #include "steamclientpublic.h"
 
 //----------------------------------------
-// SteamNetworkingSockets library config
+// GameNetworkingSockets library config
 // Opensource version
 //
 #ifndef STEAMNETWORKINGSOCKETS_OPENSOURCE
@@ -22,7 +22,7 @@
 #endif
 #define STEAMNETWORKINGSOCKETS_STANDALONELIB
 //#define STEAMNETWORKINGSOCKETS_STEAMAPI // Comment this in to support linking with steam_api.h as well
-// End SteamNetworkingSockets config.
+// End GameNetworkingSockets config.
 //-----------------------------------------------------------------------------
 
 #if !defined( STEAMNETWORKINGSOCKETS_OPENSOURCE ) && !defined( STEAMNETWORKINGSOCKETS_STREAMINGCLIENT )
@@ -432,7 +432,7 @@ enum ESteamNetConnectionEnd
 
 	//
 	// Application codes.  These are the values you will pass to
-	// ISteamNetworkingSockets::CloseConnection.  You can use these codes if
+	// IGameNetworkingSockets::CloseConnection.  You can use these codes if
 	// you want to plumb through application-specific reason codes.  If you don't
 	// need this facility, feel free to always pass
 	// k_ESteamNetConnectionEnd_App_Generic.
@@ -466,7 +466,7 @@ enum ESteamNetConnectionEnd
 	// System codes.  These will be returned by the system when
 	// the connection state is k_ESteamNetworkingConnectionState_ClosedByPeer
 	// or k_ESteamNetworkingConnectionState_ProblemDetectedLocally.  It is
-	// illegal to pass a code in this range to ISteamNetworkingSockets::CloseConnection
+	// illegal to pass a code in this range to IGameNetworkingSockets::CloseConnection
 	//
 
 	// 3xxx: Connection failed or ended because of problem with the
@@ -781,7 +781,7 @@ struct SteamNetworkingQuickConnectionStatus
 /// Max size of a single message that we can SEND.
 /// Note: We might be wiling to receive larger messages,
 /// and our peer might, too.
-const int k_cbMaxSteamNetworkingSocketsMessageSizeSend = 512 * 1024;
+const int k_cbMaxGameNetworkingSocketsMessageSizeSend = 512 * 1024;
 
 /// A message that has been received.
 struct SteamNetworkingMessage_t
@@ -852,7 +852,7 @@ struct SteamNetworkingMessage_t
 	int m_nFlags;
 
 	/// Arbitrary user data that you can use when sending messages using
-	/// IGameNetworkingUtils::AllocateMessage and ISteamNetworkingSockets::SendMessage.
+	/// IGameNetworkingUtils::AllocateMessage and IGameNetworkingSockets::SendMessage.
 	/// (The callback you set in m_pfnFreeData might use this field.)
 	///
 	/// Not used for received messages.
@@ -875,7 +875,7 @@ struct SteamNetworkingMessage_t
 protected:
 	// Declare destructor protected.  You should never need to declare a message
 	// object on the stack or create one yourself.
-	// - You will receive a pointer to a message object when you receive messages (e.g. ISteamNetworkingSockets::ReceiveMessagesOnConnection)
+	// - You will receive a pointer to a message object when you receive messages (e.g. IGameNetworkingSockets::ReceiveMessagesOnConnection)
 	// - You can allocate a message object for efficient sending using IGameNetworkingUtils::AllocateMessage
 	// - Call Release() to free the object
 	inline ~SteamNetworkingMessage_t() {}
@@ -904,7 +904,7 @@ const int k_nSteamNetworkingSend_Unreliable = 0;
 // sent soon after you send this, which can be grouped together.  Any time there
 // is enough buffered data to fill a packet, the packets will be pushed out immediately,
 // but partially-full packets not be sent until the Nagle timer expires.  See
-// ISteamNetworkingSockets::FlushMessagesOnConnection, ISteamNetworkingMessages::FlushMessagesToUser
+// IGameNetworkingSockets::FlushMessagesOnConnection, ISteamNetworkingMessages::FlushMessagesToUser
 //
 // NOTE: Don't just send every message without Nagle because you want packets to get there
 // quicker.  Make sure you understand the problem that Nagle is solving before disabling it.
@@ -917,7 +917,7 @@ const int k_nSteamNetworkingSend_NoNagle = 1;
 
 // Send a message unreliably, bypassing Nagle's algorithm for this message and any messages
 // currently pending on the Nagle timer.  This is equivalent to using k_ESteamNetworkingSend_Unreliable
-// and then immediately flushing the messages using ISteamNetworkingSockets::FlushMessagesOnConnection
+// and then immediately flushing the messages using IGameNetworkingSockets::FlushMessagesOnConnection
 // or ISteamNetworkingMessages::FlushMessagesToUser.  (But using this flag is more efficient since you
 // only make one API call.)
 const int k_nSteamNetworkingSend_UnreliableNoNagle = k_nSteamNetworkingSend_Unreliable|k_nSteamNetworkingSend_NoNagle;
@@ -940,12 +940,12 @@ const int k_nSteamNetworkingSend_NoDelay = 4;
 // If a message is dropped for these reasons, k_EResultIgnored will be returned.
 const int k_nSteamNetworkingSend_UnreliableNoDelay = k_nSteamNetworkingSend_Unreliable|k_nSteamNetworkingSend_NoDelay|k_nSteamNetworkingSend_NoNagle;
 
-// Reliable message send. Can send up to k_cbMaxSteamNetworkingSocketsMessageSizeSend bytes in a single message. 
+// Reliable message send. Can send up to k_cbMaxGameNetworkingSocketsMessageSizeSend bytes in a single message. 
 // Does fragmentation/re-assembly of messages under the hood, as well as a sliding window for
 // efficient sends of large chunks of data.
 //
 // The Nagle algorithm is used.  See notes on k_ESteamNetworkingSendType_Unreliable for more details.
-// See k_ESteamNetworkingSendType_ReliableNoNagle, ISteamNetworkingSockets::FlushMessagesOnConnection,
+// See k_ESteamNetworkingSendType_ReliableNoNagle, IGameNetworkingSockets::FlushMessagesOnConnection,
 // ISteamNetworkingMessages::FlushMessagesToUser
 //
 // Migration note: This is NOT the same as k_EP2PSendReliable, it's more like k_EP2PSendReliableWithBuffering
@@ -1091,7 +1091,7 @@ enum ESteamNetworkingConfigValue
 
 	/// [connection int64] Get/set userdata as a configuration option.
 	/// The default value is -1.   You may want to set the user data as
-	/// a config value, instead of using ISteamNetworkingSockets::SetConnectionUserData
+	/// a config value, instead of using IGameNetworkingSockets::SetConnectionUserData
 	/// in two specific instances:
 	///
 	/// - You wish to set the userdata atomically when creating
@@ -1120,7 +1120,7 @@ enum ESteamNetworkingConfigValue
 	///
 	/// - Use a separate map with the HSteamNetConnection as the key.
 	/// - Fetch the userdata from the connection in your callback
-	///   using ISteamNetworkingSockets::GetConnectionUserData, to
+	///   using IGameNetworkingSockets::GetConnectionUserData, to
 	//    ensure you have the current value.
 	k_ESteamNetworkingConfig_ConnectionUserData = 40,
 
@@ -1350,7 +1350,7 @@ enum ESteamNetworkingConfigValue
 	/// exterm void MyStatusChangedFunc( SteamNetConnectionStatusChangedCallback_t *info );
 	/// SteamNetworkingConfigValue_t opt; opt.SetPtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, MyStatusChangedFunc );
 	/// SteamNetworkingIPAddr localAddress; localAddress.Clear();
-	/// HSteamListenSocket hListenSock = SteamNetworkingSockets()->CreateListenSocketIP( localAddress, 1, &opt );
+	/// HSteamListenSocket hListenSock = GameNetworkingSockets()->CreateListenSocketIP( localAddress, 1, &opt );
 	///
 	/// When accepting an incoming connection, there is no atomic way to switch the
 	/// callback.  However, if the connection is DOA, AcceptConnection() will fail, and
@@ -1383,9 +1383,9 @@ enum ESteamNetworkingConfigValue
 	/// See: IGameNetworkingUtils::SetGlobalCallback_MessagesSessionFailed
 	k_ESteamNetworkingConfig_Callback_MessagesSessionFailed = 205,
 
-	/// [global FnSteamNetworkingSocketsCreateConnectionSignaling] Callback that will
+	/// [global FnGameNetworkingSocketsCreateConnectionSignaling] Callback that will
 	/// be invoked when we need to create a signaling object for a connection
-	/// initiated locally.  See: ISteamNetworkingSockets::ConnectP2P,
+	/// initiated locally.  See: IGameNetworkingSockets::ConnectP2P,
 	/// ISteamNetworkingMessages.
 	k_ESteamNetworkingConfig_Callback_CreateConnectionSignaling = 206,
 
@@ -1494,7 +1494,7 @@ enum ESteamNetworkingConfigValue
 // See IGameNetworkingUtils::SetDebugOutputFunction for more
 // information
 //
-// The default for all values is k_ESteamNetworkingSocketsDebugOutputType_Warning.
+// The default for all values is k_EGameNetworkingSocketsDebugOutputType_Warning.
 //
 	k_ESteamNetworkingConfig_LogLevel_AckRTT = 13, // [connection int32] RTT calculations for inline pings and replies
 	k_ESteamNetworkingConfig_LogLevel_PacketDecode = 14, // [connection int32] log SNP packets send/recv
@@ -1596,23 +1596,23 @@ enum ESteamNetworkingGetConfigValueResult
 
 /// Detail level for diagnostic output callback.
 /// See IGameNetworkingUtils::SetDebugOutputFunction
-enum ESteamNetworkingSocketsDebugOutputType
+enum EGameNetworkingSocketsDebugOutputType
 {
-	k_ESteamNetworkingSocketsDebugOutputType_None = 0,
-	k_ESteamNetworkingSocketsDebugOutputType_Bug = 1, // You used the API incorrectly, or an internal error happened
-	k_ESteamNetworkingSocketsDebugOutputType_Error = 2, // Run-time error condition that isn't the result of a bug.  (E.g. we are offline, cannot bind a port, etc)
-	k_ESteamNetworkingSocketsDebugOutputType_Important = 3, // Nothing is wrong, but this is an important notification
-	k_ESteamNetworkingSocketsDebugOutputType_Warning = 4,
-	k_ESteamNetworkingSocketsDebugOutputType_Msg = 5, // Recommended amount
-	k_ESteamNetworkingSocketsDebugOutputType_Verbose = 6, // Quite a bit
-	k_ESteamNetworkingSocketsDebugOutputType_Debug = 7, // Practically everything
-	k_ESteamNetworkingSocketsDebugOutputType_Everything = 8, // Wall of text, detailed packet contents breakdown, etc
+	k_EGameNetworkingSocketsDebugOutputType_None = 0,
+	k_EGameNetworkingSocketsDebugOutputType_Bug = 1, // You used the API incorrectly, or an internal error happened
+	k_EGameNetworkingSocketsDebugOutputType_Error = 2, // Run-time error condition that isn't the result of a bug.  (E.g. we are offline, cannot bind a port, etc)
+	k_EGameNetworkingSocketsDebugOutputType_Important = 3, // Nothing is wrong, but this is an important notification
+	k_EGameNetworkingSocketsDebugOutputType_Warning = 4,
+	k_EGameNetworkingSocketsDebugOutputType_Msg = 5, // Recommended amount
+	k_EGameNetworkingSocketsDebugOutputType_Verbose = 6, // Quite a bit
+	k_EGameNetworkingSocketsDebugOutputType_Debug = 7, // Practically everything
+	k_EGameNetworkingSocketsDebugOutputType_Everything = 8, // Wall of text, detailed packet contents breakdown, etc
 
-	k_ESteamNetworkingSocketsDebugOutputType__Force32Bit = 0x7fffffff
+	k_EGameNetworkingSocketsDebugOutputType__Force32Bit = 0x7fffffff
 };
 
 /// Setup callback for debug output, and the desired verbosity you want.
-typedef void (*FSteamNetworkingSocketsDebugOutput)( ESteamNetworkingSocketsDebugOutputType nType, const char *pszMsg );
+typedef void (*FGameNetworkingSocketsDebugOutput)( EGameNetworkingSocketsDebugOutputType nType, const char *pszMsg );
 
 //
 // Valve data centers

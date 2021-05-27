@@ -13,12 +13,12 @@
 
 #include "steamnetworkingtypes.h"
 
-class ISteamNetworkingSockets;
+class IGameNetworkingSockets;
 
 /// Interface used to send signaling messages for a particular connection.
 ///
 /// - For connections initiated locally, you will construct it and pass
-///   it to ISteamNetworkingSockets::ConnectP2PCustomSignaling.
+///   it to IGameNetworkingSockets::ConnectP2PCustomSignaling.
 /// - For connections initiated remotely and "accepted" locally, you
 ///   will return it from ISteamNetworkingSignalingRecvContext::OnConnectRequest
 class ISteamNetworkingConnectionSignaling
@@ -26,7 +26,7 @@ class ISteamNetworkingConnectionSignaling
 public:
 	/// Called to send a rendezvous message to the remote peer.  This may be called
 	/// from any thread, at any time, so you need to be thread-safe!  Don't take
-	/// any locks that might hold while calling into SteamNetworkingSockets functions,
+	/// any locks that might hold while calling into GameNetworkingSockets functions,
 	/// because this could lead to deadlocks.
 	///
 	/// Note that when initiating a connection, we may not know the identity
@@ -56,7 +56,7 @@ public:
 };
 
 /// Interface used when a custom signal is received.
-/// See ISteamNetworkingSockets::ReceivedP2PCustomSignal
+/// See IGameNetworkingSockets::ReceivedP2PCustomSignal
 class ISteamNetworkingSignalingRecvContext
 {
 public:
@@ -70,19 +70,19 @@ public:
 	/// if a user is online or not, just by sending them a request.
 	///
 	/// If you wish to send back a rejection, then use
-	/// ISteamNetworkingSockets::CloseConnection() and then return NULL.
+	/// IGameNetworkingSockets::CloseConnection() and then return NULL.
 	/// We will marshal a properly formatted rejection signal and
 	/// call SendRejectionSignal() so you can send it to them.
 	///
 	/// If you return a signaling object, the connection is NOT immediately
 	/// accepted by default.  Instead, it stays in the "connecting" state,
 	/// and the usual callback is posted, and your app can accept the
-	/// connection using ISteamNetworkingSockets::AcceptConnection.  This
+	/// connection using IGameNetworkingSockets::AcceptConnection.  This
 	/// may be useful so that these sorts of connections can be more similar
 	/// to your application code as other types of connections accepted on
 	/// a listen socket.  If this is not useful and you want to skip this
 	/// callback process and immediately accept the connection, call
-	/// ISteamNetworkingSockets::AcceptConnection before returning the
+	/// IGameNetworkingSockets::AcceptConnection before returning the
 	/// signaling object.
 	///
 	/// After accepting a connection (through either means), the connection
@@ -98,11 +98,11 @@ public:
 
 /// The function signature of the callback used to obtain a signaling object
 /// for connections initiated locally.  These are used for
-/// ISteamNetworkingSockets::ConnectP2P, and when using the
+/// IGameNetworkingSockets::ConnectP2P, and when using the
 /// ISteamNetworkingMessages interface.  To install the callback for all
 /// interfaces, do something like this:
 /// GameNetworkingUtils()->SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_CreateConnectionSignaling, (void*)fnCallback );
-typedef ISteamNetworkingConnectionSignaling * (*FnSteamNetworkingSocketsCreateConnectionSignaling)( ISteamNetworkingSockets *pLocalInterface, const SteamNetworkingIdentity &identityPeer, int nLocalVirtualPort, int nRemoteVirtualPort );
+typedef ISteamNetworkingConnectionSignaling * (*FnGameNetworkingSocketsCreateConnectionSignaling)( IGameNetworkingSockets *pLocalInterface, const SteamNetworkingIdentity &identityPeer, int nLocalVirtualPort, int nRemoteVirtualPort );
 
 #endif // STEAMNETWORKINGCUSTOMSIGNALING
 

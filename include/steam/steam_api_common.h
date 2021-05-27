@@ -6,7 +6,7 @@
 // for callbacks, etc.  In the OpenSource version, it's a stub with
 // just a few things.
 
-enum { k_iSteamNetworkingSocketsCallbacks = 1220 };
+enum { k_iGameNetworkingSocketsCallbacks = 1220 };
 enum { k_iSteamNetworkingMessagesCallbacks = 1250 };
 enum { k_iGameNetworkingUtilsCallbacks = 1280 };
 

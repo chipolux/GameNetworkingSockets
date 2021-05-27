@@ -27,7 +27,7 @@
 // Must be the last include
 #include <tier0/memdbgon.h>
 
-using namespace SteamNetworkingSocketsLib;
+using namespace GameNetworkingSocketsLib;
 
 ///////////////////////////////////////////////////////////////////////////////
 //

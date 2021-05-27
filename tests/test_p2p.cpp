@@ -55,7 +55,7 @@ void Quit( int rc )
 void SendMessageToPeer( const char *pszMsg )
 {
 	TEST_Printf( "Sending msg '%s'\n", pszMsg );
-	EResult r = SteamNetworkingSockets()->SendMessageToConnection(
+	EResult r = GameNetworkingSockets()->SendMessageToConnection(
 		g_hConnection, pszMsg, (int)strlen(pszMsg)+1, k_nSteamNetworkingSend_Reliable, nullptr );
 	assert( r == k_EResultOK );
 }
@@ -77,7 +77,7 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 		);
 
 		// Close our end
-		SteamNetworkingSockets()->CloseConnection( pInfo->m_hConn, 0, nullptr, false );
+		GameNetworkingSockets()->CloseConnection( pInfo->m_hConn, 0, nullptr, false );
 
 		if ( g_hConnection == pInfo->m_hConn )
 		{
@@ -114,7 +114,7 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 
 			TEST_Printf( "[%s] Accepting\n", pInfo->m_info.m_szConnectionDescription );
 			g_hConnection = pInfo->m_hConn;
-			SteamNetworkingSockets()->AcceptConnection( pInfo->m_hConn );
+			GameNetworkingSockets()->AcceptConnection( pInfo->m_hConn );
 		}
 		else
 		{
@@ -203,20 +203,20 @@ int main( int argc, const char **argv )
 
 	// Create the signaling service
 	SteamNetworkingErrMsg errMsg;
-	ITrivialSignalingClient *pSignaling = CreateTrivialSignalingClient( pszTrivialSignalingService, SteamNetworkingSockets(), errMsg );
+	ITrivialSignalingClient *pSignaling = CreateTrivialSignalingClient( pszTrivialSignalingService, GameNetworkingSockets(), errMsg );
 	if ( pSignaling == nullptr )
 		TEST_Fatal( "Failed to initializing signaling client.  %s", errMsg );
 
 	GameNetworkingUtils()->SetGlobalCallback_SteamNetConnectionStatusChanged( OnSteamNetConnectionStatusChanged );
 
 	// Comment this line in for more detailed spew about signals, route finding, ICE, etc
-	//GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_LogLevel_P2PRendezvous, k_ESteamNetworkingSocketsDebugOutputType_Verbose );
+	//GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_LogLevel_P2PRendezvous, k_EGameNetworkingSocketsDebugOutputType_Verbose );
 
 	// Create listen socket to receive connections on, unless we are the client
 	if ( g_eTestRole == k_ETestRole_Server )
 	{
 		TEST_Printf( "Creating listen socket, local virtual port %d\n", g_nVirtualPortLocal );
-		g_hListenSock = SteamNetworkingSockets()->CreateListenSocketP2P( g_nVirtualPortLocal, 0, nullptr );
+		g_hListenSock = GameNetworkingSockets()->CreateListenSocketP2P( g_nVirtualPortLocal, 0, nullptr );
 		assert( g_hListenSock != k_HSteamListenSocket_Invalid  );
 	}
 	else if ( g_eTestRole == k_ETestRole_Symmetric )
@@ -238,7 +238,7 @@ int main( int argc, const char **argv )
 		TEST_Printf( "Creating listen socket in symmetric mode, local virtual port %d\n", g_nVirtualPortLocal );
 		SteamNetworkingConfigValue_t opt;
 		opt.SetInt32( k_ESteamNetworkingConfig_SymmetricConnect, 1 ); // << Note we set symmetric mode on the listen socket
-		g_hListenSock = SteamNetworkingSockets()->CreateListenSocketP2P( g_nVirtualPortLocal, 1, &opt );
+		g_hListenSock = GameNetworkingSockets()->CreateListenSocketP2P( g_nVirtualPortLocal, 1, &opt );
 		assert( g_hListenSock != k_HSteamListenSocket_Invalid  );
 	}
 
@@ -292,7 +292,7 @@ int main( int argc, const char **argv )
 			errMsg
 		);
 		assert( pConnSignaling );
-		g_hConnection = SteamNetworkingSockets()->ConnectP2PCustomSignaling( pConnSignaling, &identityRemote, g_nVirtualPortRemote, (int)vecOpts.size(), vecOpts.data() );
+		g_hConnection = GameNetworkingSockets()->ConnectP2PCustomSignaling( pConnSignaling, &identityRemote, g_nVirtualPortRemote, (int)vecOpts.size(), vecOpts.data() );
 		assert( g_hConnection != k_HSteamNetConnection_Invalid );
 
 		// Go ahead and send a message now.  The message will be queued until route finding
@@ -313,7 +313,7 @@ int main( int argc, const char **argv )
 		if ( g_hConnection != k_HSteamNetConnection_Invalid )
 		{
 			SteamNetworkingMessage_t *pMessage;
-			int r = SteamNetworkingSockets()->ReceiveMessagesOnConnection( g_hConnection, &pMessage, 1 );
+			int r = GameNetworkingSockets()->ReceiveMessagesOnConnection( g_hConnection, &pMessage, 1 );
 			assert( r == 0 || r == 1 ); // <0 indicates an error
 			if ( r == 1 )
 			{
@@ -336,7 +336,7 @@ int main( int argc, const char **argv )
 				if ( g_eTestRole != k_ETestRole_Server )
 				{
 					TEST_Printf( "Closing connection and shutting down.\n" );
-					SteamNetworkingSockets()->CloseConnection( g_hConnection, 0, "Test completed OK", true );
+					GameNetworkingSockets()->CloseConnection( g_hConnection, 0, "Test completed OK", true );
 					Quit(0);
 				}
 

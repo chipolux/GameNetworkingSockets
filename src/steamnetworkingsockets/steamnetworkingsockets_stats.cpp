@@ -4,7 +4,7 @@
 #include <tier1/utlbuffer.h>
 #include "steamnetworking_statsutils.h"
 
-// !KLUDGE! For SteamNetworkingSockets_GetLocalTimestamp
+// !KLUDGE! For GameNetworkingSockets_GetLocalTimestamp
 #ifdef IS_STEAMDATAGRAMROUTER
 	#include "router/sdr.h"
 #else
@@ -14,7 +14,7 @@
 // Must be the last include
 #include <tier0/memdbgon.h>
 
-using namespace SteamNetworkingSocketsLib;
+using namespace GameNetworkingSocketsLib;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -722,7 +722,7 @@ void LinkStatsTrackerEndToEnd::GetLifetimeStats( SteamDatagramLinkLifetimeStats 
 	}
 	else
 	{
-		SteamNetworkingMicroseconds usecWhenEnded = m_usecWhenEndedConnectedState ? m_usecWhenEndedConnectedState : SteamNetworkingSockets_GetLocalTimestamp();
+		SteamNetworkingMicroseconds usecWhenEnded = m_usecWhenEndedConnectedState ? m_usecWhenEndedConnectedState : GameNetworkingSockets_GetLocalTimestamp();
 		s.m_nConnectedSeconds = std::max( k_nMillion, usecWhenEnded - m_usecWhenStartedConnectedState + 500000 ) / k_nMillion;
 	}
 
@@ -761,7 +761,7 @@ void LinkStatsTrackerEndToEnd::GetLifetimeStats( SteamDatagramLinkLifetimeStats 
 	s.m_nRXSpeedNtile98th = m_RXSpeedSample.NumSamples() < 50 ? -1 : m_RXSpeedSample.GetPercentile( .98f );
 }
 
-namespace SteamNetworkingSocketsLib
+namespace GameNetworkingSocketsLib
 {
 
 void LinkStatsInstantaneousStructToMsg( const SteamDatagramLinkInstantaneousStats &s, CMsgSteamDatagramLinkInstantaneousStats &msg )
@@ -1428,4 +1428,4 @@ int SteamNetworkingDetailedConnectionStatus::Print( char *pszBuf, int cbBuf )
 	return sz;
 }
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib

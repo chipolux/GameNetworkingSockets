@@ -8,7 +8,7 @@
 // Must be the last include
 #include <tier0/memdbgon.h>
 
-namespace SteamNetworkingSocketsLib
+namespace GameNetworkingSocketsLib
 {
 
 
@@ -119,8 +119,8 @@ uint32 SteamNetworkingIdentityHash::operator()(struct SteamNetworkingIdentity co
 	return Murmorhash32( &x, sizeof( x.m_eType ) + sizeof( x.m_cbSize ) + x.m_cbSize );
 }
 
-} // namespace SteamNetworkingSocketsLib
-using namespace SteamNetworkingSocketsLib;
+} // namespace GameNetworkingSocketsLib
+using namespace GameNetworkingSocketsLib;
 
 ///////////////////////////////////////////////////////////////////////////////
 //

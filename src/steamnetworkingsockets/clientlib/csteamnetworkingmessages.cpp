@@ -27,7 +27,7 @@ COMPILE_TIME_ASSERT( sizeof(P2PMessageHeader) == 5 );
 // * Only do kludge to always send early messages as reliable on old code, not new code.
 
 // Put everything in a namespace, so we don't violate the one definition rule
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 const SteamNetworkingMicroseconds k_usecSteamNetworkingP2PSessionIdleTimeout = 3*60*k_nMillion;
 const int k_ESteamNetConnectionEnd_P2P_SessionClosed = k_ESteamNetConnectionEnd_App_Min + 1;
@@ -39,11 +39,11 @@ static CUtlHashMap<HSteamListenSocket,CSteamNetworkingMessages*,std::equal_to<HS
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// CSteamNetworkingSockets
+// CGameNetworkingSockets
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CSteamNetworkingMessages *CSteamNetworkingSockets::GetSteamNetworkingMessages()
+CSteamNetworkingMessages *CGameNetworkingSockets::GetSteamNetworkingMessages()
 {
 	// Already exist?
 	if ( !m_pSteamNetworkingMessages )
@@ -84,7 +84,7 @@ CSteamNetworkingMessages::Channel::~Channel()
 	m_queueRecvMessages.PurgeMessages();
 }
 
-CSteamNetworkingMessages::CSteamNetworkingMessages( CSteamNetworkingSockets &steamNetworkingSockets )
+CSteamNetworkingMessages::CSteamNetworkingMessages( CGameNetworkingSockets &steamNetworkingSockets )
 : m_steamNetworkingSockets( steamNetworkingSockets )
 {
 }
@@ -251,7 +251,7 @@ EResult CSteamNetworkingMessages::SendMessageToUser( const SteamNetworkingIdenti
 	SteamNetworkingGlobalLock scopeLock( "SendMessageToUser" ); // NOTE - Messages sessions are protected by the global lock.  We have not optimized for more granular locking of the Messages interface
 	ConnectionScopeLock connectionLock;
 	SteamNetworkingMessagesSession *pSess = FindOrCreateSession( identityRemote, connectionLock );
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	// Check on connection if needed
 	pSess->CheckConnection( usecNow );
@@ -379,7 +379,7 @@ bool CSteamNetworkingMessages::AcceptSessionWithUser( const SteamNetworkingIdent
 	if ( !pSession )
 		return false;
 
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	// Then there should be a connection
 	CSteamNetworkConnectionBase *pConn = pSession->m_pConnection;
@@ -577,7 +577,7 @@ SteamNetworkingMessagesSession::SteamNetworkingMessagesSession( const SteamNetwo
 
 	m_queueRecvMessages.m_pRequiredLock = &g_lockAllRecvMessageQueues;
 
-	MarkUsed( SteamNetworkingSockets_GetLocalTimestamp() );
+	MarkUsed( GameNetworkingSockets_GetLocalTimestamp() );
 }
 
 SteamNetworkingMessagesSession::~SteamNetworkingMessagesSession()
@@ -784,7 +784,7 @@ void SteamNetworkingMessagesSession::ConnectionStateChanged( SteamNetConnectionS
 	// Reset idle timeout if we connect
 	if ( eNewAPIState == k_ESteamNetworkingConnectionState_Connecting || eNewAPIState == k_ESteamNetworkingConnectionState_Connected || eNewAPIState == k_ESteamNetworkingConnectionState_FindingRoute )
 	{
-		MarkUsed( SteamNetworkingSockets_GetLocalTimestamp() );
+		MarkUsed( GameNetworkingSockets_GetLocalTimestamp() );
 		if ( eNewAPIState == k_ESteamNetworkingConnectionState_Connected )
 			m_bConnectionWasEverConnected = true;
 	}
@@ -807,7 +807,7 @@ void SteamNetworkingMessagesSession::LinkConnection( CSteamNetworkConnectionBase
 	m_bConnectionStateChanged = true;
 	m_bConnectionWasEverConnected = false;
 	SetNextThinkTimeASAP();
-	MarkUsed( SteamNetworkingSockets_GetLocalTimestamp() );
+	MarkUsed( GameNetworkingSockets_GetLocalTimestamp() );
 
 	pConn->SetPollGroup( m_steamNetworkingMessagesOwner.m_pPollGroup );
 	UpdateConnectionInfo();
@@ -844,7 +844,7 @@ void SteamNetworkingMessagesSession::Validate( CValidator &validator, const char
 
 #endif
 
-} // namespace SteamNetworkingSocketsLib
-using namespace SteamNetworkingSocketsLib;
+} // namespace GameNetworkingSocketsLib
+using namespace GameNetworkingSocketsLib;
 
 #endif // #ifdef STEAMNETWORKINGSOCKETS_ENABLE_STEAMNETWORKINGMESSAGES

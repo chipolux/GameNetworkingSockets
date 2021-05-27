@@ -1,6 +1,6 @@
 //====== Copyright Valve Corporation, All rights reserved. ====================
 //
-// Common stuff used by SteamNetworkingSockets code
+// Common stuff used by GameNetworkingSockets code
 //
 //=============================================================================
 
@@ -124,7 +124,7 @@ struct iovec
 #endif
 
 // Internal stuff goes in a private namespace
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 // Determine serialized size of protobuf msg.
 // Always return int, because size_t is dumb,
@@ -157,14 +157,14 @@ struct Identity
 /// Max size of UDP payload.  Includes API payload and
 /// any headers, but does not include IP/UDP headers
 /// (IP addresses, ports, checksum, etc.
-const int k_cbSteamNetworkingSocketsMaxUDPMsgLen = 1300;
+const int k_cbGameNetworkingSocketsMaxUDPMsgLen = 1300;
 
 /// Do not allow MTU to be set less than this
-const int k_cbSteamNetworkingSocketsMinMTUPacketSize = 200;
+const int k_cbGameNetworkingSocketsMinMTUPacketSize = 200;
 
 /// Overhead that we will reserve for stats, etc when calculating the max
 /// message that we won't fragment
-const int k_cbSteamNetworkingSocketsNoFragmentHeaderReserve = 100;
+const int k_cbGameNetworkingSocketsNoFragmentHeaderReserve = 100;
 
 /// Size of security tag for AES-GCM.
 /// It would be nice to use a smaller tag, but BCrypt requires a 16-byte tag,
@@ -174,12 +174,12 @@ const int k_cbSteamNetwokingSocketsEncrytionTagSize = 16;
 /// Max length of plaintext and encrypted payload we will send.  AES-GCM does
 /// not use padding (but it does have the security tag).  So this can be
 /// arbitrary, it does not need to account for the block size.
-const int k_cbSteamNetworkingSocketsMaxEncryptedPayloadSend = 1248;
-const int k_cbSteamNetworkingSocketsMaxPlaintextPayloadSend = k_cbSteamNetworkingSocketsMaxEncryptedPayloadSend-k_cbSteamNetwokingSocketsEncrytionTagSize;
+const int k_cbGameNetworkingSocketsMaxEncryptedPayloadSend = 1248;
+const int k_cbGameNetworkingSocketsMaxPlaintextPayloadSend = k_cbGameNetworkingSocketsMaxEncryptedPayloadSend-k_cbSteamNetwokingSocketsEncrytionTagSize;
 
 /// Use larger limits for what we are willing to receive.
-const int k_cbSteamNetworkingSocketsMaxEncryptedPayloadRecv = k_cbSteamNetworkingSocketsMaxUDPMsgLen;
-const int k_cbSteamNetworkingSocketsMaxPlaintextPayloadRecv = k_cbSteamNetworkingSocketsMaxUDPMsgLen;
+const int k_cbGameNetworkingSocketsMaxEncryptedPayloadRecv = k_cbGameNetworkingSocketsMaxUDPMsgLen;
+const int k_cbGameNetworkingSocketsMaxPlaintextPayloadRecv = k_cbGameNetworkingSocketsMaxUDPMsgLen;
 
 /// If we have a cert that is going to expire in <N secondws, try to renew it
 const int k_nSecCertExpirySeekRenew = 3600*2;
@@ -188,7 +188,7 @@ const int k_nSecCertExpirySeekRenew = 3600*2;
 /// FIXME - For relayed connections, we send some of the stats outside the encrypted block, so that
 /// they can be observed by the relay.  For direct connections, we put it in the encrypted block.
 /// So we might need to adjust this to be per connection type instead off constant.
-COMPILE_TIME_ASSERT( k_cbSteamNetworkingSocketsMaxEncryptedPayloadSend + 50 < k_cbSteamNetworkingSocketsMaxUDPMsgLen );
+COMPILE_TIME_ASSERT( k_cbGameNetworkingSocketsMaxEncryptedPayloadSend + 50 < k_cbGameNetworkingSocketsMaxUDPMsgLen );
 
 /// Min size of raw UDP message.
 const int k_nMinSteamDatagramUDPMsgLen = 5;
@@ -279,7 +279,7 @@ const uint32 k_nCurrentProtocolVersion = 10;
 /// do this again, and we'll need to have more sophisticated mechanisms. 
 const uint32 k_nMinRequiredProtocolVersion = 8;
 
-/// SteamNetworkingMessages is built on top of SteamNetworkingSockets.  We use a reserved
+/// SteamNetworkingMessages is built on top of GameNetworkingSockets.  We use a reserved
 /// virtual port for this interface
 const int k_nVirtualPort_Messages = 0x7fffffff;
 
@@ -814,7 +814,7 @@ inline bool RandomBoolWithOdds( float odds )
 	return WeakRandomFloat( 0, 100.0 ) < odds;
 }
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #include <tier0/memdbgon.h>
 
@@ -837,7 +837,7 @@ inline bool RandomBoolWithOdds( float odds )
 
 // Declare std_vector and std_map in our namespace.  They use debug versions when available,
 // a custom allocator
-namespace SteamNetworkingSocketsLib
+namespace GameNetworkingSocketsLib
 {
 
 	// Custom allocator that use malloc/free (and right now, those are #defines

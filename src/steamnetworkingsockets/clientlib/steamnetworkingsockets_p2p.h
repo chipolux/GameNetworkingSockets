@@ -14,7 +14,7 @@
 
 class CMsgSteamDatagramConnectRequest;
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 /// Special disconnection reason code that is used in signals
 /// to indicate "no connection"
@@ -56,7 +56,7 @@ struct CachedRelayAuthTicket;
 class CSteamNetworkListenSocketP2P : public CSteamNetworkListenSocketBase
 {
 public:
-	CSteamNetworkListenSocketP2P( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface );
+	CSteamNetworkListenSocketP2P( CGameNetworkingSockets *pGameNetworkingSocketsInterface );
 
 	// CSteamNetworkListenSocketBase overrides
 	virtual bool BSupportsSymmetricMode() override { return true; }
@@ -178,7 +178,7 @@ protected:
 class CSteamNetworkConnectionP2P : public CSteamNetworkConnectionBase
 {
 public:
-	CSteamNetworkConnectionP2P( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
+	CSteamNetworkConnectionP2P( CGameNetworkingSockets *pGameNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
 
 	/// Start connecting to a remote peer at the specified virtual port
 	bool BInitConnect(
@@ -401,7 +401,7 @@ public:
 
 	inline int LogLevel_P2PRendezvous() const { return m_connectionConfig.m_LogLevel_P2PRendezvous.Get(); }
 
-	static CSteamNetworkConnectionP2P *FindDuplicateConnection( CSteamNetworkingSockets *pInterfaceLocal, int nLocalVirtualPort, const SteamNetworkingIdentity &identityRemote, int nRemoteVirtualPort, bool bOnlySymmetricConnections, CSteamNetworkConnectionP2P *pIgnore );
+	static CSteamNetworkConnectionP2P *FindDuplicateConnection( CGameNetworkingSockets *pInterfaceLocal, int nLocalVirtualPort, const SteamNetworkingIdentity &identityRemote, int nRemoteVirtualPort, bool bOnlySymmetricConnections, CSteamNetworkConnectionP2P *pIgnore );
 
 	void RemoveP2PConnectionMapByRemoteInfo();
 	bool BEnsureInP2PConnectionMapByRemoteInfo( SteamDatagramErrMsg &errMsg );
@@ -441,6 +441,6 @@ inline CSteamNetworkConnectionP2P &CConnectionTransportP2PBase::Connection() con
 	return *assert_cast<CSteamNetworkConnectionP2P *>( &m_pSelfAsConnectionTransport->m_connection );
 }
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // STEAMNETWORKINGSOCKETS_P2P_H

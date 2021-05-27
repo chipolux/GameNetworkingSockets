@@ -1,6 +1,6 @@
 # About that P2P support....
 
-SteamNetworkingSockets supports peer-to-peer connections.  A "peer-to-peer"
+GameNetworkingSockets supports peer-to-peer connections.  A "peer-to-peer"
 connection in this context means that the hosts do not (initially) know
 each other's IP address.  Furthermore, they may be behind NAT, and so they
 may not know their *own* public IP address.  They may not even *have* a public
@@ -22,7 +22,7 @@ the current google WebRTC code.)
 
 ## Symmetric connect mode
 
-SteamNetworkingSockets offers a unique feature known as *symmetric
+GameNetworkingSockets offers a unique feature known as *symmetric
 connect mode*, which really puts the "peer" in "peer-to-peer connection".
 This feature is useful in the following common use case:
 
@@ -42,7 +42,7 @@ for more info.
 ## ISteamNetworkingMessages
 
 Most P2P libraries, such as google WebRTC, and indeed our own
-[ISteamNetworkingSockets](include/steam/isteamnetworkingsockets.h), are *connection
+[IGameNetworkingSockets](include/steam/isteamnetworkingsockets.h), are *connection
 oriented*.  To talk to a peer, you first establish a connection to the peer, and
 when you send and receive messages, the peer is identified by the connection handle.
 
@@ -73,7 +73,7 @@ A side channel, capable of relaying small rendezvous
 messages from one host to another.  This means hosts must have a constant
 connection to your service, once that enables you to *push* messages to them.
 
-SteamNetworkingSockets supports a pluggable signaling service.  The requirements
+GameNetworkingSockets supports a pluggable signaling service.  The requirements
 placed on your signaling service are relatively minimal:
 
 * Individual rendezvous messages are small.  (Perhaps bigger than IP MTU,
@@ -120,7 +120,7 @@ also included with Steam, but outside the scope of a transport library like this
 
 ## Using P2P
 
-Assuming you have all of those requirements, you can use SteamNetworkingSockets
+Assuming you have all of those requirements, you can use GameNetworkingSockets
 to make P2P connections!
 
 To compile with ICE support, set USE_STEAMWEBRTC when building the project files:

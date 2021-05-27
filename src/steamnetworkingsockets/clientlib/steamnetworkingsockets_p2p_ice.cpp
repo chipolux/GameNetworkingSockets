@@ -9,11 +9,11 @@
 #ifdef STEAMNETWORKINGSOCKETS_ENABLE_ICE
 
 extern "C" {
-CreateICESession_t g_SteamNetworkingSockets_CreateICESessionFunc = nullptr;
+CreateICESession_t g_GameNetworkingSockets_CreateICESessionFunc = nullptr;
 }
 
 // Put everything in a namespace, so we don't violate the one definition rule
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -49,7 +49,7 @@ void CConnectionTransportP2PICE::TransportPopulateConnectionInfo( SteamNetConnec
 	if ( info.m_eTransportKind == k_ESteamNetTransport_UDPProbablyLocal )
 	{
 		int nPingMin, nPingMax;
-		m_pingEndToEnd.GetPingRangeFromRecentBuckets( nPingMin, nPingMax, SteamNetworkingSockets_GetLocalTimestamp() );
+		m_pingEndToEnd.GetPingRangeFromRecentBuckets( nPingMin, nPingMax, GameNetworkingSockets_GetLocalTimestamp() );
 		if ( nPingMin >= k_nMinPingTimeLocalTolerance )
 			info.m_eTransportKind = k_ESteamNetTransport_UDP;
 	}
@@ -93,7 +93,7 @@ void CConnectionTransportP2PICE::Init()
 {
 	AssertLocksHeldByCurrentThread( "P2PICE::Init" );
 
-	if ( !g_SteamNetworkingSockets_CreateICESessionFunc )
+	if ( !g_GameNetworkingSockets_CreateICESessionFunc )
 	{
 		Connection().ICEFailed( k_ESteamNetConnectionEnd_Misc_InternalError, "CreateICESession factory not set" );
 		return;
@@ -178,7 +178,7 @@ void CConnectionTransportP2PICE::Init()
 	}
 
 	// Create the session
-	m_pICESession = (*g_SteamNetworkingSockets_CreateICESessionFunc)( cfg, this, ICESESSION_INTERFACE_VERSION );
+	m_pICESession = (*g_GameNetworkingSockets_CreateICESessionFunc)( cfg, this, ICESESSION_INTERFACE_VERSION );
 	if ( !m_pICESession )
 	{
 		Connection().ICEFailed( k_ESteamNetConnectionEnd_Misc_InternalError, "CreateICESession failed" );
@@ -387,12 +387,12 @@ bool CConnectionTransportP2PICE::SendPacketGather( int nChunks, const iovec *pCh
 		Assert( (int)pChunks->iov_len == cbSendTotal );
 		return SendPacket( pChunks->iov_base, pChunks->iov_len );
 	}
-	if ( cbSendTotal > k_cbSteamNetworkingSocketsMaxUDPMsgLen )
+	if ( cbSendTotal > k_cbGameNetworkingSocketsMaxUDPMsgLen )
 	{
 		Assert( false );
 		return false;
 	}
-	uint8 pkt[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+	uint8 pkt[ k_cbGameNetworkingSocketsMaxUDPMsgLen ];
 	uint8 *p = pkt;
 	while ( nChunks > 0 )
 	{
@@ -497,7 +497,7 @@ void CConnectionTransportP2PICE::UpdateRoute()
 void CConnectionTransportP2PICE::RouteOrWritableStateChanged()
 {
 
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	// Go ahead and add a ping sample from our RTT estimate if we don't have any other data
 	if ( m_pingEndToEnd.m_nSmoothedPing < 0 )
@@ -523,7 +523,7 @@ void CConnectionTransportP2PICE::RouteOrWritableStateChanged()
 
 /// A glue object used to take a callback from ICE, which might happen in
 /// any thread, and execute it with the proper locks.
-class IConnectionTransportP2PICERunWithLock : private ISteamNetworkingSocketsRunWithLock
+class IConnectionTransportP2PICERunWithLock : private IGameNetworkingSocketsRunWithLock
 {
 public:
 
@@ -533,13 +533,13 @@ public:
 	inline void Queue( CConnectionTransportP2PICE *pTransport, const char *pszTag )
 	{
 		DbgVerify( Setup( pTransport ) ); // Caller should have already checked
-		ISteamNetworkingSocketsRunWithLock::Queue( pszTag );
+		IGameNetworkingSocketsRunWithLock::Queue( pszTag );
 	}
 
 	inline void RunOrQueue( CConnectionTransportP2PICE *pTransport, const char *pszTag )
 	{
 		if ( Setup( pTransport ) )
-			ISteamNetworkingSocketsRunWithLock::RunOrQueue( pszTag );
+			IGameNetworkingSocketsRunWithLock::RunOrQueue( pszTag );
 	}
 
 private:
@@ -579,18 +579,18 @@ private:
 
 void CConnectionTransportP2PICE::Log( IICESessionDelegate::ELogPriority ePriority, const char *pszMessageFormat, ... )
 {
-	ESteamNetworkingSocketsDebugOutputType eType;
+	EGameNetworkingSocketsDebugOutputType eType;
 	switch ( ePriority )
 	{
 		default:	
 			AssertMsg1( false, "Unknown priority %d", ePriority );
 			// FALLTHROUGH
 
-		case IICESessionDelegate::k_ELogPriorityDebug: eType = k_ESteamNetworkingSocketsDebugOutputType_Debug; break;
-		case IICESessionDelegate::k_ELogPriorityVerbose: eType = k_ESteamNetworkingSocketsDebugOutputType_Verbose; break;
-		case IICESessionDelegate::k_ELogPriorityInfo: eType = k_ESteamNetworkingSocketsDebugOutputType_Msg; break;
-		case IICESessionDelegate::k_ELogPriorityWarning: eType = k_ESteamNetworkingSocketsDebugOutputType_Warning; break;
-		case IICESessionDelegate::k_ELogPriorityError: eType = k_ESteamNetworkingSocketsDebugOutputType_Error; break;
+		case IICESessionDelegate::k_ELogPriorityDebug: eType = k_EGameNetworkingSocketsDebugOutputType_Debug; break;
+		case IICESessionDelegate::k_ELogPriorityVerbose: eType = k_EGameNetworkingSocketsDebugOutputType_Verbose; break;
+		case IICESessionDelegate::k_ELogPriorityInfo: eType = k_EGameNetworkingSocketsDebugOutputType_Msg; break;
+		case IICESessionDelegate::k_ELogPriorityWarning: eType = k_EGameNetworkingSocketsDebugOutputType_Warning; break;
+		case IICESessionDelegate::k_ELogPriorityError: eType = k_EGameNetworkingSocketsDebugOutputType_Error; break;
 	}
 
 	if ( eType > Connection().LogLevel_P2PRendezvous() )
@@ -688,7 +688,7 @@ void CConnectionTransportP2PICE::OnWritableStateChanged()
 
 					// We thought we were good.  Clear flag, we are in doubt
 					SpewMsgGroup( pTransport->LogLevel_P2PRendezvous(), "[%s] ICE reports we are no longer writable\n", pTransport->ConnectionDescription() );
-					pTransport->P2PTransportEndToEndConnectivityNotConfirmed( SteamNetworkingSockets_GetLocalTimestamp() );
+					pTransport->P2PTransportEndToEndConnectivityNotConfirmed( GameNetworkingSockets_GetLocalTimestamp() );
 				}
 			}
 		}
@@ -717,7 +717,7 @@ void CConnectionTransportP2PICE::OnData( const void *pPkt, size_t nSize )
 	if ( Connection().m_pTransportICE != this )
 		return;
 
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 	const int cbPkt = int(nSize);
 
 	if ( nSize < 1 )
@@ -772,7 +772,7 @@ void CConnectionTransportP2PICE::OnData( const void *pPkt, size_t nSize )
 		{
 			virtual void RunTransportP2PICE( CConnectionTransportP2PICE *pTransport )
 			{
-				pTransport->DrainPacketQueue( SteamNetworkingSockets_GetLocalTimestamp() );
+				pTransport->DrainPacketQueue( GameNetworkingSockets_GetLocalTimestamp() );
 			}
 		};
 
@@ -795,6 +795,6 @@ void CConnectionTransportP2PICE::OnData( const void *pPkt, size_t nSize )
 	}
 }
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // #ifdef STEAMNETWORKINGSOCKETS_ENABLE_ICE

@@ -7,7 +7,7 @@
 #include "steamnetworkingsockets_connections.h"
 #include <steamnetworkingsockets_messages_udp.pb.h>
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 class CConnectionTransportUDPBase;
 
@@ -79,7 +79,7 @@ extern void ReallyReportBadUDPPacket( const char *pszFrom, const char *pszMsgTyp
 class CSteamNetworkListenSocketDirectUDP : public CSteamNetworkListenSocketBase
 {
 public:
-	CSteamNetworkListenSocketDirectUDP( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface );
+	CSteamNetworkListenSocketDirectUDP( CGameNetworkingSockets *pGameNetworkingSocketsInterface );
 	virtual bool APIGetAddress( SteamNetworkingIPAddr *pAddress ) override;
 
 	/// Setup
@@ -193,7 +193,7 @@ protected:
 class CSteamNetworkConnectionUDP : public CSteamNetworkConnectionBase
 {
 public:
-	CSteamNetworkConnectionUDP( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
+	CSteamNetworkConnectionUDP( CGameNetworkingSockets *pGameNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
 
 	/// Convenience wrapper to do the upcast, since we know what sort of
 	/// listen socket we were connected on.
@@ -228,16 +228,16 @@ protected:
 class CSteamNetworkConnectionlocalhostLoopback final : public CSteamNetworkConnectionUDP
 {
 public:
-	CSteamNetworkConnectionlocalhostLoopback( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, const SteamNetworkingIdentity &identity, ConnectionScopeLock &scopeLock );
+	CSteamNetworkConnectionlocalhostLoopback( CGameNetworkingSockets *pGameNetworkingSocketsInterface, const SteamNetworkingIdentity &identity, ConnectionScopeLock &scopeLock );
 
 	/// Setup two connections to be talking to each other
-	static bool APICreateSocketPair( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, CSteamNetworkConnectionlocalhostLoopback *pConn[2], const SteamNetworkingIdentity pIdentity[2] );
+	static bool APICreateSocketPair( CGameNetworkingSockets *pGameNetworkingSocketsInterface, CSteamNetworkConnectionlocalhostLoopback *pConn[2], const SteamNetworkingIdentity pIdentity[2] );
 
 	/// Base class overrides
 	virtual EUnsignedCert AllowRemoteUnsignedCert() override;
 	virtual EUnsignedCert AllowLocalUnsignedCert() override;
 };
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // STEAMNETWORKINGSOCKETS_UDP_H

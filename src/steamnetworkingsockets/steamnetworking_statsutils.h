@@ -23,7 +23,7 @@
 class CMsgSteamDatagramConnectionQuality;
 
 // Internal stuff goes in a private namespace
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 /// Default interval for link stats rate measurement
 const SteamNetworkingMicroseconds k_usecSteamDatagramLinkStatsDefaultInterval = 5 * k_nMillion;
@@ -1271,6 +1271,6 @@ extern void LinkStatsInstantaneousMsgToStruct( const CMsgSteamDatagramLinkInstan
 extern void LinkStatsLifetimeStructToMsg( const SteamDatagramLinkLifetimeStats &s, CMsgSteamDatagramLinkLifetimeStats &msg );
 extern void LinkStatsLifetimeMsgToStruct( const CMsgSteamDatagramLinkLifetimeStats &msg, SteamDatagramLinkLifetimeStats &s );
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // STEAMNETWORKING_STATSUTILS_H

@@ -19,7 +19,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -92,7 +92,7 @@ void IThinker::InternalSetNextThinkTime( SteamNetworkingMicroseconds usecTargetT
 	if ( unlikely( usecTargetThinkTime <= 0 ) )
 	{
 		AssertMsg1( false, "Attempt to set target think time to %lld", (long long)usecTargetThinkTime );
-		usecTargetThinkTime = SteamNetworkingSockets_GetLocalTimestamp() + 2000;
+		usecTargetThinkTime = GameNetworkingSockets_GetLocalTimestamp() + 2000;
 	}
 
 	// Clearing it?
@@ -179,7 +179,7 @@ void IThinker::Thinker_ProcessThinkers()
 		// timestamp (e.g. to mark when a packet was received) and then
 		// in our next iteration, we will use an older timestamp to process
 		// a thinker.
-		SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+		SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 		// Scheduled too far in the future?
 		if ( pNextThinker->GetNextThinkTime() >= usecNow )
@@ -245,5 +245,5 @@ void Thinker_ValidateStatics( CValidator &validator )
 }
 #endif
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 

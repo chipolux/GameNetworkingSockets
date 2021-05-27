@@ -19,9 +19,9 @@
 
 class CMsgSteamDatagramConnectRequest;
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
-class CSteamNetworkingSockets;
+class CGameNetworkingSockets;
 class CSteamNetworkingMessage;
 class CSteamNetworkingMessages;
 
@@ -92,7 +92,7 @@ class CSteamNetworkingMessages : public IClientNetworkingMessages
 {
 public:
 	STEAMNETWORKINGSOCKETS_DECLARE_CLASS_OPERATOR_NEW
-	CSteamNetworkingMessages( CSteamNetworkingSockets &steamNetworkingSockets );
+	CSteamNetworkingMessages( CGameNetworkingSockets &steamNetworkingSockets );
 	virtual ~CSteamNetworkingMessages();
 
 	bool BInit();
@@ -112,7 +112,7 @@ public:
 
 	void NewConnection( CSteamNetworkConnectionBase *pConn );
 
-	CSteamNetworkingSockets &m_steamNetworkingSockets;
+	CGameNetworkingSockets &m_steamNetworkingSockets;
 
 	struct Channel
 	{
@@ -141,7 +141,7 @@ private:
 	static void ConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t *pInfo );
 };
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // #ifdef STEAMNETWORKINGSOCKETS_ENABLE_STEAMNETWORKINGMESSAGES
 

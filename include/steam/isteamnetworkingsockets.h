@@ -34,7 +34,7 @@ class ISteamNetworkingSignalingRecvContext;
 ///
 /// See also: ISteamNetworkingMessages, the UDP-style interface.  This API might be
 /// easier to use, especially when porting existing UDP code.
-class ISteamNetworkingSockets
+class IGameNetworkingSockets
 {
 public:
 
@@ -253,7 +253,7 @@ public:
 	///
 	/// Returns:
 	/// - k_EResultInvalidParam: invalid connection handle, or the individual message is too big.
-	///   (See k_cbMaxSteamNetworkingSocketsMessageSizeSend)
+	///   (See k_cbMaxGameNetworkingSocketsMessageSizeSend)
 	/// - k_EResultInvalidState: connection is in an invalid state
 	/// - k_EResultNoConnection: connection has ended
 	/// - k_EResultIgnored: You used k_nSteamNetworkingSend_NoDelay, and the message was dropped because
@@ -292,7 +292,7 @@ public:
 	/// if sending was successful.  If sending failed, then a negative EResult
 	/// value is placed into the array.  For example, the array will hold
 	/// -k_EResultInvalidState if the connection was in an invalid state.
-	/// See ISteamNetworkingSockets::SendMessageToConnection for possible
+	/// See IGameNetworkingSockets::SendMessageToConnection for possible
 	/// failure codes.
 	virtual void SendMessages( int nMessages, SteamNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult ) = 0;
 
@@ -513,7 +513,7 @@ public:
 	/// configured automatically for you in production environments.
 	///
 	/// In development, you'll need to set it yourself.  See
-	/// https://partner.steamgames.com/doc/api/ISteamNetworkingSockets
+	/// https://partner.steamgames.com/doc/api/IGameNetworkingSockets
 	/// for more information on how to configure dev environments.
 	virtual uint16 GetHostedDedicatedServerPort() = 0;
 
@@ -704,29 +704,29 @@ public:
 	/// mechanism (SteamAPI_RunCallbacks and SteamGameserver_RunCallbacks).
 	virtual void RunCallbacks() = 0;
 protected:
-	~ISteamNetworkingSockets(); // Silence some warnings
+	~IGameNetworkingSockets(); // Silence some warnings
 };
-#define STEAMNETWORKINGSOCKETS_INTERFACE_VERSION "SteamNetworkingSockets009"
+#define STEAMNETWORKINGSOCKETS_INTERFACE_VERSION "GameNetworkingSockets009"
 
 // Global accessors
 // Using standalone lib
 #ifdef STEAMNETWORKINGSOCKETS_STANDALONELIB
 
 	// Standalone lib.
-	static_assert( STEAMNETWORKINGSOCKETS_INTERFACE_VERSION[24] == '9', "Version mismatch" );
-	STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingSockets *SteamNetworkingSockets_LibV9();
-	inline ISteamNetworkingSockets *SteamNetworkingSockets_Lib() { return SteamNetworkingSockets_LibV9(); }
+	static_assert( STEAMNETWORKINGSOCKETS_INTERFACE_VERSION[23] == '9', "Version mismatch" );
+	STEAMNETWORKINGSOCKETS_INTERFACE IGameNetworkingSockets *GameNetworkingSockets_LibV9();
+	inline IGameNetworkingSockets *GameNetworkingSockets_Lib() { return GameNetworkingSockets_LibV9(); }
 
 	// If running in context of steam, we also define a gameserver instance.
 	#ifdef STEAMNETWORKINGSOCKETS_STEAM
-		STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingSockets *SteamGameServerNetworkingSockets_LibV9();
-		inline ISteamNetworkingSockets *SteamGameServerNetworkingSockets_Lib() { return SteamGameServerNetworkingSockets_LibV9(); }
+		STEAMNETWORKINGSOCKETS_INTERFACE IGameNetworkingSockets *SteamGameServerNetworkingSockets_LibV9();
+		inline IGameNetworkingSockets *SteamGameServerNetworkingSockets_Lib() { return SteamGameServerNetworkingSockets_LibV9(); }
 	#endif
 
 	#ifndef STEAMNETWORKINGSOCKETS_STEAMAPI
-		inline ISteamNetworkingSockets *SteamNetworkingSockets() { return SteamNetworkingSockets_LibV9(); }
+		inline IGameNetworkingSockets *GameNetworkingSockets() { return GameNetworkingSockets_LibV9(); }
 		#ifdef STEAMNETWORKINGSOCKETS_STEAM
-			inline ISteamNetworkingSockets *SteamGameServerNetworkingSockets() { return SteamGameServerNetworkingSockets_LibV9(); }
+			inline IGameNetworkingSockets *SteamGameServerNetworkingSockets() { return SteamGameServerNetworkingSockets_LibV9(); }
 		#endif
 	#endif
 #endif
@@ -735,12 +735,12 @@ protected:
 #ifdef STEAMNETWORKINGSOCKETS_STEAMAPI
 
 	// Steamworks SDK
-	STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamNetworkingSockets *, SteamNetworkingSockets_SteamAPI, STEAMNETWORKINGSOCKETS_INTERFACE_VERSION );
-	STEAM_DEFINE_GAMESERVER_INTERFACE_ACCESSOR( ISteamNetworkingSockets *, SteamGameServerNetworkingSockets_SteamAPI, STEAMNETWORKINGSOCKETS_INTERFACE_VERSION );
+	STEAM_DEFINE_USER_INTERFACE_ACCESSOR( IGameNetworkingSockets *, GameNetworkingSockets_SteamAPI, STEAMNETWORKINGSOCKETS_INTERFACE_VERSION );
+	STEAM_DEFINE_GAMESERVER_INTERFACE_ACCESSOR( IGameNetworkingSockets *, SteamGameServerNetworkingSockets_SteamAPI, STEAMNETWORKINGSOCKETS_INTERFACE_VERSION );
 
 	#ifndef STEAMNETWORKINGSOCKETS_STANDALONELIB
-		inline ISteamNetworkingSockets *SteamNetworkingSockets() { return SteamNetworkingSockets_SteamAPI(); }
-		inline ISteamNetworkingSockets *SteamGameServerNetworkingSockets() { return SteamGameServerNetworkingSockets_SteamAPI(); }
+		inline IGameNetworkingSockets *GameNetworkingSockets() { return GameNetworkingSockets_SteamAPI(); }
+		inline IGameNetworkingSockets *SteamGameServerNetworkingSockets() { return SteamGameServerNetworkingSockets_SteamAPI(); }
 	#endif
 #endif
 
@@ -772,7 +772,7 @@ protected:
 ///   and m_info.m_eState = k_ESteamNetworkingConnectionState_ClosedByPeer.  m_info.m_eEndReason
 ///   and m_info.m_szEndDebug will have for more details.
 ///   NOTE: upon receiving this callback, you must still destroy the connection using
-///   ISteamNetworkingSockets::CloseConnection to free up local resources.  (The details
+///   IGameNetworkingSockets::CloseConnection to free up local resources.  (The details
 ///   passed to the function are not used in this case, since the connection is already closed.)
 /// - A problem was detected with the connection, and it has been closed by the local host.
 ///   The most common failure is timeout, but other configuration or authentication failures
@@ -780,7 +780,7 @@ protected:
 ///   k_ESteamNetworkingConnectionState_Connected, and m_info.m_eState = k_ESteamNetworkingConnectionState_ProblemDetectedLocally.
 ///   m_info.m_eEndReason and m_info.m_szEndDebug will have for more details.
 ///   NOTE: upon receiving this callback, you must still destroy the connection using
-///   ISteamNetworkingSockets::CloseConnection to free up local resources.  (The details
+///   IGameNetworkingSockets::CloseConnection to free up local resources.  (The details
 ///   passed to the function are not used in this case, since the connection is already closed.)
 ///
 /// Remember that callbacks are posted to a queue, and networking connections can
@@ -790,7 +790,7 @@ protected:
 /// Also note that callbacks will be posted when connections are created and destroyed by your own API calls.
 struct SteamNetConnectionStatusChangedCallback_t
 { 
-	enum { k_iCallback = k_iSteamNetworkingSocketsCallbacks + 1 };
+	enum { k_iCallback = k_iGameNetworkingSocketsCallbacks + 1 };
 
 	/// Connection handle
 	HSteamNetConnection m_hConn;
@@ -812,7 +812,7 @@ struct SteamNetConnectionStatusChangedCallback_t
 /// This callback is posted whenever the state of our readiness changes.
 struct SteamNetAuthenticationStatus_t
 { 
-	enum { k_iCallback = k_iSteamNetworkingSocketsCallbacks + 2 };
+	enum { k_iCallback = k_iGameNetworkingSocketsCallbacks + 2 };
 
 	/// Status
 	ESteamNetworkingAvailability m_eAvail;

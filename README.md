@@ -43,7 +43,7 @@ What it does *not* do:
 To get an idea of what the API is like, here are a few things to check out:
 
 * The [include/steam](include/steam) folder has the public API headers.
-  * [``ISteamNetworkingSockets``](include/steam/isteamnetworkingsockets.h) is the
+  * [``IGameNetworkingSockets``](include/steam/isteamnetworkingsockets.h) is the
     most important interface.
   * [``steamnetworkingtypes.h``](include/steam/steamnetworkingtypes.h) has misc
     types and declarations.
@@ -78,7 +78,7 @@ Third party language bindings:
 
 ## Why do I see "Steam" everywhere?
 
-The main interface class is named SteamNetworkingSockets, and many files have
+The main interface class is named GameNetworkingSockets, and many files have
 "steam" in their name.  But *Steam is not needed*.  If you don't make games or
 aren't on Steam, feel free to use this code for whatever purpose you want.
 

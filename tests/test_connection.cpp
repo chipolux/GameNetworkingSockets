@@ -66,7 +66,7 @@ struct SFakePeer
 
 	inline void UpdateStats()
 	{
-		SteamNetworkingSockets()->GetQuickConnectionStatus( m_hSteamNetConnection, &m_info );
+		GameNetworkingSockets()->GetQuickConnectionStatus( m_hSteamNetConnection, &m_info );
 	}
 
 	inline int GetQueuedSendBytes()
@@ -92,7 +92,7 @@ struct SFakePeer
 		int cbSend = (int)( sizeof(msg) - sizeof(msg.m_data) + msg.m_cbSize );
 		m_nSendInterval += cbSend;
 
-		EResult result = SteamNetworkingSockets()->SendMessageToConnection(
+		EResult result = GameNetworkingSockets()->SendMessageToConnection(
 			m_hSteamNetConnection, 
 			&msg,
 			cbSend,
@@ -131,7 +131,7 @@ struct SFakePeer
 static SFakePeer g_peerServer( "Server" );
 static SFakePeer g_peerClient( "Client" );
 
-static void Recv( ISteamNetworkingSockets *pSteamSocketNetworking )
+static void Recv( IGameNetworkingSockets *pSteamSocketNetworking )
 {
 
 	while ( true )
@@ -200,7 +200,7 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 		);
 
 		// Close our end
-		SteamNetworkingSockets()->CloseConnection( pInfo->m_hConn, 0, nullptr, false );
+		GameNetworkingSockets()->CloseConnection( pInfo->m_hConn, 0, nullptr, false );
 
 		if ( g_peerServer.m_hSteamNetConnection == pInfo->m_hConn )
 		{
@@ -234,8 +234,8 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 			TEST_Printf( "[%s] Accepting\n", pInfo->m_info.m_szConnectionDescription );
 			g_peerServer.m_hSteamNetConnection = pInfo->m_hConn;
 			g_peerServer.m_bIsConnected = true;
-			SteamNetworkingSockets()->AcceptConnection( pInfo->m_hConn );
-			SteamNetworkingSockets()->SetConnectionName( g_peerServer.m_hSteamNetConnection, "Server" );
+			GameNetworkingSockets()->AcceptConnection( pInfo->m_hConn );
+			GameNetworkingSockets()->SetConnectionName( g_peerServer.m_hSteamNetConnection, "Server" );
 
 		}
 		break;
@@ -295,7 +295,7 @@ static void PrintStatus( const SFakePeer &p1, const SFakePeer &p2 )
 
 static void TestNetworkConditions( int rate, float loss, int lag, float reorderPct, int reorderLag, bool bActLikeGame )
 {
-	ISteamNetworkingSockets *pSteamSocketNetworking = SteamNetworkingSockets();
+	IGameNetworkingSockets *pSteamSocketNetworking = GameNetworkingSockets();
 
 	TEST_Printf( "---------------------------------------------------\n" );
 	TEST_Printf( "NETWORK CONDITIONS\n" );
@@ -425,7 +425,7 @@ static void TestNetworkConditions( int rate, float loss, int lag, float reorderP
 
 static void RunSteamDatagramConnectionTest()
 {
-	ISteamNetworkingSockets *pSteamSocketNetworking = SteamNetworkingSockets();
+	IGameNetworkingSockets *pSteamSocketNetworking = GameNetworkingSockets();
 
 
 	// Command line options:

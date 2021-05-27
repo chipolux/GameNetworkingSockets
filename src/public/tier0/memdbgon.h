@@ -7,9 +7,9 @@
 #if defined(STEAMNETWORKINGSOCKETS_ENABLE_MEM_OVERRIDE) && !defined(MEM_OVERRIDE_ON)
 	#define MEM_OVERRIDE_ON
 
-	#define malloc( s ) SteamNetworkingSockets_Malloc( s )
-	#define realloc( p, s ) SteamNetworkingSockets_Realloc( p, s )
-	#define free( p ) SteamNetworkingSockets_Free( p )
+	#define malloc( s ) GameNetworkingSockets_Malloc( s )
+	#define realloc( p, s ) GameNetworkingSockets_Realloc( p, s )
+	#define free( p ) GameNetworkingSockets_Free( p )
 
 	#define calloc DO_NOT_USE_CALLOC
 	#define strdup DO_NOT_USE_STRDUP
@@ -20,9 +20,9 @@
 	#define MEMDBG_ON_INCLUDED
 
 	#ifdef STEAMNETWORKINGSOCKETS_ENABLE_MEM_OVERRIDE
-		extern void *SteamNetworkingSockets_Malloc( size_t s );
-		extern void *SteamNetworkingSockets_Realloc( void *p, size_t s );
-		extern void SteamNetworkingSockets_Free( void *p );
+		extern void *GameNetworkingSockets_Malloc( size_t s );
+		extern void *GameNetworkingSockets_Realloc( void *p, size_t s );
+		extern void GameNetworkingSockets_Free( void *p );
 	#endif
 #endif
 

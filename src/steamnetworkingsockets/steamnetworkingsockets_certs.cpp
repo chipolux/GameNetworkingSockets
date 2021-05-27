@@ -7,7 +7,7 @@
 // Must be the last include
 #include <tier0/memdbgon.h>
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 uint64 CalculatePublicKeyID( const CECSigningPublicKey &pubKey )
 {

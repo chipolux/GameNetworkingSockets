@@ -19,17 +19,17 @@
 static FILE *g_fpLog = nullptr;
 static SteamNetworkingMicroseconds g_logTimeZero;
 
-static void DebugOutput( ESteamNetworkingSocketsDebugOutputType eType, const char *pszMsg )
+static void DebugOutput( EGameNetworkingSocketsDebugOutputType eType, const char *pszMsg )
 {
 	SteamNetworkingMicroseconds time = GameNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
 	if ( g_fpLog )
 		fprintf( g_fpLog, "%10.6f %s\n", time*1e-6, pszMsg );
-	//if ( eType <= k_ESteamNetworkingSocketsDebugOutputType_Msg )
+	//if ( eType <= k_EGameNetworkingSocketsDebugOutputType_Msg )
 	{
 		printf( "%10.6f %s\n", time*1e-6, pszMsg );
 		fflush(stdout);
 	}
-	if ( eType == k_ESteamNetworkingSocketsDebugOutputType_Bug )
+	if ( eType == k_EGameNetworkingSocketsDebugOutputType_Bug )
 	{
 		fflush(stdout);
 		fflush(stderr);
@@ -57,7 +57,7 @@ void TEST_Printf( const char *fmt, ... )
 	char *nl = strchr( text, '\0' ) - 1;
 	if ( nl >= text && *nl == '\n' )
 		*nl = '\0';
-	DebugOutput( k_ESteamNetworkingSocketsDebugOutputType_Msg, text );
+	DebugOutput( k_EGameNetworkingSocketsDebugOutputType_Msg, text );
 }
 
 void TEST_Fatal( const char *fmt, ... )
@@ -77,11 +77,11 @@ void TEST_Init( const SteamNetworkingIdentity *pIdentity )
 	g_fpLog = fopen( "log.txt", "wt" );
 	g_logTimeZero = GameNetworkingUtils()->GetLocalTimestamp();
 
-	GameNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Debug, DebugOutput );
-	//GameNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Verbose, DebugOutput );
-	//GameNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput );
+	GameNetworkingUtils()->SetDebugOutputFunction( k_EGameNetworkingSocketsDebugOutputType_Debug, DebugOutput );
+	//GameNetworkingUtils()->SetDebugOutputFunction( k_EGameNetworkingSocketsDebugOutputType_Verbose, DebugOutput );
+	//GameNetworkingUtils()->SetDebugOutputFunction( k_EGameNetworkingSocketsDebugOutputType_Msg, DebugOutput );
 
-	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_LogLevel_P2PRendezvous, k_ESteamNetworkingSocketsDebugOutputType_Debug );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_LogLevel_P2PRendezvous, k_EGameNetworkingSocketsDebugOutputType_Debug );
 
 	#ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
 		SteamDatagramErrMsg errMsg;
@@ -119,7 +119,7 @@ void TEST_Kill()
 
 void TEST_PumpCallbacks()
 {
-	SteamNetworkingSockets()->RunCallbacks();
+	GameNetworkingSockets()->RunCallbacks();
 	std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
 }
 

@@ -14,14 +14,14 @@
 	#include "../../common/steam/iclientnetworkingutils.h"
 	#define ICLIENTNETWORKING_OVERRIDE override
 #else
-	typedef ISteamNetworkingSockets IClientNetworkingSockets;
+	typedef IGameNetworkingSockets IClientNetworkingSockets;
 	typedef IGameNetworkingUtils IClientNetworkingUtils;
 	#define ICLIENTNETWORKING_OVERRIDE
 #endif
 
 #include "steamnetworkingsockets_connections.h"
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 class CGameNetworkingUtils;
 class CSteamNetworkListenSocketP2P;
@@ -32,11 +32,11 @@ class CSteamNetworkListenSocketP2P;
 //
 /////////////////////////////////////////////////////////////////////////////
 
-class CSteamNetworkingSockets : public IClientNetworkingSockets
+class CGameNetworkingSockets : public IClientNetworkingSockets
 {
 public:
 	STEAMNETWORKINGSOCKETS_DECLARE_CLASS_OPERATOR_NEW
-	CSteamNetworkingSockets( CGameNetworkingUtils *pGameNetworkingUtils );
+	CGameNetworkingSockets( CGameNetworkingUtils *pGameNetworkingUtils );
 
 	CGameNetworkingUtils *const m_pGameNetworkingUtils;
 	CMsgSteamDatagramCertificateSigned m_msgSignedCert;
@@ -75,7 +75,7 @@ public:
 		InternalQueueCallback( T::k_iCallback, sizeof(T), &x, fnRegisteredFunctionPtr );
 	}
 
-	// Implements ISteamNetworkingSockets
+	// Implements IGameNetworkingSockets
 	virtual HSteamListenSocket CreateListenSocketIP( const SteamNetworkingIPAddr &localAddress, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override;
 	virtual HSteamNetConnection ConnectByIPAddress( const SteamNetworkingIPAddr &adress, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override;
 	virtual HSteamListenSocket CreateListenSocketP2P( int nLocalVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override;
@@ -119,10 +119,10 @@ public:
 	/// Configuration options that will apply to all connections on this interface
 	ConnectionConfig m_connectionConfig;
 
-	/// List of existing CSteamNetworkingSockets instances.  This is used, for example,
+	/// List of existing CGameNetworkingSockets instances.  This is used, for example,
 	/// if we want to initiate a P2P connection to a local identity, we can instead
 	/// use a loopback connection.
-	static std::vector<CSteamNetworkingSockets *> s_vecSteamNetworkingSocketsInstances;
+	static std::vector<CGameNetworkingSockets *> s_vecGameNetworkingSocketsInstances;
 
 	// P2P listen sockets
 	CUtlHashMap<int,CSteamNetworkListenSocketP2P *,std::equal_to<int>,std::hash<int>> m_mapListenSocketsByVirtualPort;
@@ -137,7 +137,7 @@ public:
 #ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
 	virtual bool BCertRequestInFlight() = 0;
 
-	ScheduledMethodThinker<CSteamNetworkingSockets> m_scheduleCheckRenewCert;
+	ScheduledMethodThinker<CGameNetworkingSockets> m_scheduleCheckRenewCert;
 
 	/// Platform-specific code to actually obtain a cert
 	virtual void BeginFetchCertAsync() = 0;
@@ -149,7 +149,7 @@ public:
 	/// needing to be able to do so soon.  If we don't have one right now, we will begin
 	/// taking action to obtain one
 	virtual void CheckAuthenticationPrerequisites( SteamNetworkingMicroseconds usecNow );
-	void AuthenticationNeeded() { CheckAuthenticationPrerequisites( SteamNetworkingSockets_GetLocalTimestamp() ); }
+	void AuthenticationNeeded() { CheckAuthenticationPrerequisites( GameNetworkingSockets_GetLocalTimestamp() ); }
 
 	virtual ESteamNetworkingAvailability InitAuthentication() override final;
 	virtual ESteamNetworkingAvailability GetAuthenticationStatus( SteamNetAuthenticationStatus_t *pAuthStatus ) override final;
@@ -233,7 +233,7 @@ protected:
 	bool InternalReceivedP2PSignal( const void *pMsg, int cbMsg, ISteamNetworkingSignalingRecvContext *pContext, bool bDefaultPlatformSignaling );
 
 	// Protected - use Destroy()
-	virtual ~CSteamNetworkingSockets();
+	virtual ~CGameNetworkingSockets();
 };
 
 class CGameNetworkingUtils : public IClientNetworkingUtils
@@ -245,7 +245,7 @@ public:
 	virtual SteamNetworkingMessage_t *AllocateMessage( int cbAllocateBuffer ) override;
 
 	virtual SteamNetworkingMicroseconds GetLocalTimestamp() override;
-	virtual void SetDebugOutputFunction( ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc ) override;
+	virtual void SetDebugOutputFunction( EGameNetworkingSocketsDebugOutputType eDetailLevel, FGameNetworkingSocketsDebugOutput pfnFunc ) override;
 
 	virtual bool SetConfigValue( ESteamNetworkingConfigValue eValue,
 		ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj,
@@ -316,6 +316,6 @@ protected:
 	AppId_t m_nAppID = 0;
 };
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // CSTEAMNETWORKINGSOCKETS_H

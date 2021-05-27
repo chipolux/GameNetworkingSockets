@@ -15,7 +15,7 @@
 extern "C" {
 
 // Initialize the library.  Optionally, you can set an initial identity for the default
-// interface that is returned by SteamNetworkingSockets().
+// interface that is returned by GameNetworkingSockets().
 //
 // On failure, false is returned, and a non-localized diagnostic message is returned.
 STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingSockets_Init( const SteamNetworkingIdentity *pIdentity, SteamNetworkingErrMsg &errMsg );
@@ -28,7 +28,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_Kill();
 /// especially all allocations that are per-connection.  A few allocations
 /// might still go to the default CRT malloc and operator new.
 /// To use this, you must compile the library with STEAMNETWORKINGSOCKETS_ENABLE_MEM_OVERRIDE
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetCustomMemoryAllocator(
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetCustomMemoryAllocator(
 	void* (*pfn_malloc)( size_t s ),
 	void (*pfn_free)( void *p ),
 	void* (*pfn_realloc)( void *p, size_t s )
@@ -38,9 +38,9 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetCustomMemoryAllo
 //
 // Statistics about the global lock.
 //
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockWaitWarningThreshold( SteamNetworkingMicroseconds usecThreshold );
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockAcquiredCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) );
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockHeldCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) );
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockWaitWarningThreshold( SteamNetworkingMicroseconds usecThreshold );
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockAcquiredCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) );
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockHeldCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) );
 
 }
 

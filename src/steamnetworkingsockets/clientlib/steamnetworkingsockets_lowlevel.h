@@ -31,7 +31,7 @@
 
 struct iovec;
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 class IRawUDPSocket;
 
@@ -299,36 +299,36 @@ inline bool BRateLimitSpew( SteamNetworkingMicroseconds usecNow )
 	return true;
 }
 
-extern ESteamNetworkingSocketsDebugOutputType g_eDefaultGroupSpewLevel;
+extern EGameNetworkingSocketsDebugOutputType g_eDefaultGroupSpewLevel;
 extern void ReallySpewTypeFmt( int eType, PRINTF_FORMAT_STRING const char *pFmt, ... ) FMTFUNCTION( 2, 3 );
-extern void (*g_pfnPreFormatSpewHandler)( ESteamNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap );
+extern void (*g_pfnPreFormatSpewHandler)( EGameNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap );
 
 #define SpewTypeGroup( eType, nGroup, ... ) ( ( (eType) <= (nGroup) ) ? ReallySpewTypeFmt( (eType), __VA_ARGS__ ) : (void)0 )
-#define SpewMsgGroup( nGroup, ... ) SpewTypeGroup( k_ESteamNetworkingSocketsDebugOutputType_Msg, (nGroup), __VA_ARGS__ )
-#define SpewVerboseGroup( nGroup, ... ) SpewTypeGroup( k_ESteamNetworkingSocketsDebugOutputType_Verbose, (nGroup), __VA_ARGS__ )
-#define SpewDebugGroup( nGroup, ... ) SpewTypeGroup( k_ESteamNetworkingSocketsDebugOutputType_Debug, (nGroup), __VA_ARGS__ )
-#define SpewImportantGroup( nGroup, ... ) SpewTypeGroup( k_ESteamNetworkingSocketsDebugOutputType_Important, (nGroup), __VA_ARGS__ )
-#define SpewWarningGroup( nGroup, ... ) SpewTypeGroup( k_ESteamNetworkingSocketsDebugOutputType_Warning, (nGroup), __VA_ARGS__ )
-#define SpewErrorGroup( nGroup, ... ) SpewTypeGroup( k_ESteamNetworkingSocketsDebugOutputType_Error, (nGroup), __VA_ARGS__ )
-#define SpewBugGroup( nGroup, ... ) SpewTypeGroup( k_ESteamNetworkingSocketsDebugOutputType_Bug, (nGroup), __VA_ARGS__ )
+#define SpewMsgGroup( nGroup, ... ) SpewTypeGroup( k_EGameNetworkingSocketsDebugOutputType_Msg, (nGroup), __VA_ARGS__ )
+#define SpewVerboseGroup( nGroup, ... ) SpewTypeGroup( k_EGameNetworkingSocketsDebugOutputType_Verbose, (nGroup), __VA_ARGS__ )
+#define SpewDebugGroup( nGroup, ... ) SpewTypeGroup( k_EGameNetworkingSocketsDebugOutputType_Debug, (nGroup), __VA_ARGS__ )
+#define SpewImportantGroup( nGroup, ... ) SpewTypeGroup( k_EGameNetworkingSocketsDebugOutputType_Important, (nGroup), __VA_ARGS__ )
+#define SpewWarningGroup( nGroup, ... ) SpewTypeGroup( k_EGameNetworkingSocketsDebugOutputType_Warning, (nGroup), __VA_ARGS__ )
+#define SpewErrorGroup( nGroup, ... ) SpewTypeGroup( k_EGameNetworkingSocketsDebugOutputType_Error, (nGroup), __VA_ARGS__ )
+#define SpewBugGroup( nGroup, ... ) SpewTypeGroup( k_EGameNetworkingSocketsDebugOutputType_Bug, (nGroup), __VA_ARGS__ )
 
 #define SpewTypeDefaultGroup( eType, ... ) SpewTypeGroup( eType, g_eDefaultGroupSpewLevel, __VA_ARGS__ )
-#define SpewMsg( ... ) SpewTypeDefaultGroup( k_ESteamNetworkingSocketsDebugOutputType_Msg, __VA_ARGS__ )
-#define SpewVerbose( ... ) SpewTypeDefaultGroup( k_ESteamNetworkingSocketsDebugOutputType_Verbose, __VA_ARGS__ )
-#define SpewDebug( ... ) SpewTypeDefaultGroup( k_ESteamNetworkingSocketsDebugOutputType_Debug, __VA_ARGS__ )
-#define SpewImportant( ... ) SpewTypeDefaultGroup( k_ESteamNetworkingSocketsDebugOutputType_Important, __VA_ARGS__ )
-#define SpewWarning( ... ) SpewTypeDefaultGroup( k_ESteamNetworkingSocketsDebugOutputType_Warning, __VA_ARGS__ )
-#define SpewError( ... ) SpewTypeDefaultGroup( k_ESteamNetworkingSocketsDebugOutputType_Error, __VA_ARGS__ )
-#define SpewBug( ... ) SpewTypeDefaultGroup( k_ESteamNetworkingSocketsDebugOutputType_Bug, __VA_ARGS__ )
+#define SpewMsg( ... ) SpewTypeDefaultGroup( k_EGameNetworkingSocketsDebugOutputType_Msg, __VA_ARGS__ )
+#define SpewVerbose( ... ) SpewTypeDefaultGroup( k_EGameNetworkingSocketsDebugOutputType_Verbose, __VA_ARGS__ )
+#define SpewDebug( ... ) SpewTypeDefaultGroup( k_EGameNetworkingSocketsDebugOutputType_Debug, __VA_ARGS__ )
+#define SpewImportant( ... ) SpewTypeDefaultGroup( k_EGameNetworkingSocketsDebugOutputType_Important, __VA_ARGS__ )
+#define SpewWarning( ... ) SpewTypeDefaultGroup( k_EGameNetworkingSocketsDebugOutputType_Warning, __VA_ARGS__ )
+#define SpewError( ... ) SpewTypeDefaultGroup( k_EGameNetworkingSocketsDebugOutputType_Error, __VA_ARGS__ )
+#define SpewBug( ... ) SpewTypeDefaultGroup( k_EGameNetworkingSocketsDebugOutputType_Bug, __VA_ARGS__ )
 
 #define SpewTypeDefaultGroupRateLimited( usecNow, eType, ... ) ( ( (eType) <= g_eDefaultGroupSpewLevel && BRateLimitSpew( usecNow ) ) ? ReallySpewTypeFmt( (eType), __VA_ARGS__ ) : (void)0 )
-#define SpewWarningRateLimited( usecNow, ... ) SpewTypeDefaultGroupRateLimited( usecNow, k_ESteamNetworkingSocketsDebugOutputType_Warning, __VA_ARGS__ )
+#define SpewWarningRateLimited( usecNow, ... ) SpewTypeDefaultGroupRateLimited( usecNow, k_EGameNetworkingSocketsDebugOutputType_Warning, __VA_ARGS__ )
 
 /// Make sure stuff is initialized
-extern bool BSteamNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg );
+extern bool BGameNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg );
 
 /// Nuke common stuff
-extern void SteamNetworkingSocketsLowLevelDecRef();
+extern void GameNetworkingSocketsLowLevelDecRef();
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -543,7 +543,7 @@ struct SteamNetworkingGlobalLock
 };
 
 #ifdef DBGFLAG_VALIDATE
-extern void SteamNetworkingSocketsLowLevelValidate( CValidator &validator );
+extern void GameNetworkingSocketsLowLevelValidate( CValidator &validator );
 #endif
 
 /// Wake up the service thread ASAP.  Intended to be called from other threads,
@@ -558,10 +558,10 @@ extern void WakeSteamDatagramThread();
 ///
 /// Note: This code could have been a lot simpler with std::function, but
 /// it was intentionally not used, to avoid adding that runtime dependency.
-class ISteamNetworkingSocketsRunWithLock
+class IGameNetworkingSocketsRunWithLock
 {
 public:
-	virtual ~ISteamNetworkingSocketsRunWithLock();
+	virtual ~IGameNetworkingSocketsRunWithLock();
 
 	/// If we can run immediately, then do so, delete self, and return true.
 	/// Otherwise, we are placed into a queue and false is returned.
@@ -580,7 +580,7 @@ private:
 protected:
 	virtual void Run() = 0;
 
-	inline ISteamNetworkingSocketsRunWithLock() {};
+	inline IGameNetworkingSocketsRunWithLock() {};
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -590,10 +590,10 @@ protected:
 /////////////////////////////////////////////////////////////////////////////
 
 /// Fetch current time
-extern SteamNetworkingMicroseconds SteamNetworkingSockets_GetLocalTimestamp();
+extern SteamNetworkingMicroseconds GameNetworkingSockets_GetLocalTimestamp();
 
 /// Set debug output hook
-extern void SteamNetworkingSockets_SetDebugOutputFunction( ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc );
+extern void GameNetworkingSockets_SetDebugOutputFunction( EGameNetworkingSocketsDebugOutputType eDetailLevel, FGameNetworkingSocketsDebugOutput pfnFunc );
 
 /// Return true if it looks like the address is a local address
 extern bool IsRouteToAddressProbablyLocal( netadr_t addr );
@@ -621,8 +621,8 @@ extern bool IsRouteToAddressProbablyLocal( netadr_t addr );
 	inline void ETW_ICEProcessPacket( HSteamNetConnection hConn, int cbPkt ) {}
 #endif
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_DefaultPreFormatDebugOutputHandler( ESteamNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap );
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_DefaultPreFormatDebugOutputHandler( EGameNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap );
 
 #endif // STEAMNETWORKINGSOCKETS_LOWLEVEL_H

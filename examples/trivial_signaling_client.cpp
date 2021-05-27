@@ -1,6 +1,6 @@
 // Client of our dummy trivial signaling server service.
 // Serves as an example of you how to hook up signaling server
-// to SteamNetworkingSockets P2P connections
+// to GameNetworkingSockets P2P connections
 
 #include "../tests/test_common.h"
 
@@ -76,8 +76,8 @@ class CTrivialSignalingClient : public ITrivialSignalingClient
 		// Implements ISteamNetworkingConnectionSignaling
 		//
 
-		// This is called from SteamNetworkingSockets to send a signal.  This could be called from any thread,
-		// so we need to be threadsafe, and avoid duoing slow stuff or calling back into SteamNetworkingSockets
+		// This is called from GameNetworkingSockets to send a signal.  This could be called from any thread,
+		// so we need to be threadsafe, and avoid duoing slow stuff or calling back into GameNetworkingSockets
 		virtual bool SendSignal( HSteamNetConnection hConn, const SteamNetConnectionInfo_t &info, const void *pMsg, int cbMsg ) override
 		{
 
@@ -98,7 +98,7 @@ class CTrivialSignalingClient : public ITrivialSignalingClient
 			return true;
 		}
 
-		// Self destruct.  This will be called by SteamNetworkingSockets when it's done with us.
+		// Self destruct.  This will be called by GameNetworkingSockets when it's done with us.
 		virtual void Release() override
 		{
 			delete this;
@@ -107,7 +107,7 @@ class CTrivialSignalingClient : public ITrivialSignalingClient
 
 	sockaddr_storage m_adrServer;
 	size_t const m_adrServerSize;
-	ISteamNetworkingSockets *const m_pSteamNetworkingSockets;
+	IGameNetworkingSockets *const m_pGameNetworkingSockets;
 	std::string m_sGreeting;
 	std::deque< std::string > m_queueSend;
 
@@ -158,15 +158,15 @@ class CTrivialSignalingClient : public ITrivialSignalingClient
 	}
 
 public:
-	CTrivialSignalingClient( const sockaddr *adrServer, size_t adrServerSize, ISteamNetworkingSockets *pSteamNetworkingSockets )
-	: m_adrServerSize( adrServerSize ), m_pSteamNetworkingSockets( pSteamNetworkingSockets )
+	CTrivialSignalingClient( const sockaddr *adrServer, size_t adrServerSize, IGameNetworkingSockets *pGameNetworkingSockets )
+	: m_adrServerSize( adrServerSize ), m_pGameNetworkingSockets( pGameNetworkingSockets )
 	{
 		memcpy( &m_adrServer, adrServer, adrServerSize );
 		m_sock = INVALID_SOCKET;
 
 		// Save off our identity
 		SteamNetworkingIdentity identitySelf; identitySelf.Clear();
-		pSteamNetworkingSockets->GetIdentity( &identitySelf );
+		pGameNetworkingSockets->GetIdentity( &identitySelf );
 		assert( !identitySelf.IsInvalid() );
 		assert( !identitySelf.IsLocalHost() ); // We need something more specific than that
 		m_sGreeting = SteamNetworkingIdentityRender( identitySelf ).c_str();
@@ -351,7 +351,7 @@ public:
 				// To process this call, SteamnetworkingSockets will need take its own internal lock.
 				// That lock may be held by another thread that is asking you to send a signal!  So
 				// be warned that deadlocks are a possibility here.
-				m_pSteamNetworkingSockets->ReceivedP2PCustomSignal( data.c_str(), (int)data.length(), &context );
+				m_pGameNetworkingSockets->ReceivedP2PCustomSignal( data.c_str(), (int)data.length(), &context );
 			}
 
 next_message:
@@ -370,7 +370,7 @@ next_message:
 // Start connecting to the signaling server.
 ITrivialSignalingClient *CreateTrivialSignalingClient(
 	const char *pszServerAddress, // Address of the server.
-	ISteamNetworkingSockets *pSteamNetworkingSockets, // Where should we send signals when we get them?
+	IGameNetworkingSockets *pGameNetworkingSockets, // Where should we send signals when we get them?
 	SteamNetworkingErrMsg &errMsg // Error message is retjrned here if we fail
 ) {
 
@@ -396,7 +396,7 @@ ITrivialSignalingClient *CreateTrivialSignalingClient(
 		return nullptr;
 	}
 
-	auto *pClient = new CTrivialSignalingClient( pAddrInfo->ai_addr, pAddrInfo->ai_addrlen, pSteamNetworkingSockets );
+	auto *pClient = new CTrivialSignalingClient( pAddrInfo->ai_addr, pAddrInfo->ai_addrlen, pGameNetworkingSockets );
 
 	freeaddrinfo( pAddrInfo );
 

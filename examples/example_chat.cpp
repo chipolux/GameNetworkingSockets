@@ -1,6 +1,6 @@
 //====== Copyright Valve Corporation, All rights reserved. ====================
 //
-// Example client/server chat application using SteamNetworkingSockets
+// Example client/server chat application using GameNetworkingSockets
 
 #include <assert.h>
 #include <stdio.h>
@@ -51,12 +51,12 @@ static void NukeProcess( int rc )
 	#endif
 }
 
-static void DebugOutput( ESteamNetworkingSocketsDebugOutputType eType, const char *pszMsg )
+static void DebugOutput( EGameNetworkingSocketsDebugOutputType eType, const char *pszMsg )
 {
 	SteamNetworkingMicroseconds time = GameNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
 	printf( "%10.6f %s\n", time*1e-6, pszMsg );
 	fflush(stdout);
-	if ( eType == k_ESteamNetworkingSocketsDebugOutputType_Bug )
+	if ( eType == k_EGameNetworkingSocketsDebugOutputType_Bug )
 	{
 		fflush(stdout);
 		fflush(stderr);
@@ -74,7 +74,7 @@ static void FatalError( const char *fmt, ... )
 	char *nl = strchr( text, '\0' ) - 1;
 	if ( nl >= text && *nl == '\n' )
 		*nl = '\0';
-	DebugOutput( k_ESteamNetworkingSocketsDebugOutputType_Bug, text );
+	DebugOutput( k_EGameNetworkingSocketsDebugOutputType_Bug, text );
 }
 
 static void Printf( const char *fmt, ... )
@@ -87,7 +87,7 @@ static void Printf( const char *fmt, ... )
 	char *nl = strchr( text, '\0' ) - 1;
 	if ( nl >= text && *nl == '\n' )
 		*nl = '\0';
-	DebugOutput( k_ESteamNetworkingSocketsDebugOutputType_Msg, text );
+	DebugOutput( k_EGameNetworkingSocketsDebugOutputType_Msg, text );
 }
 
 static void InitSteamDatagramConnectionSockets()
@@ -115,7 +115,7 @@ static void InitSteamDatagramConnectionSockets()
 
 	g_logTimeZero = GameNetworkingUtils()->GetLocalTimestamp();
 
-	GameNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput );
+	GameNetworkingUtils()->SetDebugOutputFunction( k_EGameNetworkingSocketsDebugOutputType_Msg, DebugOutput );
 }
 
 static void ShutdownSteamDatagramConnectionSockets()
@@ -235,7 +235,7 @@ public:
 	{
 		// Select instance to use.  For now we'll always use the default.
 		// But we could use SteamGameServerNetworkingSockets() on Steam.
-		m_pInterface = SteamNetworkingSockets();
+		m_pInterface = GameNetworkingSockets();
 
 		// Start listening
 		SteamNetworkingIPAddr serverLocalAddr;
@@ -269,7 +269,7 @@ public:
 			// protocol strings.
 			SendStringToClient( it.first, "Server is shutting down.  Goodbye." );
 
-			// Close the connection.  We use "linger mode" to ask SteamNetworkingSockets
+			// Close the connection.  We use "linger mode" to ask GameNetworkingSockets
 			// to flush this out and close gracefully.
 			m_pInterface->CloseConnection( it.first, 0, "Server Shutdown", true );
 		}
@@ -285,7 +285,7 @@ private:
 
 	HSteamListenSocket m_hListenSock;
 	HSteamNetPollGroup m_hPollGroup;
-	ISteamNetworkingSockets *m_pInterface;
+	IGameNetworkingSockets *m_pInterface;
 
 	struct Client_t
 	{
@@ -557,7 +557,7 @@ public:
 	void Run( const SteamNetworkingIPAddr &serverAddr )
 	{
 		// Select instance to use.  For now we'll always use the default.
-		m_pInterface = SteamNetworkingSockets();
+		m_pInterface = GameNetworkingSockets();
 
 		// Start connecting
 		char szAddr[ SteamNetworkingIPAddr::k_cchMaxString ];
@@ -580,7 +580,7 @@ public:
 private:
 
 	HSteamNetConnection m_hConnection;
-	ISteamNetworkingSockets *m_pInterface;
+	IGameNetworkingSockets *m_pInterface;
 
 	void PollIncomingMessages()
 	{

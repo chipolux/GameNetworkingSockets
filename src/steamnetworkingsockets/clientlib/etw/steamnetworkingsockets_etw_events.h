@@ -215,7 +215,7 @@ Remarks:
 #endif
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION
 //+
-// Provider Valve-SteamNetworkingSockets Event Count 9
+// Provider Valve-GameNetworkingSockets Event Count 9
 //+
 EXTERN_C __declspec(selectany) const GUID VALVE_STEAMNETWORKINGSOCKETS = {0xb77d8a36, 0xef0c, 0x4976, {0x8d, 0x22, 0x08, 0xf9, 0x86, 0xf5, 0x6c, 0xfb}};
 
@@ -290,12 +290,12 @@ EXTERN_C __declspec(selectany) const EVENT_DESCRIPTOR webrtc_setsockopt = {0x193
 // Event Enablement Bits
 //
 
-EXTERN_C __declspec(selectany) DECLSPEC_CACHEALIGN ULONG Valve_SteamNetworkingSocketsEnableBits[1];
-EXTERN_C __declspec(selectany) const ULONGLONG Valve_SteamNetworkingSocketsKeywords[1] = {0x0};
-EXTERN_C __declspec(selectany) const UCHAR Valve_SteamNetworkingSocketsLevels[1] = {0};
-EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT VALVE_STEAMNETWORKINGSOCKETS_Context = {0, 0, 0, 0, 0, 0, 0, 0, 1, Valve_SteamNetworkingSocketsEnableBits, Valve_SteamNetworkingSocketsKeywords, Valve_SteamNetworkingSocketsLevels};
+EXTERN_C __declspec(selectany) DECLSPEC_CACHEALIGN ULONG Valve_GameNetworkingSocketsEnableBits[1];
+EXTERN_C __declspec(selectany) const ULONGLONG Valve_GameNetworkingSocketsKeywords[1] = {0x0};
+EXTERN_C __declspec(selectany) const UCHAR Valve_GameNetworkingSocketsLevels[1] = {0};
+EXTERN_C __declspec(selectany) MCGEN_TRACE_CONTEXT VALVE_STEAMNETWORKINGSOCKETS_Context = {0, 0, 0, 0, 0, 0, 0, 0, 1, Valve_GameNetworkingSocketsEnableBits, Valve_GameNetworkingSocketsKeywords, Valve_GameNetworkingSocketsLevels};
 
-EXTERN_C __declspec(selectany) REGHANDLE Valve_SteamNetworkingSocketsHandle = (REGHANDLE)0;
+EXTERN_C __declspec(selectany) REGHANDLE Valve_GameNetworkingSocketsHandle = (REGHANDLE)0;
 
 #if !defined(McGenEventRegisterUnregister)
 #define McGenEventRegisterUnregister
@@ -382,141 +382,141 @@ Remarks:
 //
 // Register with ETW Vista +
 //
-#ifndef EventRegisterValve_SteamNetworkingSockets
-#define EventRegisterValve_SteamNetworkingSockets() McGenEventRegister(&VALVE_STEAMNETWORKINGSOCKETS, McGenControlCallbackV2, &VALVE_STEAMNETWORKINGSOCKETS_Context, &Valve_SteamNetworkingSocketsHandle) 
+#ifndef EventRegisterValve_GameNetworkingSockets
+#define EventRegisterValve_GameNetworkingSockets() McGenEventRegister(&VALVE_STEAMNETWORKINGSOCKETS, McGenControlCallbackV2, &VALVE_STEAMNETWORKINGSOCKETS_Context, &Valve_GameNetworkingSocketsHandle) 
 #endif
 
 //
 // UnRegister with ETW
 //
-#ifndef EventUnregisterValve_SteamNetworkingSockets
-#define EventUnregisterValve_SteamNetworkingSockets() McGenEventUnregister(&Valve_SteamNetworkingSocketsHandle) 
+#ifndef EventUnregisterValve_GameNetworkingSockets
+#define EventUnregisterValve_GameNetworkingSockets() McGenEventUnregister(&Valve_GameNetworkingSocketsHandle) 
 #endif
 
 //
 // Enablement check macro for LongOp
 //
 
-#define EventEnabledLongOp() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledLongOp() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for LongOp
 //
 #define EventWriteLongOp(OpName, usec, Info)\
         EventEnabledLongOp() ?\
-        Template_sis(Valve_SteamNetworkingSocketsHandle, &LongOp, OpName, usec, Info)\
+        Template_sis(Valve_GameNetworkingSocketsHandle, &LongOp, OpName, usec, Info)\
         : ERROR_SUCCESS\
 
 //
 // Enablement check macro for UDPSendPacket
 //
 
-#define EventEnabledUDPSendPacket() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledUDPSendPacket() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for UDPSendPacket
 //
 #define EventWriteUDPSendPacket(RemoteAddr, Size)\
         EventEnabledUDPSendPacket() ?\
-        Template_sd(Valve_SteamNetworkingSocketsHandle, &UDPSendPacket, RemoteAddr, Size)\
+        Template_sd(Valve_GameNetworkingSocketsHandle, &UDPSendPacket, RemoteAddr, Size)\
         : ERROR_SUCCESS\
 
 //
 // Enablement check macro for UDPRecvPacket
 //
 
-#define EventEnabledUDPRecvPacket() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledUDPRecvPacket() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for UDPRecvPacket
 //
 #define EventWriteUDPRecvPacket(RemoteAddr, Size)\
         EventEnabledUDPRecvPacket() ?\
-        Template_sd(Valve_SteamNetworkingSocketsHandle, &UDPRecvPacket, RemoteAddr, Size)\
+        Template_sd(Valve_GameNetworkingSocketsHandle, &UDPRecvPacket, RemoteAddr, Size)\
         : ERROR_SUCCESS\
 
 //
 // Enablement check macro for ICESendPacket
 //
 
-#define EventEnabledICESendPacket() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledICESendPacket() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for ICESendPacket
 //
 #define EventWriteICESendPacket(ConnectionID, Size)\
         EventEnabledICESendPacket() ?\
-        Template_dd(Valve_SteamNetworkingSocketsHandle, &ICESendPacket, ConnectionID, Size)\
+        Template_dd(Valve_GameNetworkingSocketsHandle, &ICESendPacket, ConnectionID, Size)\
         : ERROR_SUCCESS\
 
 //
 // Enablement check macro for ICEProcessPacket
 //
 
-#define EventEnabledICEProcessPacket() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledICEProcessPacket() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for ICEProcessPacket
 //
 #define EventWriteICEProcessPacket(ConnectionID, Size)\
         EventEnabledICEProcessPacket() ?\
-        Template_dd(Valve_SteamNetworkingSocketsHandle, &ICEProcessPacket, ConnectionID, Size)\
+        Template_dd(Valve_GameNetworkingSocketsHandle, &ICEProcessPacket, ConnectionID, Size)\
         : ERROR_SUCCESS\
 
 //
 // Enablement check macro for ICERecvPacket
 //
 
-#define EventEnabledICERecvPacket() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledICERecvPacket() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for ICERecvPacket
 //
 #define EventWriteICERecvPacket(ConnectionID, Size)\
         EventEnabledICERecvPacket() ?\
-        Template_dd(Valve_SteamNetworkingSocketsHandle, &ICERecvPacket, ConnectionID, Size)\
+        Template_dd(Valve_GameNetworkingSocketsHandle, &ICERecvPacket, ConnectionID, Size)\
         : ERROR_SUCCESS\
 
 //
 // Enablement check macro for webrtc_send
 //
 
-#define EventEnabledwebrtc_send() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledwebrtc_send() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for webrtc_send
 //
 #define EventWritewebrtc_send(Size)\
         EventEnabledwebrtc_send() ?\
-        Template_d(Valve_SteamNetworkingSocketsHandle, &webrtc_send, Size)\
+        Template_d(Valve_GameNetworkingSocketsHandle, &webrtc_send, Size)\
         : ERROR_SUCCESS\
 
 //
 // Enablement check macro for webrtc_sendto
 //
 
-#define EventEnabledwebrtc_sendto() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledwebrtc_sendto() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for webrtc_sendto
 //
 #define EventWritewebrtc_sendto(RemoteAddr, Size)\
         EventEnabledwebrtc_sendto() ?\
-        Template_sd(Valve_SteamNetworkingSocketsHandle, &webrtc_sendto, RemoteAddr, Size)\
+        Template_sd(Valve_GameNetworkingSocketsHandle, &webrtc_sendto, RemoteAddr, Size)\
         : ERROR_SUCCESS\
 
 //
 // Enablement check macro for webrtc_setsockopt
 //
 
-#define EventEnabledwebrtc_setsockopt() ((Valve_SteamNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
+#define EventEnabledwebrtc_setsockopt() ((Valve_GameNetworkingSocketsEnableBits[0] & 0x00000001) != 0)
 
 //
 // Event Macro for webrtc_setsockopt
 //
 #define EventWritewebrtc_setsockopt(level, opt, value)\
         EventEnabledwebrtc_setsockopt() ?\
-        Template_ddd(Valve_SteamNetworkingSocketsHandle, &webrtc_setsockopt, level, opt, value)\
+        Template_ddd(Valve_GameNetworkingSocketsHandle, &webrtc_setsockopt, level, opt, value)\
         : ERROR_SUCCESS\
 
 #endif // MCGEN_DISABLE_PROVIDER_CODE_GENERATION

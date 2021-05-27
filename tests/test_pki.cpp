@@ -7,7 +7,7 @@
 #include <common/crypto.h>
 #include <common/crypto_25519.h>
 
-using namespace SteamNetworkingSocketsLib;
+using namespace GameNetworkingSocketsLib;
 
 // Time as I write this.  So that the tests will still work even after these generated keys expire.
 time_t k_timeTestNow = 1555374048;

@@ -9,7 +9,7 @@
 
 struct P2PSessionState_t;
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 struct LockDebugInfo;
 
@@ -33,7 +33,7 @@ constexpr SteamNetworkingMicroseconds k_usecAckDelayPrecision = (1 << k_nAckDela
 constexpr SteamNetworkingMicroseconds k_usecNackFlush = 3*1000;
 
 // Max size of a message that we are wiling to *receive*.
-constexpr int k_cbMaxMessageSizeRecv = k_cbMaxSteamNetworkingSocketsMessageSizeSend*2;
+constexpr int k_cbMaxMessageSizeRecv = k_cbMaxGameNetworkingSocketsMessageSizeSend*2;
 
 // The max we will look ahead and allocate data, ahead of the reliable
 // messages we have been able to decode.  We limit this to make sure that
@@ -61,7 +61,7 @@ constexpr int k_nMaxBufferedUnreliableSegments = 20;
 constexpr int k_cbMaxUnreliableMsgSizeSend = 15*1100;
 
 // Max possible size of an unreliable segment we could receive.
-constexpr int k_cbMaxUnreliableSegmentSizeRecv = k_cbSteamNetworkingSocketsMaxPlaintextPayloadRecv;
+constexpr int k_cbMaxUnreliableSegmentSizeRecv = k_cbGameNetworkingSocketsMaxPlaintextPayloadRecv;
 
 // Largest possible total unreliable message we can receive, based on the constraints above
 constexpr int k_cbMaxUnreliableMsgSizeRecv = k_nMaxBufferedUnreliableSegments*k_cbMaxUnreliableSegmentSizeRecv;
@@ -180,7 +180,7 @@ struct SteamNetworkingMessageQueue
 const int k_nMaxPacketsPerThink = 16;
 
 /// Max number of tokens we are allowed to store up in reserve, for a burst.
-const float k_flSendRateBurstOverageAllowance = k_cbSteamNetworkingSocketsMaxEncryptedPayloadSend;
+const float k_flSendRateBurstOverageAllowance = k_cbGameNetworkingSocketsMaxEncryptedPayloadSend;
 
 struct SNPRange_t
 {
@@ -575,4 +575,4 @@ struct SSNPReceiverState
 	int64 m_nMessagesRecvUnreliable = 0;
 };
 
-} // SteamNetworkingSocketsLib
+} // GameNetworkingSocketsLib

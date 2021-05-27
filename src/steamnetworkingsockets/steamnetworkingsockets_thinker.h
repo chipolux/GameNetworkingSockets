@@ -6,7 +6,7 @@
 
 #include "steamnetworkingsockets_internal.h"
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -182,6 +182,6 @@ public:
 
 };
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // STEAMNETWORKINGSOCKETS_THINKER_H

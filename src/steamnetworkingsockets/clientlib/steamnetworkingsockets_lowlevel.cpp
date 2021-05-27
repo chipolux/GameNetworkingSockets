@@ -50,7 +50,7 @@
 
 #include <tier0/memdbgon.h>
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 constexpr int k_msMaxPollWait = 1000;
 constexpr SteamNetworkingMicroseconds k_usecMaxTimestampDelta = k_msMaxPollWait * 1100;
@@ -183,7 +183,7 @@ void LockDebugInfo::AboutToLock( bool bTry )
 	if ( t.m_nHeldLocks == 0 )
 	{
 		// Remember when we started trying to lock
-		t.m_usecOuterLockStartTime = SteamNetworkingSockets_GetLocalTimestamp();
+		t.m_usecOuterLockStartTime = GameNetworkingSockets_GetLocalTimestamp();
 	}
 	else
 	{
@@ -237,7 +237,7 @@ void LockDebugInfo::OnLocked( const char *pszTag )
 
 	if ( t.m_nHeldLocks == 1 )
 	{
-		SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+		SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 		SteamNetworkingMicroseconds usecTimeSpentWaitingOnLock = usecNow - t.m_usecOuterLockStartTime;
 		t.m_usecLongLockWarningThreshold = k_usecDefaultLongLockHeldWarningThreshold;
 		t.m_nTags = 0;
@@ -245,9 +245,9 @@ void LockDebugInfo::OnLocked( const char *pszTag )
 		if ( usecTimeSpentWaitingOnLock > s_usecLockWaitWarningThreshold && usecNow > t.m_usecIgnoreLongLockWaitTimeUntil )
 		{
 			if ( pszTag )
-				SpewWarning( "Waited %.1fms for SteamNetworkingSockets lock [%s]", usecTimeSpentWaitingOnLock*1e-3, pszTag );
+				SpewWarning( "Waited %.1fms for GameNetworkingSockets lock [%s]", usecTimeSpentWaitingOnLock*1e-3, pszTag );
 			else
-				SpewWarning( "Waited %.1fms for SteamNetworkingSockets lock", usecTimeSpentWaitingOnLock*1e-3 );
+				SpewWarning( "Waited %.1fms for GameNetworkingSockets lock", usecTimeSpentWaitingOnLock*1e-3 );
 			ETW_LongOp( "lock wait", usecTimeSpentWaitingOnLock, pszTag );
 		}
 
@@ -277,7 +277,7 @@ void LockDebugInfo::AboutToUnlock()
 	{
 
 		// We're about to do the final release.  How long did we hold the lock?
-		usecElapsed = SteamNetworkingSockets_GetLocalTimestamp() - t.m_usecOuterLockStartTime;
+		usecElapsed = GameNetworkingSockets_GetLocalTimestamp() - t.m_usecOuterLockStartTime;
 
 		// Too long?  We need to check the threshold here because the threshold could
 		// change by another thread immediately after we release the lock.  Also, if
@@ -325,7 +325,7 @@ void LockDebugInfo::AboutToUnlock()
 	// Yelp if we held the lock for longer than the threshold.
 	if ( usecElapsedTooLong != 0 )
 	{
-		SpewWarning( "SteamNetworkingSockets lock held for %.1fms.  (Performance warning).  %s", usecElapsedTooLong*1e-3, tags );
+		SpewWarning( "GameNetworkingSockets lock held for %.1fms.  (Performance warning).  %s", usecElapsedTooLong*1e-3, tags );
 		ETW_LongOp( "lock held", usecElapsedTooLong, tags );
 	}
 
@@ -369,7 +369,7 @@ void SteamNetworkingGlobalLock::SetLongLockWarningThresholdMS( const char *pszTa
 	if ( t.m_usecLongLockWarningThreshold < usecWarningThreshold )
 	{
 		t.m_usecLongLockWarningThreshold = usecWarningThreshold;
-		t.m_usecIgnoreLongLockWaitTimeUntil = SteamNetworkingSockets_GetLocalTimestamp() + t.m_usecLongLockWarningThreshold;
+		t.m_usecIgnoreLongLockWaitTimeUntil = GameNetworkingSockets_GetLocalTimestamp() + t.m_usecLongLockWarningThreshold;
 	}
 }
 
@@ -435,11 +435,11 @@ static volatile bool s_bManualPollMode;
 // won't get enough work or have enough contention for that to be an important
 // optimization
 static ShortDurationLock s_mutexRunWithLockQueue( "run_with_lock_queue" );
-static std::vector< ISteamNetworkingSocketsRunWithLock * > s_vecRunWithLockQueue;
+static std::vector< IGameNetworkingSocketsRunWithLock * > s_vecRunWithLockQueue;
 
-ISteamNetworkingSocketsRunWithLock::~ISteamNetworkingSocketsRunWithLock() {}
+IGameNetworkingSocketsRunWithLock::~IGameNetworkingSocketsRunWithLock() {}
 
-bool ISteamNetworkingSocketsRunWithLock::RunOrQueue( const char *pszTag )
+bool IGameNetworkingSocketsRunWithLock::RunOrQueue( const char *pszTag )
 {
 	// Check if lock is available immediately
 	if ( !SteamNetworkingGlobalLock::TryLock( pszTag, 0 ) )
@@ -464,7 +464,7 @@ bool ISteamNetworkingSocketsRunWithLock::RunOrQueue( const char *pszTag )
 	return true;
 }
 
-void ISteamNetworkingSocketsRunWithLock::Queue( const char *pszTag )
+void IGameNetworkingSocketsRunWithLock::Queue( const char *pszTag )
 {
 	// Remember our tag, for accounting purposes
 	m_pszTag = pszTag;
@@ -481,7 +481,7 @@ void ISteamNetworkingSocketsRunWithLock::Queue( const char *pszTag )
 
 }
 
-void ISteamNetworkingSocketsRunWithLock::ServiceQueue()
+void IGameNetworkingSocketsRunWithLock::ServiceQueue()
 {
 	// Quick check if we're empty, which will be common and can be done safely
 	// even if we don't hold the lock and the vector is being modified.  It's
@@ -491,7 +491,7 @@ void ISteamNetworkingSocketsRunWithLock::ServiceQueue()
 	if ( s_vecRunWithLockQueue.empty() )
 		return;
 
-	std::vector<ISteamNetworkingSocketsRunWithLock *> vecTempQueue;
+	std::vector<IGameNetworkingSocketsRunWithLock *> vecTempQueue;
 
 	// Quickly move the queue into the temp while holding the lock.
 	// Once it is in our temp, we can release the lock.
@@ -501,7 +501,7 @@ void ISteamNetworkingSocketsRunWithLock::ServiceQueue()
 	s_mutexRunWithLockQueue.unlock();
 
 	// Run them
-	for ( ISteamNetworkingSocketsRunWithLock *pItem: vecTempQueue )
+	for ( IGameNetworkingSocketsRunWithLock *pItem: vecTempQueue )
 	{
 		// Make sure we hold the lock, and also set the tag for debugging purposes
 		SteamNetworkingGlobalLock::AssertHeldByCurrentThread( pItem->m_pszTag );
@@ -647,7 +647,7 @@ static SteamNetworkingMicroseconds s_usecFakeRateLimitBucketUpdateTime;
 
 static void InitFakeRateLimit()
 {
-	s_usecFakeRateLimitBucketUpdateTime = SteamNetworkingSockets_GetLocalTimestamp();
+	s_usecFakeRateLimitBucketUpdateTime = GameNetworkingSockets_GetLocalTimestamp();
 	s_flFakeRateLimit_Send_tokens = (double)INT_MAX;
 	s_flFakeRateLimit_Recv_tokens = (double)INT_MAX;
 }
@@ -750,7 +750,7 @@ public:
 		}
 
 		#ifdef STEAMNETWORKINGSOCKETS_LOWLEVEL_TIME_SOCKET_CALLS
-			SteamNetworkingMicroseconds usecSendStart = SteamNetworkingSockets_GetLocalTimestamp();
+			SteamNetworkingMicroseconds usecSendStart = GameNetworkingSockets_GetLocalTimestamp();
 		#endif
 
 		#ifdef WIN32
@@ -787,7 +787,7 @@ public:
 		#endif
 
 		#ifdef STEAMNETWORKINGSOCKETS_LOWLEVEL_TIME_SOCKET_CALLS
-			SteamNetworkingMicroseconds usecSendEnd = SteamNetworkingSockets_GetLocalTimestamp();
+			SteamNetworkingMicroseconds usecSendEnd = GameNetworkingSockets_GetLocalTimestamp();
 			if ( usecSendEnd > s_usecIgnoreLongLockWaitTimeUntil )
 			{
 				SteamNetworkingMicroseconds usecSendElapsed = usecSendEnd - usecSendStart;
@@ -809,12 +809,12 @@ public:
 			cbTotal += pChunks[i].iov_len;
 		if ( bSend )
 		{
-			ReallySpewTypeFmt( k_ESteamNetworkingSocketsDebugOutputType_Msg, "[Trace Send] %s -> %s | %d bytes\n",
+			ReallySpewTypeFmt( k_EGameNetworkingSocketsDebugOutputType_Msg, "[Trace Send] %s -> %s | %d bytes\n",
 				SteamNetworkingIPAddrRender( m_boundAddr ).c_str(), CUtlNetAdrRender( adrRemote ).String(), cbTotal );
 		}
 		else
 		{
-			ReallySpewTypeFmt( k_ESteamNetworkingSocketsDebugOutputType_Msg, "[Trace Recv] %s <- %s | %d bytes\n",
+			ReallySpewTypeFmt( k_EGameNetworkingSocketsDebugOutputType_Msg, "[Trace Recv] %s <- %s | %d bytes\n",
 				SteamNetworkingIPAddrRender( m_boundAddr ).c_str(), CUtlNetAdrRender( adrRemote ).String(), cbTotal );
 		}
 		int l = std::min( cbTotal, g_Config_PacketTraceMaxBytes.Get() );
@@ -850,7 +850,7 @@ public:
 			*d = '\0';
 
 			// Emit the row
-			ReallySpewTypeFmt( k_ESteamNetworkingSocketsDebugOutputType_Msg, "    %s\n", buf );
+			ReallySpewTypeFmt( k_EGameNetworkingSocketsDebugOutputType_Msg, "    %s\n", buf );
 		}
 	}
 
@@ -879,7 +879,7 @@ public:
 		int cbPkt = 0;
 		for ( int i = 0 ; i < nChunks ; ++i )
 			cbPkt += pChunks[i].iov_len;
-		if ( cbPkt > k_cbSteamNetworkingSocketsMaxUDPMsgLen )
+		if ( cbPkt > k_cbGameNetworkingSocketsMaxUDPMsgLen )
 		{
 			AssertMsg( false, "Tried to lag a packet that w as too big!" );
 			return;
@@ -900,7 +900,7 @@ public:
 
 		// Limit to something sane
 		msDelay = std::min( msDelay, 5000 );
-		const SteamNetworkingMicroseconds usecTime = SteamNetworkingSockets_GetLocalTimestamp() + msDelay * 1000;
+		const SteamNetworkingMicroseconds usecTime = GameNetworkingSockets_GetLocalTimestamp() + msDelay * 1000;
 
 		// Find the right place to insert the packet.  This is a dumb linear search, but in
 		// the steady state where the delay is constant, this search loop won't actually iterate,
@@ -972,7 +972,7 @@ public:
 					// packet is queued while we're in this function.  We don't want
 					// our list to shift in memory, and the pointer we pass to the
 					// caller to dangle.
-					char temp[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+					char temp[ k_cbGameNetworkingSocketsMaxUDPMsgLen ];
 					memcpy( temp, pkt.m_pkt, pkt.m_cbPkt );
 					pSock->m_callback( RecvPktInfo_t{ temp, pkt.m_cbPkt, pkt.m_adrRemote, pSock } );
 				}
@@ -1026,7 +1026,7 @@ private:
 		netadr_t m_adrRemote;
 		SteamNetworkingMicroseconds m_usecTime; /// Time when it should be sent or received
 		int m_cbPkt;
-		char m_pkt[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+		char m_pkt[ k_cbGameNetworkingSocketsMaxUDPMsgLen ];
 	};
 	CUtlLinkedList<LaggedPacket> m_list;
 
@@ -1083,7 +1083,7 @@ bool CRawUDPSocketImpl::BSendRawPacketGather( int nChunks, const iovec *pChunks,
 		{
 
 			// Update bucket with tokens
-			UpdateFakeRateLimitTokenBuckets( SteamNetworkingSockets_GetLocalTimestamp() );
+			UpdateFakeRateLimitTokenBuckets( GameNetworkingSockets_GetLocalTimestamp() );
 
 			// Still empty?
 			if ( s_flFakeRateLimit_Send_tokens <= 0.0f )
@@ -1511,7 +1511,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 		poll( pPollFDs, nPollFDs, nMaxTimeoutMS );
 	#endif
 
-	SteamNetworkingMicroseconds usecStartedLocking = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecStartedLocking = GameNetworkingSockets_GetLocalTimestamp();
 	UpdateFakeRateLimitTokenBuckets( usecStartedLocking );
 	for (;;)
 	{
@@ -1532,7 +1532,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 		// However, note that try_lock_for is permitted to "fail" spuriously, returning
 		// false even if no other thread holds the lock.  (For performance reasons.)
 		// So we check how long we have actually been waiting.
-		SteamNetworkingMicroseconds usecElapsed = SteamNetworkingSockets_GetLocalTimestamp() - usecStartedLocking;
+		SteamNetworkingMicroseconds usecElapsed = GameNetworkingSockets_GetLocalTimestamp() - usecStartedLocking;
 		AssertMsg1( usecElapsed < 50*1000 || s_nLowLevelSupportRefCount.load(std::memory_order_acquire) <= 0 || s_bManualPollMode != bManualPoll || Plat_IsInDebugSession(), "SDR service thread gave up on lock after waiting %dms.  This directly adds to delay of processing of network packets!", int( usecElapsed/1000 ) );
 	}
 
@@ -1540,7 +1540,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 	FlushSpew();
 
 	// Recv socket data from any sockets that might have data, and execute the callbacks.
-	char buf[ k_cbSteamNetworkingSocketsMaxUDPMsgLen + 1024 ];
+	char buf[ k_cbGameNetworkingSocketsMaxUDPMsgLen + 1024 ];
 #ifdef _WIN32
 	// Note that we assume we aren't polling a ton of sockets here.  We do at least skip ahead
 	// to the first socket with data, based on the return value of WaitForMultipleObjects.  But
@@ -1594,7 +1594,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 				return true; // current thread owns the lock
 
 			#ifdef STEAMNETWORKINGSOCKETS_LOWLEVEL_TIME_SOCKET_CALLS
-				SteamNetworkingMicroseconds usecRecvFromStart = SteamNetworkingSockets_GetLocalTimestamp();
+				SteamNetworkingMicroseconds usecRecvFromStart = GameNetworkingSockets_GetLocalTimestamp();
 			#endif
 
 			sockaddr_storage from;
@@ -1602,7 +1602,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 			int ret = ::recvfrom( pSock->m_socket, buf, sizeof( buf ), 0, (sockaddr *)&from, &fromlen );
 
 			#ifdef STEAMNETWORKINGSOCKETS_LOWLEVEL_TIME_SOCKET_CALLS
-				SteamNetworkingMicroseconds usecRecvFromEnd = SteamNetworkingSockets_GetLocalTimestamp(); // FIXME - If we add a timestamp to RecvPktInfo_t this will be free
+				SteamNetworkingMicroseconds usecRecvFromEnd = GameNetworkingSockets_GetLocalTimestamp(); // FIXME - If we add a timestamp to RecvPktInfo_t this will be free
 				if ( usecRecvFromEnd > s_usecIgnoreLongLockWaitTimeUntil )
 				{
 					SteamNetworkingMicroseconds usecRecvFromElapsed = usecRecvFromEnd - usecRecvFromStart;
@@ -1650,7 +1650,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 					// If we read it in the outer loop.  Which...we probably should do
 					// and add to the context struct, since almost every packet callback
 					// currently does it.
-					UpdateFakeRateLimitTokenBuckets( SteamNetworkingSockets_GetLocalTimestamp() );
+					UpdateFakeRateLimitTokenBuckets( GameNetworkingSockets_GetLocalTimestamp() );
 
 					// Still empty?
 					if ( s_flFakeRateLimit_Recv_tokens <= 0.0f )
@@ -1719,7 +1719,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 			}
 
 			#ifdef STEAMNETWORKINGSOCKETS_LOWLEVEL_TIME_SOCKET_CALLS
-				SteamNetworkingMicroseconds usecProcessPacketEnd = SteamNetworkingSockets_GetLocalTimestamp();
+				SteamNetworkingMicroseconds usecProcessPacketEnd = GameNetworkingSockets_GetLocalTimestamp();
 				if ( usecProcessPacketEnd > s_usecIgnoreLongLockWaitTimeUntil )
 				{
 					SteamNetworkingMicroseconds usecProcessPacketElapsed = usecProcessPacketEnd - usecRecvFromEnd;
@@ -1755,7 +1755,7 @@ static void ProcessDeferredOperations()
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 
 	// Tasks that were queued to be run while we hold the lock
-	ISteamNetworkingSocketsRunWithLock::ServiceQueue();
+	IGameNetworkingSocketsRunWithLock::ServiceQueue();
 
 	// Process any connections queued for delete
 	CSteamNetworkConnectionBase::ProcessDeletionList();
@@ -1778,7 +1778,7 @@ static void ProcessDeferredOperations()
 // Returns: true - we want to keep running, lock is held
 // Returns: false - stop request detected, lock no longer held
 //
-static bool SteamNetworkingSockets_InternalPoll( int msWait, bool bManualPoll )
+static bool GameNetworkingSockets_InternalPoll( int msWait, bool bManualPoll )
 {
 	AssertGlobalLockHeldExactlyOnce();
 
@@ -1789,7 +1789,7 @@ static bool SteamNetworkingSockets_InternalPoll( int msWait, bool bManualPoll )
 
 		// Calc wait time to wake up as late as possible,
 		// rounded up to the nearest millisecond.
-		SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+		SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 		int64 usecUntilNextThinkTime = usecNextWakeTime - usecNow;
 
 		if ( usecNow >= usecNextWakeTime )
@@ -1935,7 +1935,7 @@ static void SteamNetworkingThreadProc()
 	SpewVerbose( "Service thread running.\n" );
 
 	// Keep looping until we're asked to terminate
-	while ( SteamNetworkingSockets_InternalPoll( 5000, false ) )
+	while ( GameNetworkingSockets_InternalPoll( 5000, false ) )
 	{
 		// If they activate manual poll mode, then bail!
 		if ( s_bManualPollMode )
@@ -2171,11 +2171,11 @@ void CSharedSocket::RemoteHost::Close()
 
 SteamNetworkingMicroseconds g_usecLastRateLimitSpew;
 int g_nRateLimitSpewCount;
-ESteamNetworkingSocketsDebugOutputType g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None; // Option selected by the "system" (environment variable, etc)
-ESteamNetworkingSocketsDebugOutputType g_eAppSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Msg; // Option selected by app
-ESteamNetworkingSocketsDebugOutputType g_eDefaultGroupSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Msg; // Effective value
-static FSteamNetworkingSocketsDebugOutput s_pfnDebugOutput = nullptr;
-void (*g_pfnPreFormatSpewHandler)( ESteamNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap ) = SteamNetworkingSockets_DefaultPreFormatDebugOutputHandler;
+EGameNetworkingSocketsDebugOutputType g_eSystemSpewLevel = k_EGameNetworkingSocketsDebugOutputType_None; // Option selected by the "system" (environment variable, etc)
+EGameNetworkingSocketsDebugOutputType g_eAppSpewLevel = k_EGameNetworkingSocketsDebugOutputType_Msg; // Option selected by app
+EGameNetworkingSocketsDebugOutputType g_eDefaultGroupSpewLevel = k_EGameNetworkingSocketsDebugOutputType_Msg; // Effective value
+static FGameNetworkingSocketsDebugOutput s_pfnDebugOutput = nullptr;
+void (*g_pfnPreFormatSpewHandler)( EGameNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap ) = GameNetworkingSockets_DefaultPreFormatDebugOutputHandler;
 static bool s_bSpewInitted = false;
 
 static FILE *g_pFileSystemSpew;
@@ -2197,15 +2197,15 @@ static void InitSpew()
 		{
 			switch ( atoi( STEAMNETWORKINGSOCKETS_LOG_LEVEL ) )
 			{
-				case 0: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None; break;
-				case 1: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Warning; break;
-				case 2: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Msg; break;
-				case 3: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Verbose; break;
-				case 4: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Debug; break;
-				case 5: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Everything; break;
+				case 0: g_eSystemSpewLevel = k_EGameNetworkingSocketsDebugOutputType_None; break;
+				case 1: g_eSystemSpewLevel = k_EGameNetworkingSocketsDebugOutputType_Warning; break;
+				case 2: g_eSystemSpewLevel = k_EGameNetworkingSocketsDebugOutputType_Msg; break;
+				case 3: g_eSystemSpewLevel = k_EGameNetworkingSocketsDebugOutputType_Verbose; break;
+				case 4: g_eSystemSpewLevel = k_EGameNetworkingSocketsDebugOutputType_Debug; break;
+				case 5: g_eSystemSpewLevel = k_EGameNetworkingSocketsDebugOutputType_Everything; break;
 			}
 
-			if ( g_eSystemSpewLevel > k_ESteamNetworkingSocketsDebugOutputType_None )
+			if ( g_eSystemSpewLevel > k_EGameNetworkingSocketsDebugOutputType_None )
 			{
 
 				// What log file to use?
@@ -2218,12 +2218,12 @@ static void InitSpew()
 				g_pFileSystemSpew = fopen( pszLogFile, "wb" );
 				if ( g_pFileSystemSpew )
 				{
-					g_usecSystemLogFileOpened = SteamNetworkingSockets_GetLocalTimestamp();
+					g_usecSystemLogFileOpened = GameNetworkingSockets_GetLocalTimestamp();
 					time_t now = time(nullptr);
 					fprintf( g_pFileSystemSpew, "Log opened, time %lld %s", (long long)now, ctime( &now ) );
 
 					// if they ask for verbose, turn on some other groups, by default
-					if ( g_eSystemSpewLevel >= k_ESteamNetworkingSocketsDebugOutputType_Verbose )
+					if ( g_eSystemSpewLevel >= k_EGameNetworkingSocketsDebugOutputType_Verbose )
 					{
 						g_ConfigDefault_LogLevel_P2PRendezvous.m_value.m_defaultValue = g_eSystemSpewLevel;
 						g_ConfigDefault_LogLevel_P2PRendezvous.m_value.Set( g_eSystemSpewLevel );
@@ -2235,7 +2235,7 @@ static void InitSpew()
 				else
 				{
 					// Failed
-					g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None;
+					g_eSystemSpewLevel = k_EGameNetworkingSocketsDebugOutputType_None;
 				}
 			}
 		}
@@ -2247,7 +2247,7 @@ static void InitSpew()
 
 static void KillSpew()
 {
-	g_eDefaultGroupSpewLevel = g_eSystemSpewLevel = g_eAppSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None;
+	g_eDefaultGroupSpewLevel = g_eSystemSpewLevel = g_eAppSpewLevel = k_EGameNetworkingSocketsDebugOutputType_None;
 	s_pfnDebugOutput = nullptr;
 	s_bSpewInitted = false;
 	s_bNeedToFlushSystemSpew = false;
@@ -2273,11 +2273,11 @@ void ReallySpewTypeFmt( int eType, const char *pMsg, ... )
 {
 	va_list ap;
 	va_start( ap, pMsg );
-	(*g_pfnPreFormatSpewHandler)( ESteamNetworkingSocketsDebugOutputType(eType), true, nullptr, 0, pMsg, ap );
+	(*g_pfnPreFormatSpewHandler)( EGameNetworkingSocketsDebugOutputType(eType), true, nullptr, 0, pMsg, ap );
 	va_end( ap );
 }
 
-bool BSteamNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg )
+bool BGameNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg )
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 
@@ -2285,7 +2285,7 @@ bool BSteamNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg )
 	// just before we start up our thread, so we don't lurch
 	// on our first reading after the thread is running and
 	// take action to correct this.
-	SteamNetworkingSockets_GetLocalTimestamp();
+	GameNetworkingSockets_GetLocalTimestamp();
 
 	// First time init?
 	if ( s_nLowLevelSupportRefCount.load(std::memory_order_acquire) == 0 )
@@ -2299,7 +2299,7 @@ bool BSteamNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg )
 
 		// Give us a extra time here.  This is a one-time init function and the OS might
 		// need to load up libraries and stuff.
-		SteamNetworkingGlobalLock::SetLongLockWarningThresholdMS( "BSteamNetworkingSocketsLowLevelAddRef", 500 );
+		SteamNetworkingGlobalLock::SetLongLockWarningThresholdMS( "BGameNetworkingSocketsLowLevelAddRef", 500 );
 
 		// Initialize COM
 		#ifdef _XBOX_ONE
@@ -2406,14 +2406,14 @@ bool BSteamNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg )
 			// we need to nuke it
 			KillSpew();
 			while ( s_nLowLevelSupportRefCount.load(std::memory_order_acquire) > 0 )
-				SteamNetworkingSocketsLowLevelDecRef();
+				GameNetworkingSocketsLowLevelDecRef();
 		} );
 	}
 
 	return true;
 }
 
-void SteamNetworkingSocketsLowLevelDecRef()
+void GameNetworkingSocketsLowLevelDecRef()
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 
@@ -2429,7 +2429,7 @@ void SteamNetworkingSocketsLowLevelDecRef()
 	// There is a potential race condition / deadlock with the service thread,
 	// that might cause us to have to wait for it to timeout.  And the OS
 	// might need to do stuff when we close a bunch of sockets (and WSACleanup)
-	SteamNetworkingGlobalLock::SetLongLockWarningThresholdMS( "SteamNetworkingSocketsLowLevelDecRef", 500 );
+	SteamNetworkingGlobalLock::SetLongLockWarningThresholdMS( "GameNetworkingSocketsLowLevelDecRef", 500 );
 
 	if ( s_vecRawSockets.IsEmpty() )
 	{
@@ -2488,37 +2488,37 @@ void SteamNetworkingSocketsLowLevelDecRef()
 }
 
 #ifdef DBGFLAG_VALIDATE
-void SteamNetworkingSocketsLowLevelValidate( CValidator &validator )
+void GameNetworkingSocketsLowLevelValidate( CValidator &validator )
 {
 	ValidateRecursive( s_vecRawSockets );
 }
 #endif
 
-void SteamNetworkingSockets_SetDebugOutputFunction( ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc )
+void GameNetworkingSockets_SetDebugOutputFunction( EGameNetworkingSocketsDebugOutputType eDetailLevel, FGameNetworkingSocketsDebugOutput pfnFunc )
 {
-	if ( pfnFunc && eDetailLevel > k_ESteamNetworkingSocketsDebugOutputType_None )
+	if ( pfnFunc && eDetailLevel > k_EGameNetworkingSocketsDebugOutputType_None )
 	{
-		SteamNetworkingSocketsLib::s_pfnDebugOutput = pfnFunc;
-		SteamNetworkingSocketsLib::g_eAppSpewLevel = ESteamNetworkingSocketsDebugOutputType( eDetailLevel );
+		GameNetworkingSocketsLib::s_pfnDebugOutput = pfnFunc;
+		GameNetworkingSocketsLib::g_eAppSpewLevel = EGameNetworkingSocketsDebugOutputType( eDetailLevel );
 	}
 	else
 	{
-		SteamNetworkingSocketsLib::s_pfnDebugOutput = nullptr;
-		SteamNetworkingSocketsLib::g_eAppSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None;
+		GameNetworkingSocketsLib::s_pfnDebugOutput = nullptr;
+		GameNetworkingSocketsLib::g_eAppSpewLevel = k_EGameNetworkingSocketsDebugOutputType_None;
 	}
 
-	SteamNetworkingSocketsLib::InitSpew();
+	GameNetworkingSocketsLib::InitSpew();
 }
 
-SteamNetworkingMicroseconds SteamNetworkingSockets_GetLocalTimestamp()
+SteamNetworkingMicroseconds GameNetworkingSockets_GetLocalTimestamp()
 {
 	SteamNetworkingMicroseconds usecResult;
 	long long usecLastReturned;
 	for (;;)
 	{
 		// Fetch values into locals (probably registers)
-		usecLastReturned = SteamNetworkingSocketsLib::s_usecTimeLastReturned;
-		long long usecOffset = SteamNetworkingSocketsLib::s_usecTimeOffset;
+		usecLastReturned = GameNetworkingSocketsLib::s_usecTimeLastReturned;
+		long long usecOffset = GameNetworkingSocketsLib::s_usecTimeOffset;
 
 		// Read raw timer
 		uint64 usecRaw = Plat_USTime();
@@ -2535,7 +2535,7 @@ SteamNetworkingMicroseconds SteamNetworkingSockets_GetLocalTimestamp()
 			// Should be the common case - only a relatively small of time has elapsed
 			break;
 		}
-		if ( SteamNetworkingSocketsLib::s_nLowLevelSupportRefCount.load(std::memory_order_acquire) <= 0 )
+		if ( GameNetworkingSocketsLib::s_nLowLevelSupportRefCount.load(std::memory_order_acquire) <= 0 )
 		{
 			// We don't have any expectation that we should be updating the timer frequently,
 			// so  a big jump in the value just means they aren't calling it very often
@@ -2549,7 +2549,7 @@ SteamNetworkingMicroseconds SteamNetworkingSockets_GetLocalTimestamp()
 		usecResult = usecRaw + usecNewOffset;
 
 		// Save the new offset.
-		if ( SteamNetworkingSocketsLib::s_usecTimeOffset.compare_exchange_strong( usecOffset, usecNewOffset ) )
+		if ( GameNetworkingSocketsLib::s_usecTimeOffset.compare_exchange_strong( usecOffset, usecNewOffset ) )
 			break;
 
 		// Race condition which should be extremely rare.  Some other thread changed the offset, in the time
@@ -2559,20 +2559,20 @@ SteamNetworkingMicroseconds SteamNetworkingSockets_GetLocalTimestamp()
 
 	// Save the last value returned.  Unless another thread snuck in there while we were busy.
 	// If so, that's OK.
-	SteamNetworkingSocketsLib::s_usecTimeLastReturned.compare_exchange_strong( usecLastReturned, usecResult );
+	GameNetworkingSocketsLib::s_usecTimeLastReturned.compare_exchange_strong( usecLastReturned, usecResult );
 
 	return usecResult;
 }
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
-using namespace SteamNetworkingSocketsLib;
+using namespace GameNetworkingSocketsLib;
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetManualPollMode( bool bFlag )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetManualPollMode( bool bFlag )
 {
 	if ( s_bManualPollMode == bFlag )
 		return;
-	SteamNetworkingGlobalLock scopeLock( "SteamNetworkingSockets_SetManualPollMode" );
+	SteamNetworkingGlobalLock scopeLock( "GameNetworkingSockets_SetManualPollMode" );
 	s_bManualPollMode = bFlag;
 
 	// Check for starting/stopping the thread
@@ -2596,7 +2596,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetManualPollMode( 
 	}
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_Poll( int msMaxWaitTime )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_Poll( int msMaxWaitTime )
 {
 	if ( !s_bManualPollMode )
 	{
@@ -2605,18 +2605,18 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_Poll( int msMaxWait
 	}
 	Assert( s_nLowLevelSupportRefCount.load(std::memory_order_acquire) > 0 );
 
-	while ( !SteamNetworkingGlobalLock::TryLock( "SteamNetworkingSockets_Poll", 1 ) )
+	while ( !SteamNetworkingGlobalLock::TryLock( "GameNetworkingSockets_Poll", 1 ) )
 	{
 		if ( --msMaxWaitTime <= 0 )
 			return;
 	}
 
-	bool bStillLocked = SteamNetworkingSockets_InternalPoll( msMaxWaitTime, true );
+	bool bStillLocked = GameNetworkingSockets_InternalPoll( msMaxWaitTime, true );
 	if ( bStillLocked )
 		SteamNetworkingGlobalLock::Unlock();
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockWaitWarningThreshold( SteamNetworkingMicroseconds usecTheshold )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockWaitWarningThreshold( SteamNetworkingMicroseconds usecTheshold )
 {
 	#if STEAMNETWORKINGSOCKETS_LOCK_DEBUG_LEVEL > 0
 		s_usecLockWaitWarningThreshold = usecTheshold;
@@ -2625,7 +2625,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockWaitWarningT
 	#endif
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockAcquiredCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockAcquiredCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) )
 {
 	#if STEAMNETWORKINGSOCKETS_LOCK_DEBUG_LEVEL > 0
 		s_fLockAcquiredCallback = callback;
@@ -2634,7 +2634,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockAcquiredCall
 	#endif
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockHeldCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockHeldCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) )
 {
 	#if STEAMNETWORKINGSOCKETS_LOCK_DEBUG_LEVEL > 0
 		s_fLockHeldCallback = callback;
@@ -2643,16 +2643,16 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetLockHeldCallback
 	#endif
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetPreFormatDebugOutputHandler(
-	ESteamNetworkingSocketsDebugOutputType eDetailLevel,
-	void (*pfn_Handler)( ESteamNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetPreFormatDebugOutputHandler(
+	EGameNetworkingSocketsDebugOutputType eDetailLevel,
+	void (*pfn_Handler)( EGameNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap )
 )
 {
 	g_eDefaultGroupSpewLevel = eDetailLevel;
 	g_pfnPreFormatSpewHandler = pfn_Handler;
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_DefaultPreFormatDebugOutputHandler( ESteamNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_DefaultPreFormatDebugOutputHandler( EGameNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap )
 {
 	// Do the formatting
 	char buf[ 2048 ];
@@ -2678,19 +2678,19 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_DefaultPreFormatDeb
 	{
 
 		// Write
-		SteamNetworkingMicroseconds usecLogTime = SteamNetworkingSockets_GetLocalTimestamp() - g_usecSystemLogFileOpened;
+		SteamNetworkingMicroseconds usecLogTime = GameNetworkingSockets_GetLocalTimestamp() - g_usecSystemLogFileOpened;
 		fprintf( g_pFileSystemSpew, "%8.3f %s\n", usecLogTime*1e-6, buf );
 
 		// Queue to flush when we we think we can afford to hit the disk synchronously
 		s_bNeedToFlushSystemSpew = true;
 
 		// Flush certain critical messages things immediately
-		if ( eType <= k_ESteamNetworkingSocketsDebugOutputType_Error )
+		if ( eType <= k_EGameNetworkingSocketsDebugOutputType_Error )
 			FlushSpew();
 	}
 
 	// Invoke callback
-	FSteamNetworkingSocketsDebugOutput pfnDebugOutput = s_pfnDebugOutput;
+	FGameNetworkingSocketsDebugOutput pfnDebugOutput = s_pfnDebugOutput;
 	if ( pfnDebugOutput )
 		pfnDebugOutput( eType, buf );
 }
@@ -2712,24 +2712,24 @@ static void* (*s_pfn_malloc)( size_t s ) = malloc;
 static void (*s_pfn_free)( void *p ) = free;
 static void* (*s_pfn_realloc)( void *p, size_t s ) = realloc;
 
-void *SteamNetworkingSockets_Malloc( size_t s )
+void *GameNetworkingSockets_Malloc( size_t s )
 {
 	s_bHasAllocatedMemory = true;
 	return (*s_pfn_malloc)( s );
 }
 
-void *SteamNetworkingSockets_Realloc( void *p, size_t s )
+void *GameNetworkingSockets_Realloc( void *p, size_t s )
 {
 	s_bHasAllocatedMemory = true;
 	return (*s_pfn_realloc)( p, s );
 }
 
-void SteamNetworkingSockets_Free( void *p )
+void GameNetworkingSockets_Free( void *p )
 {
 	(*s_pfn_free)( p );
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetCustomMemoryAllocator(
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetCustomMemoryAllocator(
 	void* (*pfn_malloc)( size_t s ),
 	void (*pfn_free)( void *p ),
 	void* (*pfn_realloc)( void *p, size_t s )

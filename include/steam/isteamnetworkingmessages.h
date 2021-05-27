@@ -11,13 +11,13 @@
 /// The non-connection-oriented interface to send and receive messages
 /// (whether they be "clients" or "servers").
 ///
-/// ISteamNetworkingSockets is connection-oriented (like TCP), meaning you
+/// IGameNetworkingSockets is connection-oriented (like TCP), meaning you
 /// need to listen and connect, and then you send messages using a connection
 /// handle.  ISteamNetworkingMessages is more like UDP, in that you can just send
 /// messages to arbitrary peers at any time.  The underlying connections are
 /// established implicitly.
 ///
-/// Under the hood ISteamNetworkingMessages works on top of the ISteamNetworkingSockets
+/// Under the hood ISteamNetworkingMessages works on top of the IGameNetworkingSockets
 /// code, so you get the same routing and messaging efficiency.  The difference is
 /// mainly in your responsibility to explicitly establish a connection and
 /// the type of feedback you get about the state of the connection.  Both
@@ -27,10 +27,10 @@
 /// The primary purpose of this interface is to be "like UDP", so that UDP-based code
 /// can be ported easily to take advantage of relayed connections.  If you find
 /// yourself needing more low level information or control, or to be able to better
-/// handle failure, then you probably need to use ISteamNetworkingSockets directly.
+/// handle failure, then you probably need to use IGameNetworkingSockets directly.
 /// Also, note that if your main goal is to obtain a connection between two peers
 /// without concerning yourself with assigning roles of "client" and "server",
-/// you may find the symmetric connection mode of ISteamNetworkingSockets useful.
+/// you may find the symmetric connection mode of IGameNetworkingSockets useful.
 /// (See k_ESteamNetworkingConfig_SymmetricConnect.)
 ///
 class ISteamNetworkingMessages
@@ -77,7 +77,7 @@ public:
 	///   and k_nSteamNetworkingSend_AutoRestartBrokenSession is not used.  (You can use
 	///   GetSessionConnectionInfo to get the details.)  In order to acknowledge the broken session
 	///   and start a new one, you must call CloseSessionWithUser
-	/// - See ISteamNetworkingSockets::SendMessageToConnection for more possible return values
+	/// - See IGameNetworkingSockets::SendMessageToConnection for more possible return values
 	virtual EResult SendMessageToUser( const SteamNetworkingIdentity &identityRemote, const void *pubData, uint32 cubData, int nSendFlags, int nRemoteChannel ) = 0;
 
 	/// Reads the next message that has been sent from another user via SendMessageToUser() on the given channel.

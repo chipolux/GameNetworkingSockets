@@ -8,7 +8,7 @@
 #include "tier0/memdbgon.h"
 
 // Put everything in a namespace, so we don't violate the one definition rule
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -80,8 +80,8 @@ void ReallyReportBadUDPPacket( const char *pszFrom, const char *pszMsgType, cons
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CSteamNetworkListenSocketDirectUDP::CSteamNetworkListenSocketDirectUDP( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface )
-: CSteamNetworkListenSocketBase( pSteamNetworkingSocketsInterface )
+CSteamNetworkListenSocketDirectUDP::CSteamNetworkListenSocketDirectUDP( CGameNetworkingSockets *pGameNetworkingSocketsInterface )
+: CSteamNetworkListenSocketBase( pGameNetworkingSocketsInterface )
 {
 	m_pSock = nullptr;
 }
@@ -114,7 +114,7 @@ bool CSteamNetworkListenSocketDirectUDP::BInit( const SteamNetworkingIPAddr &loc
 	int IP_AllowWithoutAuth = m_connectionConfig.m_IP_AllowWithoutAuth.Get();
 	if ( IP_AllowWithoutAuth < 2 )
 	{
-		m_pSteamNetworkingSocketsInterface->AuthenticationNeeded();
+		m_pGameNetworkingSocketsInterface->AuthenticationNeeded();
 
 		// If we know for sure that this can't ever work, then go ahead and fail now.
 		#ifndef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
@@ -167,7 +167,7 @@ void CSteamNetworkListenSocketDirectUDP::ReceivedFromUnknownHost( const RecvPktI
 	int cbPkt = info.m_cbPkt;
 	const netadr_t &adrFrom = info.m_adrFrom;
 
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	if ( cbPkt < 5 )
 	{
@@ -408,7 +408,7 @@ void CSteamNetworkListenSocketDirectUDP::Received_ConnectRequest( const CMsgStea
 	}
 
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionUDP *pConn = new CSteamNetworkConnectionUDP( m_pSteamNetworkingSocketsInterface, connectionLock );
+	CSteamNetworkConnectionUDP *pConn = new CSteamNetworkConnectionUDP( m_pGameNetworkingSocketsInterface, connectionLock );
 
 	// OK, they have completed the handshake.  Accept the connection.
 	if ( !pConn->BBeginAccept( this, adrFrom, m_pSock, identityRemote, unClientConnectionID, msg.cert(), msg.crypt(), errMsg ) )
@@ -463,7 +463,7 @@ void CSteamNetworkListenSocketDirectUDP::SendMsg( uint8 nMsgID, const google::pr
 		return;
 	}
 
-	uint8 pkt[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+	uint8 pkt[ k_cbGameNetworkingSocketsMaxUDPMsgLen ];
 	pkt[0] = nMsgID;
 	int cbPkt = ProtoMsgByteSize( msg )+1;
 	if ( cbPkt > sizeof(pkt) )
@@ -481,7 +481,7 @@ void CSteamNetworkListenSocketDirectUDP::SendMsg( uint8 nMsgID, const google::pr
 void CSteamNetworkListenSocketDirectUDP::SendPaddedMsg( uint8 nMsgID, const google::protobuf::MessageLite &msg, const netadr_t adrTo )
 {
 
-	uint8 pkt[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+	uint8 pkt[ k_cbGameNetworkingSocketsMaxUDPMsgLen ];
 	memset( pkt, 0, sizeof(pkt) ); // don't send random bits from our process memory over the wire!
 	UDPPaddedMessageHdr *hdr = (UDPPaddedMessageHdr *)pkt;
 	int nMsgLength = ProtoMsgByteSize( msg );
@@ -520,7 +520,7 @@ int CConnectionTransportUDPBase::SendEncryptedDataChunk( const void *pChunk, int
 {
 	UDPSendPacketContext_t &ctx = static_cast<UDPSendPacketContext_t &>( ctxBase );
 
-	uint8 pkt[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+	uint8 pkt[ k_cbGameNetworkingSocketsMaxUDPMsgLen ];
 	UDPDataMsgHdr *hdr = (UDPDataMsgHdr *)pkt;
 	hdr->m_unMsgFlags = 0x80;
 	Assert( m_connection.m_unConnectionIDRemote != 0 );
@@ -812,7 +812,7 @@ void CConnectionTransportUDPBase::SendNoConnection( uint32 unFromConnectionID, u
 void CConnectionTransportUDPBase::SendMsg( uint8 nMsgID, const google::protobuf::MessageLite &msg )
 {
 
-	uint8 pkt[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+	uint8 pkt[ k_cbGameNetworkingSocketsMaxUDPMsgLen ];
 	pkt[0] = nMsgID;
 	int cbPkt = ProtoMsgByteSize( msg )+1;
 	if ( cbPkt > sizeof(pkt) )
@@ -829,11 +829,11 @@ void CConnectionTransportUDPBase::SendMsg( uint8 nMsgID, const google::protobuf:
 void CConnectionTransportUDPBase::SendPaddedMsg( uint8 nMsgID, const google::protobuf::MessageLite &msg )
 {
 
-	uint8 pkt[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+	uint8 pkt[ k_cbGameNetworkingSocketsMaxUDPMsgLen ];
 	V_memset( pkt, 0, sizeof(pkt) ); // don't send random bits from our process memory over the wire!
 	UDPPaddedMessageHdr *hdr = (UDPPaddedMessageHdr *)pkt;
 	int nMsgLength = ProtoMsgByteSize( msg );
-	if ( nMsgLength + sizeof(*hdr) > k_cbSteamNetworkingSocketsMaxUDPMsgLen )
+	if ( nMsgLength + sizeof(*hdr) > k_cbGameNetworkingSocketsMaxUDPMsgLen )
 	{
 		AssertMsg3( false, "Msg type %d is %d bytes, larger than MTU of %d bytes", int( nMsgID ), int( nMsgLength + sizeof(*hdr) ), (int)sizeof(pkt) );
 		return;
@@ -902,8 +902,8 @@ void CConnectionTransportUDPBase::Received_NoConnection( const CMsgSteamSockets_
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CSteamNetworkConnectionUDP::CSteamNetworkConnectionUDP( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, ConnectionScopeLock &scopeLock )
-: CSteamNetworkConnectionBase( pSteamNetworkingSocketsInterface, scopeLock )
+CSteamNetworkConnectionUDP::CSteamNetworkConnectionUDP( CGameNetworkingSockets *pGameNetworkingSocketsInterface, ConnectionScopeLock &scopeLock )
+: CSteamNetworkConnectionBase( pGameNetworkingSocketsInterface, scopeLock )
 {
 }
 
@@ -1121,7 +1121,7 @@ bool CSteamNetworkConnectionUDP::BInitConnect( const SteamNetworkingIPAddr &addr
 	{
 
 		// Use identity from the interface, if we have one
-		m_identityLocal = m_pSteamNetworkingSocketsInterface->InternalGetIdentity();
+		m_identityLocal = m_pGameNetworkingSocketsInterface->InternalGetIdentity();
 		if ( m_identityLocal.IsInvalid())
 		{
 
@@ -1146,7 +1146,7 @@ bool CSteamNetworkConnectionUDP::BInitConnect( const SteamNetworkingIPAddr &addr
 	m_pTransport = pTransport;
 
 	// Let base class do some common initialization
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 	if ( !CSteamNetworkConnectionBase::BInitConnection( usecNow, nOptions, pOptions, errMsg ) )
 	{
 		DestroyTransport();
@@ -1220,7 +1220,7 @@ bool CSteamNetworkConnectionUDP::BBeginAccept(
 		return false;
 
 	// Let base class do some common initialization
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 	if ( !CSteamNetworkConnectionBase::BInitConnection( usecNow, 0, nullptr, errMsg ) )
 	{
 		DestroyTransport();
@@ -1333,7 +1333,7 @@ void CConnectionTransportUDP::PacketReceived( const RecvPktInfo_t &info, CConnec
 	int cbPkt = info.m_cbPkt;
 	const netadr_t &adrFrom = info.m_adrFrom;
 
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	if ( cbPkt < 5 )
 	{
@@ -1770,8 +1770,8 @@ EUnsignedCert CSteamNetworkConnectionUDP::AllowLocalUnsignedCert()
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CSteamNetworkConnectionlocalhostLoopback::CSteamNetworkConnectionlocalhostLoopback( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, const SteamNetworkingIdentity &identity, ConnectionScopeLock &scopeLock )
-: CSteamNetworkConnectionUDP( pSteamNetworkingSocketsInterface, scopeLock )
+CSteamNetworkConnectionlocalhostLoopback::CSteamNetworkConnectionlocalhostLoopback( CGameNetworkingSockets *pGameNetworkingSocketsInterface, const SteamNetworkingIdentity &identity, ConnectionScopeLock &scopeLock )
+: CSteamNetworkConnectionUDP( pGameNetworkingSocketsInterface, scopeLock )
 {
 	m_identityLocal = identity;
 }
@@ -1786,15 +1786,15 @@ EUnsignedCert CSteamNetworkConnectionlocalhostLoopback::AllowLocalUnsignedCert()
 	return k_EUnsignedCert_Allow;
 }
 
-bool CSteamNetworkConnectionlocalhostLoopback::APICreateSocketPair( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, CSteamNetworkConnectionlocalhostLoopback *pConn[2], const SteamNetworkingIdentity pIdentity[2] )
+bool CSteamNetworkConnectionlocalhostLoopback::APICreateSocketPair( CGameNetworkingSockets *pGameNetworkingSocketsInterface, CSteamNetworkConnectionlocalhostLoopback *pConn[2], const SteamNetworkingIdentity pIdentity[2] )
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 	ConnectionScopeLock scopeLock[2];
 
 	SteamDatagramErrMsg errMsg;
 
-	pConn[1] = new CSteamNetworkConnectionlocalhostLoopback( pSteamNetworkingSocketsInterface, pIdentity[0], scopeLock[0] );
-	pConn[0] = new CSteamNetworkConnectionlocalhostLoopback( pSteamNetworkingSocketsInterface, pIdentity[1], scopeLock[1] );
+	pConn[1] = new CSteamNetworkConnectionlocalhostLoopback( pGameNetworkingSocketsInterface, pIdentity[0], scopeLock[0] );
+	pConn[0] = new CSteamNetworkConnectionlocalhostLoopback( pGameNetworkingSocketsInterface, pIdentity[1], scopeLock[1] );
 	if ( !pConn[0] || !pConn[1] )
 	{
 failed:
@@ -1818,7 +1818,7 @@ failed:
 	if ( !CConnectionTransportUDP::CreateLoopbackPair( pTransport ) )
 		goto failed;
 
-	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	// Initialize both connections
 	for ( int i = 0 ; i < 2 ; ++i )
@@ -1858,4 +1858,4 @@ failed:
 	return true;
 }
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib

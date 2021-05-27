@@ -15,7 +15,7 @@
 // Here is the original file (God rest its soul):
 // https://webrtc.googlesource.com/src/+/30a3e787948dd6cdd541773101d664b85eb332a6/pc/webrtc_sdp.cc
 //
-// SteamNetworkingSockets only wants the ICE portion of the WebRTC code
+// GameNetworkingSockets only wants the ICE portion of the WebRTC code
 // We don't want video/audio codecs, or even crypto or DTLS.  The WebRTC
 // code actually has a beautifully-layered organization, and we are able
 // to access the WebRTC library at a low level easily.  This file is the

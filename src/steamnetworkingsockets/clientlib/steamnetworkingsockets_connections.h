@@ -23,9 +23,9 @@
 #include "steamnetworkingsockets_snp.h"
 
 struct SteamNetConnectionStatusChangedCallback_t;
-class ISteamNetworkingSocketsSerialized;
+class IGameNetworkingSocketsSerialized;
 
-namespace SteamNetworkingSocketsLib {
+namespace GameNetworkingSocketsLib {
 
 const SteamNetworkingMicroseconds k_usecConnectRetryInterval = k_nMillion/2;
 const SteamNetworkingMicroseconds k_usecFinWaitTimeout = 5*k_nMillion;
@@ -33,7 +33,7 @@ const SteamNetworkingMicroseconds k_usecFinWaitTimeout = 5*k_nMillion;
 typedef char ConnectionEndDebugMsg[ k_cchSteamNetworkingMaxConnectionCloseReason ];
 typedef char ConnectionTypeDescription_t[64];
 
-class CSteamNetworkingSockets;
+class CGameNetworkingSockets;
 class CSteamNetworkingMessages;
 class CSteamNetworkConnectionBase;
 class CSteamNetworkConnectionP2P;
@@ -126,7 +126,7 @@ struct RecvPacketContext_t
 	int m_cbPlainText;
 
 	// Temporary buffer to hold decrypted data, if we were actually encrypted
-	uint8 m_decrypted[ k_cbSteamNetworkingSocketsMaxPlaintextPayloadRecv ];
+	uint8 m_decrypted[ k_cbGameNetworkingSocketsMaxPlaintextPayloadRecv ];
 };
 
 template<typename TStatsMsg>
@@ -203,13 +203,13 @@ using PollGroupScopeLock = ScopeLock<PollGroupLock>;
 class CSteamNetworkPollGroup
 {
 public:
-	CSteamNetworkPollGroup( CSteamNetworkingSockets *pInterface );
+	CSteamNetworkPollGroup( CGameNetworkingSockets *pInterface );
 	~CSteamNetworkPollGroup();
 
 	PollGroupLock m_lock;
 
 	/// What interface is responsible for this listen socket?
-	CSteamNetworkingSockets *const m_pSteamNetworkingSocketsInterface;
+	CGameNetworkingSockets *const m_pGameNetworkingSocketsInterface;
 
 	/// Linked list of messages received through any connection on this listen socket
 	SteamNetworkingMessageQueue m_queueRecvMessages;
@@ -252,7 +252,7 @@ public:
 	HSteamListenSocket m_hListenSocketSelf;
 
 	/// What interface is responsible for this listen socket?
-	CSteamNetworkingSockets *const m_pSteamNetworkingSocketsInterface;
+	CGameNetworkingSockets *const m_pGameNetworkingSocketsInterface;
 
 	/// Configuration options that will apply to all connections accepted through this listen socket
 	ConnectionConfig m_connectionConfig;
@@ -267,7 +267,7 @@ public:
 	#endif
 
 protected:
-	CSteamNetworkListenSocketBase( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface );
+	CSteamNetworkListenSocketBase( CGameNetworkingSockets *pGameNetworkingSocketsInterface );
 	virtual ~CSteamNetworkListenSocketBase(); // hidden destructor, don't call directly.  Use Destroy()
 
 	bool BInitListenSocketCommon( int nOptions, const SteamNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
@@ -415,7 +415,7 @@ public:
 //
 
 	/// What interface is responsible for this connection?
-	CSteamNetworkingSockets *const m_pSteamNetworkingSocketsInterface;
+	CGameNetworkingSockets *const m_pGameNetworkingSocketsInterface;
 
 	/// Current active transport for this connection.
 	/// MIGHT BE NULL in certain failure / edge cases!
@@ -607,7 +607,7 @@ public:
 	inline bool IsConnectionForMessagesSession() const { return m_connectionConfig.m_LocalVirtualPort.Get() == k_nVirtualPort_Messages; }
 
 protected:
-	CSteamNetworkConnectionBase( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
+	CSteamNetworkConnectionBase( CGameNetworkingSockets *pGameNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
 	virtual ~CSteamNetworkConnectionBase(); // hidden destructor, don't call directly.  Use ConnectionQueueDestroy()
 
 	/// Initialize connection bookkeeping
@@ -685,7 +685,7 @@ protected:
 	CMsgSteamDatagramSessionCryptInfoSigned m_msgSignedCryptLocal;
 	CMsgSteamDatagramCertificateSigned m_msgSignedCertLocal;
 	bool m_bCertHasIdentity; // Does the cert contain the identity we will use for this connection?
-	ESteamNetworkingSocketsCipher m_eNegotiatedCipher;
+	EGameNetworkingSocketsCipher m_eNegotiatedCipher;
 
 	// AES keys used in each direction
 	bool m_bCryptKeysValid;
@@ -903,7 +903,7 @@ public:
 
 	/// Create a pair of loopback connections that are immediately connected to each other
 	/// No callbacks are posted.
-	static bool APICreateSocketPair( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, CSteamNetworkConnectionPipe **pOutConnections, const SteamNetworkingIdentity pIdentity[2] );
+	static bool APICreateSocketPair( CGameNetworkingSockets *pGameNetworkingSocketsInterface, CSteamNetworkConnectionPipe **pOutConnections, const SteamNetworkingIdentity pIdentity[2] );
 
 	/// Create a pair of loopback connections that act like normal connections, but use internal transport.
 	/// The two connections will be placed in the "connecting" state, and will go through the ordinary
@@ -911,7 +911,7 @@ public:
 	///
 	/// The client connection is returned.
 	static CSteamNetworkConnectionPipe *CreateLoopbackConnection(
-		CSteamNetworkingSockets *pClientInstance, int nOptions, const SteamNetworkingConfigValue_t *pOptions,
+		CGameNetworkingSockets *pClientInstance, int nOptions, const SteamNetworkingConfigValue_t *pOptions,
 		CSteamNetworkListenSocketBase *pListenSocket,
 		SteamNetworkingErrMsg &errMsg,
 		ConnectionScopeLock &scopeLock );
@@ -941,7 +941,7 @@ public:
 private:
 
 	// Use CreateSocketPair!
-	CSteamNetworkConnectionPipe( CSteamNetworkingSockets *pSteamNetworkingSocketsInterface, const SteamNetworkingIdentity &identity, ConnectionScopeLock &scopeLock );
+	CSteamNetworkConnectionPipe( CGameNetworkingSockets *pGameNetworkingSocketsInterface, const SteamNetworkingIdentity &identity, ConnectionScopeLock &scopeLock );
 	virtual ~CSteamNetworkConnectionPipe();
 
 	/// Setup the server side of a loopback connection
@@ -990,6 +990,6 @@ inline CSteamNetworkConnectionBase *FindConnectionByLocalID( uint32 nLocalConnec
 	return GetConnectionByHandle( HSteamNetConnection( nLocalConnectionID ), scopeLock );
 }
 
-} // namespace SteamNetworkingSocketsLib
+} // namespace GameNetworkingSocketsLib
 
 #endif // STEAMNETWORKINGSOCKETS_CONNECTIONS_H

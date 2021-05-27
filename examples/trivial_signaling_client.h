@@ -1,12 +1,12 @@
 // Client of our dummy trivial signaling server service.
 // Serves as an example of you how to hook up signaling server
-// to SteamNetworkingSockets P2P connections
+// to GameNetworkingSockets P2P connections
 
 #pragma once
 
 #include <steam/steamnetworkingcustomsignaling.h>
 
-class ISteamNetworkingSockets;
+class IGameNetworkingSockets;
 
 /// Interface to our client.
 class ITrivialSignalingClient
@@ -30,7 +30,7 @@ public:
 // Start connecting to the signaling server.
 ITrivialSignalingClient *CreateTrivialSignalingClient(
 	const char *address, // Address:port
-	ISteamNetworkingSockets *pSteamNetworkingSockets, // Where should we send signals when we get them?
+	IGameNetworkingSockets *pGameNetworkingSockets, // Where should we send signals when we get them?
 	SteamNetworkingErrMsg &errMsg // Error message is retjrned here if we fail
 );
 

@@ -25,7 +25,7 @@
 			<!-- Steamnetworkingsockets events -->
       <provider
           guid="{B77D8A36-EF0C-4976-8D22-08F986F56CFB}"
-          name="Valve-SteamNetworkingSockets"
+          name="Valve-GameNetworkingSockets"
           symbol="VALVE_STEAMNETWORKINGSOCKETS"
           messageFileName="%temp%\steamclient.dll"
           resourceFileName="%temp%\steamclient.dll" >
