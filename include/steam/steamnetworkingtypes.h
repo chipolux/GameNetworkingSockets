@@ -852,7 +852,7 @@ struct SteamNetworkingMessage_t
 	int m_nFlags;
 
 	/// Arbitrary user data that you can use when sending messages using
-	/// ISteamNetworkingUtils::AllocateMessage and ISteamNetworkingSockets::SendMessage.
+	/// IGameNetworkingUtils::AllocateMessage and ISteamNetworkingSockets::SendMessage.
 	/// (The callback you set in m_pfnFreeData might use this field.)
 	///
 	/// Not used for received messages.
@@ -876,7 +876,7 @@ protected:
 	// Declare destructor protected.  You should never need to declare a message
 	// object on the stack or create one yourself.
 	// - You will receive a pointer to a message object when you receive messages (e.g. ISteamNetworkingSockets::ReceiveMessagesOnConnection)
-	// - You can allocate a message object for efficient sending using ISteamNetworkingUtils::AllocateMessage
+	// - You can allocate a message object for efficient sending using IGameNetworkingUtils::AllocateMessage
 	// - Call Release() to free the object
 	inline ~SteamNetworkingMessage_t() {}
 };
@@ -1008,7 +1008,7 @@ const int k_nSteamNetworkingSend_AutoRestartBrokenSession = 32;
 /// NOTE: This object should only be used in the same process!  Do not serialize it,
 /// send it over the wire, or persist it in a file or database!  If you need
 /// to do that, convert it to a string representation using the methods in
-/// ISteamNetworkingUtils().
+/// IGameNetworkingUtils().
 struct SteamNetworkPingLocation_t
 {
 	uint8 m_data[ 512 ];
@@ -1331,7 +1331,7 @@ enum ESteamNetworkingConfigValue
 	// to associate specific functions with specific listen sockets or connections, you can
 	// register them as configuration values.
 	//
-	// Note also that ISteamNetworkingUtils has some helpers to set these globally.
+	// Note also that IGameNetworkingUtils has some helpers to set these globally.
 
 	/// [connection FnSteamNetConnectionStatusChanged] Callback that will be invoked
 	/// when the state of a connection changes.
@@ -1363,24 +1363,24 @@ enum ESteamNetworkingConfigValue
 	/// [global FnSteamNetAuthenticationStatusChanged] Callback that will be invoked
 	/// when our auth state changes.  If you use this, install the callback before creating
 	/// any connections or listen sockets, and don't change it.
-	/// See: ISteamNetworkingUtils::SetGlobalCallback_SteamNetAuthenticationStatusChanged
+	/// See: IGameNetworkingUtils::SetGlobalCallback_SteamNetAuthenticationStatusChanged
 	k_ESteamNetworkingConfig_Callback_AuthStatusChanged = 202,
 
 	/// [global FnSteamRelayNetworkStatusChanged] Callback that will be invoked
 	/// when our auth state changes.  If you use this, install the callback before creating
 	/// any connections or listen sockets, and don't change it.
-	/// See: ISteamNetworkingUtils::SetGlobalCallback_SteamRelayNetworkStatusChanged
+	/// See: IGameNetworkingUtils::SetGlobalCallback_SteamRelayNetworkStatusChanged
 	k_ESteamNetworkingConfig_Callback_RelayNetworkStatusChanged = 203,
 
 	/// [global FnSteamNetworkingMessagesSessionRequest] Callback that will be invoked
 	/// when a peer wants to initiate a SteamNetworkingMessagesSessionRequest.
-	/// See: ISteamNetworkingUtils::SetGlobalCallback_MessagesSessionRequest
+	/// See: IGameNetworkingUtils::SetGlobalCallback_MessagesSessionRequest
 	k_ESteamNetworkingConfig_Callback_MessagesSessionRequest = 204,
 
 	/// [global FnSteamNetworkingMessagesSessionFailed] Callback that will be invoked
 	/// when a session you have initiated, or accepted either fails to connect, or loses
 	/// connection in some unexpected way.
-	/// See: ISteamNetworkingUtils::SetGlobalCallback_MessagesSessionFailed
+	/// See: IGameNetworkingUtils::SetGlobalCallback_MessagesSessionFailed
 	k_ESteamNetworkingConfig_Callback_MessagesSessionFailed = 205,
 
 	/// [global FnSteamNetworkingSocketsCreateConnectionSignaling] Callback that will
@@ -1478,7 +1478,7 @@ enum ESteamNetworkingConfigValue
 	/// [global int32] 0 or 1.  Some variables are "dev" variables.  They are useful
 	/// for debugging, but should not be adjusted in production.  When this flag is false (the default),
 	/// such variables will not be enumerated by the ISteamnetworkingUtils::GetFirstConfigValue
-	/// ISteamNetworkingUtils::GetConfigValueInfo functions.  The idea here is that you
+	/// IGameNetworkingUtils::GetConfigValueInfo functions.  The idea here is that you
 	/// can use those functions to provide a generic mechanism to set any configuration
 	/// value from a console or configuration file, looking up the variable by name.  Depending
 	/// on your game, modifying other configuration values may also have negative effects, and
@@ -1491,7 +1491,7 @@ enum ESteamNetworkingConfigValue
 //
 // Log levels for debugging information of various subsystems.
 // Higher numeric values will cause more stuff to be printed.
-// See ISteamNetworkingUtils::SetDebugOutputFunction for more
+// See IGameNetworkingUtils::SetDebugOutputFunction for more
 // information
 //
 // The default for all values is k_ESteamNetworkingSocketsDebugOutputType_Warning.
@@ -1521,9 +1521,9 @@ const int k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_All = 0x7fffffff;
 /// when the options are applied.  To set options at creation time in a reliable way, they must be
 /// passed to the creation function.  This structure is used to pass those options.
 ///
-/// For the meaning of these fields, see ISteamNetworkingUtils::SetConfigValue.  Basically
+/// For the meaning of these fields, see IGameNetworkingUtils::SetConfigValue.  Basically
 /// when the object is created, we just iterate over the list of options and call
-/// ISteamNetworkingUtils::SetConfigValueStruct, where the scope arguments are supplied by the
+/// IGameNetworkingUtils::SetConfigValueStruct, where the scope arguments are supplied by the
 /// object being created.
 struct SteamNetworkingConfigValue_t
 {
@@ -1595,7 +1595,7 @@ enum ESteamNetworkingGetConfigValueResult
 //
 
 /// Detail level for diagnostic output callback.
-/// See ISteamNetworkingUtils::SetDebugOutputFunction
+/// See IGameNetworkingUtils::SetDebugOutputFunction
 enum ESteamNetworkingSocketsDebugOutputType
 {
 	k_ESteamNetworkingSocketsDebugOutputType_None = 0,

@@ -313,7 +313,7 @@ EResult CSteamNetworkingMessages::SendMessageToUser( const SteamNetworkingIdenti
 
 	// Allocate a message, and put our header in front.
 	int cbSend = cubData + sizeof(P2PMessageHeader);
-	CSteamNetworkingMessage *pMsg = (CSteamNetworkingMessage *)m_steamNetworkingSockets.m_pSteamNetworkingUtils->AllocateMessage( cbSend );
+	CSteamNetworkingMessage *pMsg = (CSteamNetworkingMessage *)m_steamNetworkingSockets.m_pGameNetworkingUtils->AllocateMessage( cbSend );
 	if ( !pMsg )
 	{
 		pSess->m_pConnection->ConnectionState_ProblemDetectedLocally( k_ESteamNetConnectionEnd_AppException_Generic, "Failed to allocate message" );

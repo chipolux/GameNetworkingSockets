@@ -53,7 +53,7 @@ static void NukeProcess( int rc )
 
 static void DebugOutput( ESteamNetworkingSocketsDebugOutputType eType, const char *pszMsg )
 {
-	SteamNetworkingMicroseconds time = SteamNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
+	SteamNetworkingMicroseconds time = GameNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
 	printf( "%10.6f %s\n", time*1e-6, pszMsg );
 	fflush(stdout);
 	if ( eType == k_ESteamNetworkingSocketsDebugOutputType_Bug )
@@ -110,12 +110,12 @@ static void InitSteamDatagramConnectionSockets()
 		// Authentication is disabled automatically in the open-source
 		// version since we don't have a trusted third party to issue
 		// certs.
-		SteamNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_IP_AllowWithoutAuth, 1 );
+		GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_IP_AllowWithoutAuth, 1 );
 	#endif
 
-	g_logTimeZero = SteamNetworkingUtils()->GetLocalTimestamp();
+	g_logTimeZero = GameNetworkingUtils()->GetLocalTimestamp();
 
-	SteamNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput );
+	GameNetworkingUtils()->SetDebugOutputFunction( k_ESteamNetworkingSocketsDebugOutputType_Msg, DebugOutput );
 }
 
 static void ShutdownSteamDatagramConnectionSockets()

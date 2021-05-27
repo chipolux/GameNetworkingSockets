@@ -2505,7 +2505,7 @@ CSteamNetworkConnectionBase *CSteamNetworkingSockets::InternalConnectP2P(
 						continue;
 
 					// Set the option
-					if ( !m_pSteamNetworkingUtils->SetConfigValueStruct( opt, k_ESteamNetworkingConfig_Connection, pMatchingConnection->m_hConnectionSelf ) )
+					if ( !m_pGameNetworkingUtils->SetConfigValueStruct( opt, k_ESteamNetworkingConfig_Connection, pMatchingConnection->m_hConnectionSelf ) )
 					{
 						// Spew, but keep going!
 						SpewBug( errMsg, "[%s] Failed to set option %d while implicitly accepting.  Ignoring failure!", pMatchingConnection->GetDescription(), opt.m_eValue );

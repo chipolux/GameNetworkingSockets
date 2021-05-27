@@ -15,7 +15,7 @@
 	#define ICLIENTNETWORKING_OVERRIDE override
 #else
 	typedef ISteamNetworkingSockets IClientNetworkingSockets;
-	typedef ISteamNetworkingUtils IClientNetworkingUtils;
+	typedef IGameNetworkingUtils IClientNetworkingUtils;
 	#define ICLIENTNETWORKING_OVERRIDE
 #endif
 
@@ -23,7 +23,7 @@
 
 namespace SteamNetworkingSocketsLib {
 
-class CSteamNetworkingUtils;
+class CGameNetworkingUtils;
 class CSteamNetworkListenSocketP2P;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -36,9 +36,9 @@ class CSteamNetworkingSockets : public IClientNetworkingSockets
 {
 public:
 	STEAMNETWORKINGSOCKETS_DECLARE_CLASS_OPERATOR_NEW
-	CSteamNetworkingSockets( CSteamNetworkingUtils *pSteamNetworkingUtils );
+	CSteamNetworkingSockets( CGameNetworkingUtils *pGameNetworkingUtils );
 
-	CSteamNetworkingUtils *const m_pSteamNetworkingUtils;
+	CGameNetworkingUtils *const m_pGameNetworkingUtils;
 	CMsgSteamDatagramCertificateSigned m_msgSignedCert;
 	CMsgSteamDatagramCertificate m_msgCert;
 	CECSigningPrivateKey m_keyPrivateKey;
@@ -236,11 +236,11 @@ protected:
 	virtual ~CSteamNetworkingSockets();
 };
 
-class CSteamNetworkingUtils : public IClientNetworkingUtils
+class CGameNetworkingUtils : public IClientNetworkingUtils
 {
 public:
 	STEAMNETWORKINGSOCKETS_DECLARE_CLASS_OPERATOR_NEW
-	virtual ~CSteamNetworkingUtils();
+	virtual ~CGameNetworkingUtils();
 
 	virtual SteamNetworkingMessage_t *AllocateMessage( int cbAllocateBuffer ) override;
 

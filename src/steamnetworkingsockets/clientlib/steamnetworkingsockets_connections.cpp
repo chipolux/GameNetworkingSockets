@@ -504,7 +504,7 @@ bool CSteamNetworkListenSocketBase::BInitListenSocketCommon( int nOptions, const
 	{
 		for ( int i = 0 ; i < nOptions ; ++i )
 		{
-			if ( !m_pSteamNetworkingSocketsInterface->m_pSteamNetworkingUtils->SetConfigValueStruct( pOptions[i], k_ESteamNetworkingConfig_ListenSocket, m_hListenSocketSelf ) )
+			if ( !m_pSteamNetworkingSocketsInterface->m_pGameNetworkingUtils->SetConfigValueStruct( pOptions[i], k_ESteamNetworkingConfig_ListenSocket, m_hListenSocketSelf ) )
 			{
 				V_sprintf_safe( errMsg, "Error setting option %d", pOptions[i].m_eValue );
 				return false;
@@ -1027,7 +1027,7 @@ bool CSteamNetworkConnectionBase::BInitConnection( SteamNetworkingMicroseconds u
 	{
 		for ( int i = 0 ; i < nOptions ; ++i )
 		{
-			if ( !m_pSteamNetworkingSocketsInterface->m_pSteamNetworkingUtils->SetConfigValueStruct( pOptions[i], k_ESteamNetworkingConfig_Connection, m_hConnectionSelf ) )
+			if ( !m_pSteamNetworkingSocketsInterface->m_pGameNetworkingUtils->SetConfigValueStruct( pOptions[i], k_ESteamNetworkingConfig_Connection, m_hConnectionSelf ) )
 			{
 				V_sprintf_safe( errMsg, "Error setting option %d", pOptions[i].m_eValue );
 				return false;
@@ -1356,7 +1356,7 @@ void CSteamNetworkConnectionBase::SetLocalCertUnsigned()
 	keyPublic.GetRawDataAsStdString( msgCert.mutable_key_data() );
 	msgCert.set_key_type( CMsgSteamDatagramCertificate_EKeyType_ED25519 );
 	SteamNetworkingIdentityToProtobuf( m_identityLocal, msgCert, identity_string, legacy_identity_binary, legacy_steam_id );
-	msgCert.add_app_ids( m_pSteamNetworkingSocketsInterface->m_pSteamNetworkingUtils->GetAppID() );
+	msgCert.add_app_ids( m_pSteamNetworkingSocketsInterface->m_pGameNetworkingUtils->GetAppID() );
 
 	// Should we set an expiry?  I mean it's unsigned, so it has zero value, so probably not
 	//s_msgCertLocal.set_time_created( );
@@ -1429,7 +1429,7 @@ bool CSteamNetworkConnectionBase::BRecvCryptoHandshake( const CMsgSteamDatagramC
 	{
 
 		// Check the signature and chain of trust, and expiry, and deserialize the signed cert
-		time_t timeNow = m_pSteamNetworkingSocketsInterface->m_pSteamNetworkingUtils->GetTimeSecure();
+		time_t timeNow = m_pSteamNetworkingSocketsInterface->m_pGameNetworkingUtils->GetTimeSecure();
 		pCACertAuthScope = CertStore_CheckCert( msgCert, m_msgCertRemote, timeNow, errMsg );
 		if ( !pCACertAuthScope )
 		{
@@ -1793,7 +1793,7 @@ ESteamNetConnectionEnd CSteamNetworkConnectionBase::CheckRemoteCert( const CertA
 	AssertLocksHeldByCurrentThread( "BFinishCryptoHandshake" );
 
 	// Allowed for this app?
-	if ( !CheckCertAppID( m_msgCertRemote, pCACertAuthScope, m_pSteamNetworkingSocketsInterface->m_pSteamNetworkingUtils->GetAppID(), errMsg ) )
+	if ( !CheckCertAppID( m_msgCertRemote, pCACertAuthScope, m_pSteamNetworkingSocketsInterface->m_pGameNetworkingUtils->GetAppID(), errMsg ) )
 		return k_ESteamNetConnectionEnd_Remote_BadCert;
 
 	// Check if we don't allow unsigned certs

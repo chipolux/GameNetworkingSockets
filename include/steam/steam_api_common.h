@@ -8,6 +8,6 @@
 
 enum { k_iSteamNetworkingSocketsCallbacks = 1220 };
 enum { k_iSteamNetworkingMessagesCallbacks = 1250 };
-enum { k_iSteamNetworkingUtilsCallbacks = 1280 };
+enum { k_iGameNetworkingUtilsCallbacks = 1280 };
 
 #endif // STEAM_API_COMMON

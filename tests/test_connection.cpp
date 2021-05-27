@@ -78,7 +78,7 @@ struct SFakePeer
 	{
 		TestMsg msg;
 		msg.m_bReliable = bReliable;
-		msg.m_usecWhenSent = SteamNetworkingUtils()->GetLocalTimestamp();
+		msg.m_usecWhenSent = GameNetworkingUtils()->GetLocalTimestamp();
 		msg.m_cbSize = std::uniform_int_distribution<>( 20, cbMaxSize )( g_rand );
 		//bIsReliable = false;
 		//nBytes = 1200-13;
@@ -169,7 +169,7 @@ static void Recv( ISteamNetworkingSockets *pSteamSocketNetworking )
 			assert( !pTestMsg->m_bReliable );
 		}
 
-		float flDelay = ( SteamNetworkingUtils()->GetLocalTimestamp() - pTestMsg->m_usecWhenSent ) * 1e-6f;
+		float flDelay = ( GameNetworkingUtils()->GetLocalTimestamp() - pTestMsg->m_usecWhenSent ) * 1e-6f;
 		pConnection->m_nRecvInterval += pIncomingMsg->GetSize();
 		if ( pTestMsg->m_bReliable )
 		{
@@ -306,17 +306,17 @@ static void TestNetworkConditions( int rate, float loss, int lag, float reorderP
 	TEST_Printf( "Act like game. . : %d\n", (int)bActLikeGame );
 	TEST_Printf( "---------------------------------------------------\n" );
 
-	SteamNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_SendRateMin, rate );
-	SteamNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_SendRateMax, rate );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_SendRateMin, rate );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_SendRateMax, rate );
 
-	SteamNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketLoss_Send, loss );
-	SteamNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketLoss_Recv, 0 );
-	SteamNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketLag_Send, lag );
-	SteamNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketLag_Recv, 0 );
-	SteamNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketReorder_Send, reorderPct );
-	SteamNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketReorder_Time, reorderLag );
+	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketLoss_Send, loss );
+	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketLoss_Recv, 0 );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketLag_Send, lag );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketLag_Recv, 0 );
+	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketReorder_Send, reorderPct );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketReorder_Time, reorderLag );
 
-	SteamNetworkingMicroseconds usecWhenStarted = SteamNetworkingUtils()->GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecWhenStarted = GameNetworkingUtils()->GetLocalTimestamp();
 
 	// Loop!
 
@@ -335,11 +335,11 @@ static void TestNetworkConditions( int rate, float loss, int lag, float reorderP
 #endif
 	bool bQuiet = true;
 	SteamNetworkingMicroseconds usecWhenStateEnd = 0;
-	SteamNetworkingMicroseconds usecLastPrint = SteamNetworkingUtils()->GetLocalTimestamp();
+	SteamNetworkingMicroseconds usecLastPrint = GameNetworkingUtils()->GetLocalTimestamp();
 
 	while ( true )
 	{
-		SteamNetworkingMicroseconds now = SteamNetworkingUtils()->GetLocalTimestamp();
+		SteamNetworkingMicroseconds now = GameNetworkingUtils()->GetLocalTimestamp();
 		g_usecTestElapsed = now - usecWhenStarted;
 		// If flElapsed > 1.0 when in debug, just slamp it
 		//if ( Plat_IsInDebugSession() && now - flLastNow > 1.0f )
@@ -535,7 +535,7 @@ int main(  )
 
 	// Create client and server sockets
 	TEST_Init( nullptr );
-	SteamNetworkingUtils()->SetGlobalCallback_SteamNetConnectionStatusChanged( OnSteamNetConnectionStatusChanged );
+	GameNetworkingUtils()->SetGlobalCallback_SteamNetConnectionStatusChanged( OnSteamNetConnectionStatusChanged );
 
 	// Run the test
 	RunSteamDatagramConnectionTest();

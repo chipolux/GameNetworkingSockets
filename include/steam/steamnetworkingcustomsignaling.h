@@ -101,7 +101,7 @@ public:
 /// ISteamNetworkingSockets::ConnectP2P, and when using the
 /// ISteamNetworkingMessages interface.  To install the callback for all
 /// interfaces, do something like this:
-/// SteamNetworkingUtils()->SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_CreateConnectionSignaling, (void*)fnCallback );
+/// GameNetworkingUtils()->SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_CreateConnectionSignaling, (void*)fnCallback );
 typedef ISteamNetworkingConnectionSignaling * (*FnSteamNetworkingSocketsCreateConnectionSignaling)( ISteamNetworkingSockets *pLocalInterface, const SteamNetworkingIdentity &identityPeer, int nLocalVirtualPort, int nRemoteVirtualPort );
 
 #endif // STEAMNETWORKINGCUSTOMSIGNALING

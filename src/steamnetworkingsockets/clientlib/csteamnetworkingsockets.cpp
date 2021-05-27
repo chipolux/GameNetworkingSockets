@@ -25,7 +25,7 @@
 #include "tier0/memdbgon.h"
 
 ISteamNetworkingSockets::~ISteamNetworkingSockets() {}
-ISteamNetworkingUtils::~ISteamNetworkingUtils() {}
+IGameNetworkingUtils::~IGameNetworkingUtils() {}
 
 // Put everything in a namespace, so we don't violate the one definition rule
 namespace SteamNetworkingSocketsLib {
@@ -366,9 +366,9 @@ CSteamNetworkPollGroup *GetPollGroupByHandle( HSteamNetPollGroup hPollGroup, Pol
 
 std::vector<CSteamNetworkingSockets *> CSteamNetworkingSockets::s_vecSteamNetworkingSocketsInstances;
 
-CSteamNetworkingSockets::CSteamNetworkingSockets( CSteamNetworkingUtils *pSteamNetworkingUtils )
+CSteamNetworkingSockets::CSteamNetworkingSockets( CGameNetworkingUtils *pGameNetworkingUtils )
 : m_bHaveLowLevelRef( false )
-, m_pSteamNetworkingUtils( pSteamNetworkingUtils )
+, m_pGameNetworkingUtils( pGameNetworkingUtils )
 , m_pSteamNetworkingMessages( nullptr )
 , m_bEverTriedToGetCert( false )
 , m_bEverGotCert( false )
@@ -566,7 +566,7 @@ int CSteamNetworkingSockets::GetSecondsUntilCertExpiry() const
 	Assert( m_msgCert.has_key_data() );
 	Assert( m_msgCert.has_time_expiry() ); // We should never generate keys without an expiry!
 
-	int nSeconduntilExpiry = (long)m_msgCert.time_expiry() - (long)m_pSteamNetworkingUtils->GetTimeSecure();
+	int nSeconduntilExpiry = (long)m_msgCert.time_expiry() - (long)m_pGameNetworkingUtils->GetTimeSecure();
 	return nSeconduntilExpiry;
 }
 
@@ -635,7 +635,7 @@ bool CSteamNetworkingSockets::SetCertificate( const void *pCertificate, int cbCe
 	// Crack the cert, and check the signature.  If *we* aren't even willing
 	// to trust it, assume that our peers won't either
 	CMsgSteamDatagramCertificate msgCert;
-	time_t authTime = m_pSteamNetworkingUtils->GetTimeSecure();
+	time_t authTime = m_pGameNetworkingUtils->GetTimeSecure();
 	const CertAuthScope *pAuthScope = CertStore_CheckCert( msgCertSigned, msgCert, authTime, errMsg );
 	if ( !pAuthScope )
 	{
@@ -704,7 +704,7 @@ bool CSteamNetworkingSockets::SetCertificate( const void *pCertificate, int cbCe
 	}
 
 	// Make sure the cert authorizes us for the App we think we are running
-	AppId_t nAppID = m_pSteamNetworkingUtils->GetAppID();
+	AppId_t nAppID = m_pGameNetworkingUtils->GetAppID();
 	if ( !CheckCertAppID( msgCert, pAuthScope, nAppID, tempErrMsg ) )
 	{
 		V_sprintf_safe( errMsg, "Cert does not authorize us for App %u", nAppID );
@@ -1554,23 +1554,23 @@ void CSteamNetworkingSockets::InternalQueueCallback( int nCallback, int cbCallba
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// CSteamNetworkingUtils
+// CGameNetworkingUtils
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CSteamNetworkingUtils::~CSteamNetworkingUtils() {}
+CGameNetworkingUtils::~CGameNetworkingUtils() {}
 
-SteamNetworkingMessage_t *CSteamNetworkingUtils::AllocateMessage( int cbAllocateBuffer )
+SteamNetworkingMessage_t *CGameNetworkingUtils::AllocateMessage( int cbAllocateBuffer )
 {
 	return CSteamNetworkingMessage::New( cbAllocateBuffer );
 }
 
-SteamNetworkingMicroseconds CSteamNetworkingUtils::GetLocalTimestamp()
+SteamNetworkingMicroseconds CGameNetworkingUtils::GetLocalTimestamp()
 {
 	return SteamNetworkingSockets_GetLocalTimestamp();
 }
 
-void CSteamNetworkingUtils::SetDebugOutputFunction( ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc )
+void CGameNetworkingUtils::SetDebugOutputFunction( ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc )
 {
 	SteamNetworkingSockets_SetDebugOutputFunction( eDetailLevel, pfnFunc );
 }
@@ -1922,7 +1922,7 @@ ESteamNetworkingGetConfigValueResult GetConfigValueTyped(
 	return eResult;
 }
 
-bool CSteamNetworkingUtils::SetConfigValue( ESteamNetworkingConfigValue eValue,
+bool CGameNetworkingUtils::SetConfigValue( ESteamNetworkingConfigValue eValue,
 	ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj,
 	ESteamNetworkingConfigDataType eDataType, const void *pValue )
 {
@@ -1978,7 +1978,7 @@ bool CSteamNetworkingUtils::SetConfigValue( ESteamNetworkingConfigValue eValue,
 	return false;
 }
 
-ESteamNetworkingGetConfigValueResult CSteamNetworkingUtils::GetConfigValue(
+ESteamNetworkingGetConfigValueResult CGameNetworkingUtils::GetConfigValue(
 	ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType,
 	intptr_t scopeObj, ESteamNetworkingConfigDataType *pOutDataType,
 	void *pResult, size_t *cbResult )
@@ -2045,7 +2045,7 @@ static bool BEnumerateConfigValue( const GlobalConfigValueEntry *pVal )
 	return true;
 }
 
-bool CSteamNetworkingUtils::GetConfigValueInfo( ESteamNetworkingConfigValue eValue,
+bool CGameNetworkingUtils::GetConfigValueInfo( ESteamNetworkingConfigValue eValue,
 	const char **pOutName, ESteamNetworkingConfigDataType *pOutDataType,
 	ESteamNetworkingConfigScope *pOutScope, ESteamNetworkingConfigValue *pOutNextValue )
 {
@@ -2082,7 +2082,7 @@ bool CSteamNetworkingUtils::GetConfigValueInfo( ESteamNetworkingConfigValue eVal
 	return true;
 }
 
-ESteamNetworkingConfigValue CSteamNetworkingUtils::GetFirstConfigValue()
+ESteamNetworkingConfigValue CGameNetworkingUtils::GetFirstConfigValue()
 {
 	EnsureConfigValueTableInitted();
 	Assert( BEnumerateConfigValue( s_vecConfigValueTable[0] ) );
@@ -2090,43 +2090,43 @@ ESteamNetworkingConfigValue CSteamNetworkingUtils::GetFirstConfigValue()
 }
 
 
-void CSteamNetworkingUtils::SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort )
+void CGameNetworkingUtils::SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort )
 {
 	::SteamNetworkingIPAddr_ToString( &addr, buf, cbBuf, bWithPort );
 }
 
-bool CSteamNetworkingUtils::SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr )
+bool CGameNetworkingUtils::SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr )
 {
 	return ::SteamNetworkingIPAddr_ParseString( pAddr, pszStr );
 }
 
-void CSteamNetworkingUtils::SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity &identity, char *buf, size_t cbBuf )
+void CGameNetworkingUtils::SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity &identity, char *buf, size_t cbBuf )
 {
 	return ::SteamNetworkingIdentity_ToString( &identity, buf, cbBuf );
 }
 
-bool CSteamNetworkingUtils::SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, const char *pszStr )
+bool CGameNetworkingUtils::SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, const char *pszStr )
 {
 	return ::SteamNetworkingIdentity_ParseString( pIdentity, sizeof(SteamNetworkingIdentity), pszStr );
 }
 
-AppId_t CSteamNetworkingUtils::GetAppID()
+AppId_t CGameNetworkingUtils::GetAppID()
 {
 	return m_nAppID;
 }
 
-void CSteamNetworkingUtils::TEST_ResetSelf()
+void CGameNetworkingUtils::TEST_ResetSelf()
 {
 	m_nAppID = 0;
 }
 
-time_t CSteamNetworkingUtils::GetTimeSecure()
+time_t CGameNetworkingUtils::GetTimeSecure()
 {
 	// Trusting local user's clock!
 	return time(nullptr);
 }
 
-const char *CSteamNetworkingUtils::GetBuildString()
+const char *CGameNetworkingUtils::GetBuildString()
 {
 	#if defined( STEAMNETWORKINGSOCKETS_OPENSOURCE )
 		return "opensource " __DATE__ " " __TIME__;
@@ -2155,7 +2155,7 @@ const char *CSteamNetworkingUtils::GetBuildString()
 	#endif
 }
 
-const char *CSteamNetworkingUtils::GetPlatformString()
+const char *CGameNetworkingUtils::GetPlatformString()
 {
 	#if defined( NN_NINTENDO_SDK )
 		return "nswitch";
@@ -2221,7 +2221,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingSockets_Init( const SteamNet
 	}
 
 	// Init basic functionality
-	CSteamNetworkingSockets *pSteamNetworkingSockets = new CSteamNetworkingSockets( ( CSteamNetworkingUtils *)SteamNetworkingUtils() );
+	CSteamNetworkingSockets *pSteamNetworkingSockets = new CSteamNetworkingSockets( ( CGameNetworkingUtils *)GameNetworkingUtils() );
 	if ( !pSteamNetworkingSockets->BInitGameNetworkingSockets( pIdentity, errMsg ) )
 	{
 		pSteamNetworkingSockets->Destroy();
@@ -2247,9 +2247,9 @@ STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingSockets *SteamNetworkingSockets
 	return s_pSteamNetworkingSockets;
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingUtils *SteamNetworkingUtils_LibV3()
+STEAMNETWORKINGSOCKETS_INTERFACE IGameNetworkingUtils *GameNetworkingUtils_LibV3()
 {
-	static CSteamNetworkingUtils s_utils;
+	static CGameNetworkingUtils s_utils;
 	return &s_utils;
 }
 

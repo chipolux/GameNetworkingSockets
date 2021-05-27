@@ -17,7 +17,7 @@ struct SteamRelayNetworkStatus_t;
 //-----------------------------------------------------------------------------
 /// Misc networking utilities for checking the local networking environment
 /// and estimating pings.
-class ISteamNetworkingUtils
+class IGameNetworkingUtils
 {
 public:
 	//
@@ -318,27 +318,27 @@ public:
 	virtual bool SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, const char *pszStr ) = 0;
 
 protected:
-	~ISteamNetworkingUtils(); // Silence some warnings
+	~IGameNetworkingUtils(); // Silence some warnings
 };
-#define STEAMNETWORKINGUTILS_INTERFACE_VERSION "SteamNetworkingUtils003"
+#define STEAMNETWORKINGUTILS_INTERFACE_VERSION "GameNetworkingUtils003"
 
 // Global accessors
 // Using standalone lib
 #ifdef STEAMNETWORKINGSOCKETS_STANDALONELIB
 
 	// Standalone lib
-	static_assert( STEAMNETWORKINGUTILS_INTERFACE_VERSION[22] == '3', "Version mismatch" );
-	STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingUtils *SteamNetworkingUtils_LibV3();
-	inline ISteamNetworkingUtils *SteamNetworkingUtils_Lib() { return SteamNetworkingUtils_LibV3(); }
+	static_assert( STEAMNETWORKINGUTILS_INTERFACE_VERSION[21] == '3', "Version mismatch" );
+	STEAMNETWORKINGSOCKETS_INTERFACE IGameNetworkingUtils *GameNetworkingUtils_LibV3();
+	inline IGameNetworkingUtils *GameNetworkingUtils_Lib() { return GameNetworkingUtils_LibV3(); }
 
 	#ifndef STEAMNETWORKINGSOCKETS_STEAMAPI
-		inline ISteamNetworkingUtils *SteamNetworkingUtils() { return SteamNetworkingUtils_LibV3(); }
+		inline IGameNetworkingUtils *GameNetworkingUtils() { return GameNetworkingUtils_LibV3(); }
 	#endif
 #endif
 
 // Using Steamworks SDK
 #ifdef STEAMNETWORKINGSOCKETS_STEAMAPI
-	STEAM_DEFINE_INTERFACE_ACCESSOR( ISteamNetworkingUtils *, SteamNetworkingUtils_SteamAPI,
+	STEAM_DEFINE_INTERFACE_ACCESSOR( IGameNetworkingUtils *, GameNetworkingUtils_SteamAPI,
 		/* Prefer user version of the interface.  But if it isn't found, then use
 		gameserver one.  Yes, this is a completely terrible hack */
 		SteamInternal_FindOrCreateUserInterface( 0, STEAMNETWORKINGUTILS_INTERFACE_VERSION ) ?
@@ -349,7 +349,7 @@ protected:
 	)
 
 	#ifndef STEAMNETWORKINGSOCKETS_STANDALONELIB
-		inline ISteamNetworkingUtils *SteamNetworkingUtils() { return SteamNetworkingUtils_SteamAPI(); }
+		inline IGameNetworkingUtils *GameNetworkingUtils() { return GameNetworkingUtils_SteamAPI(); }
 	#endif
 #endif
 
@@ -358,7 +358,7 @@ protected:
 /// which describes what POPs are available.
 struct SteamRelayNetworkStatus_t
 { 
-	enum { k_iCallback = k_iSteamNetworkingUtilsCallbacks + 1 };
+	enum { k_iCallback = k_iGameNetworkingUtilsCallbacks + 1 };
 
 	/// Summary status.  When this is "current", initialization has
 	/// completed.  Anything else means you are not ready yet, or
@@ -411,21 +411,21 @@ private:
 //
 // Internal stuff
 
-inline void ISteamNetworkingUtils::InitRelayNetworkAccess() { CheckPingDataUpToDate( 1e10f ); }
-inline bool ISteamNetworkingUtils::SetGlobalConfigValueInt32( ESteamNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Int32, &val ); }
-inline bool ISteamNetworkingUtils::SetGlobalConfigValueFloat( ESteamNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Float, &val ); }
-inline bool ISteamNetworkingUtils::SetGlobalConfigValueString( ESteamNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_String, val ); }
-inline bool ISteamNetworkingUtils::SetGlobalConfigValuePtr( ESteamNetworkingConfigValue eValue, void *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Ptr, &val ); } // Note: passing pointer to pointer.
-inline bool ISteamNetworkingUtils::SetConnectionConfigValueInt32( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_Int32, &val ); }
-inline bool ISteamNetworkingUtils::SetConnectionConfigValueFloat( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_Float, &val ); }
-inline bool ISteamNetworkingUtils::SetConnectionConfigValueString( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_String, val ); }
-inline bool ISteamNetworkingUtils::SetGlobalCallback_SteamNetConnectionStatusChanged( FnSteamNetConnectionStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)fnCallback ); }
-inline bool ISteamNetworkingUtils::SetGlobalCallback_SteamNetAuthenticationStatusChanged( FnSteamNetAuthenticationStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_AuthStatusChanged, (void*)fnCallback ); }
-inline bool ISteamNetworkingUtils::SetGlobalCallback_SteamRelayNetworkStatusChanged( FnSteamRelayNetworkStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_RelayNetworkStatusChanged, (void*)fnCallback ); }
-inline bool ISteamNetworkingUtils::SetGlobalCallback_MessagesSessionRequest( FnSteamNetworkingMessagesSessionRequest fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionRequest, (void*)fnCallback ); }
-inline bool ISteamNetworkingUtils::SetGlobalCallback_MessagesSessionFailed( FnSteamNetworkingMessagesSessionFailed fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionFailed, (void*)fnCallback ); }
+inline void IGameNetworkingUtils::InitRelayNetworkAccess() { CheckPingDataUpToDate( 1e10f ); }
+inline bool IGameNetworkingUtils::SetGlobalConfigValueInt32( ESteamNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Int32, &val ); }
+inline bool IGameNetworkingUtils::SetGlobalConfigValueFloat( ESteamNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Float, &val ); }
+inline bool IGameNetworkingUtils::SetGlobalConfigValueString( ESteamNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_String, val ); }
+inline bool IGameNetworkingUtils::SetGlobalConfigValuePtr( ESteamNetworkingConfigValue eValue, void *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Ptr, &val ); } // Note: passing pointer to pointer.
+inline bool IGameNetworkingUtils::SetConnectionConfigValueInt32( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_Int32, &val ); }
+inline bool IGameNetworkingUtils::SetConnectionConfigValueFloat( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_Float, &val ); }
+inline bool IGameNetworkingUtils::SetConnectionConfigValueString( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_String, val ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_SteamNetConnectionStatusChanged( FnSteamNetConnectionStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_SteamNetAuthenticationStatusChanged( FnSteamNetAuthenticationStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_AuthStatusChanged, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_SteamRelayNetworkStatusChanged( FnSteamRelayNetworkStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_RelayNetworkStatusChanged, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_MessagesSessionRequest( FnSteamNetworkingMessagesSessionRequest fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionRequest, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_MessagesSessionFailed( FnSteamNetworkingMessagesSessionFailed fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionFailed, (void*)fnCallback ); }
 
-inline bool ISteamNetworkingUtils::SetConfigValueStruct( const SteamNetworkingConfigValue_t &opt, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj )
+inline bool IGameNetworkingUtils::SetConfigValueStruct( const SteamNetworkingConfigValue_t &opt, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj )
 {
 	// Locate the argument.  Strings are a special case, since the
 	// "value" (the whole string buffer) doesn't fit in the struct
@@ -449,11 +449,11 @@ inline bool ISteamNetworkingUtils::SetConfigValueStruct( const SteamNetworkingCo
 	inline bool SteamNetworkingIdentity::ParseString( const char *pszStr ) { return SteamNetworkingIdentity_ParseString( this, sizeof(*this), pszStr ); }
 
 #elif defined( STEAMNETWORKINGSOCKETS_STEAMAPI )
-	// Using steamworks SDK - go through SteamNetworkingUtils()
-	inline void SteamNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { SteamNetworkingUtils()->SteamNetworkingIPAddr_ToString( *this, buf, cbBuf, bWithPort ); }
-	inline bool SteamNetworkingIPAddr::ParseString( const char *pszStr ) { return SteamNetworkingUtils()->SteamNetworkingIPAddr_ParseString( this, pszStr ); }
-	inline void SteamNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { SteamNetworkingUtils()->SteamNetworkingIdentity_ToString( *this, buf, cbBuf ); }
-	inline bool SteamNetworkingIdentity::ParseString( const char *pszStr ) { return SteamNetworkingUtils()->SteamNetworkingIdentity_ParseString( this, pszStr ); }
+	// Using steamworks SDK - go through GameNetworkingUtils()
+	inline void SteamNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { GameNetworkingUtils()->SteamNetworkingIPAddr_ToString( *this, buf, cbBuf, bWithPort ); }
+	inline bool SteamNetworkingIPAddr::ParseString( const char *pszStr ) { return GameNetworkingUtils()->SteamNetworkingIPAddr_ParseString( this, pszStr ); }
+	inline void SteamNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { GameNetworkingUtils()->SteamNetworkingIdentity_ToString( *this, buf, cbBuf ); }
+	inline bool SteamNetworkingIdentity::ParseString( const char *pszStr ) { return GameNetworkingUtils()->SteamNetworkingIdentity_ParseString( this, pszStr ); }
 #else
 	#error "Invalid config"
 #endif

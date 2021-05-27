@@ -91,7 +91,7 @@ public:
 	/// be able to connect to one or the other, then nLocalVirtualPort should be a small
 	/// integer (<1000) unique to each listen socket you create.
 	///
-	/// If you use this, you probably want to call ISteamNetworkingUtils::InitRelayNetworkAccess()
+	/// If you use this, you probably want to call IGameNetworkingUtils::InitRelayNetworkAccess()
 	/// when your app initializes.
 	///
 	/// If you are listening on a dedicated servers in known data center,
@@ -265,7 +265,7 @@ public:
 	/// Send one or more messages without copying the message payload.
 	/// This is the most efficient way to send messages. To use this
 	/// function, you must first allocate a message object using
-	/// ISteamNetworkingUtils::AllocateMessage.  (Do not declare one
+	/// IGameNetworkingUtils::AllocateMessage.  (Do not declare one
 	/// on the stack or allocate your own.)
 	///
 	/// You should fill in the message payload.  You can either let
@@ -496,7 +496,7 @@ public:
 	/// here.  The reason is to make reconnection to a gameserver robust, even if the client computer loses
 	/// connection to Steam or the central backend, or the app is restarted or crashes, etc.
 	///
-	/// If you use this, you probably want to call ISteamNetworkingUtils::InitRelayNetworkAccess()
+	/// If you use this, you probably want to call IGameNetworkingUtils::InitRelayNetworkAccess()
 	/// when your app initializes
 	///
 	/// If you need to set any initial config options, pass them here.  See
@@ -631,7 +631,7 @@ public:
 	/// If you don't know their identity yet, you can pass NULL, and their
 	/// identity will be established in the connection handshake.  
 	///
-	/// If you use this, you probably want to call ISteamNetworkingUtils::InitRelayNetworkAccess()
+	/// If you use this, you probably want to call IGameNetworkingUtils::InitRelayNetworkAccess()
 	/// when your app initializes
 	///
 	/// If you need to set any initial config options, pass them here.  See
@@ -667,7 +667,7 @@ public:
 	/// usually have more information.)
 	///
 	/// If you expect to be using relayed connections, then you probably want
-	/// to call ISteamNetworkingUtils::InitRelayNetworkAccess() when your app initializes
+	/// to call IGameNetworkingUtils::InitRelayNetworkAccess() when your app initializes
 	virtual bool ReceivedP2PCustomSignal( const void *pMsg, int cbMsg, ISteamNetworkingSignalingRecvContext *pContext ) = 0;
 
 //

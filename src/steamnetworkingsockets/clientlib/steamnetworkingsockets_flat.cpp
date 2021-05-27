@@ -182,132 +182,132 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamAPI_ISteamNetworkingSockets_RunCallba
 	self->RunCallbacks(  );
 }
 
-//--- ISteamNetworkingUtils-------------------------
+//--- IGameNetworkingUtils-------------------------
 
-STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingUtils *SteamAPI_SteamNetworkingUtils_v003()
+STEAMNETWORKINGSOCKETS_INTERFACE IGameNetworkingUtils *SteamAPI_GameNetworkingUtils_v003()
 {
-	return SteamNetworkingUtils();
+	return GameNetworkingUtils();
 }
-STEAMNETWORKINGSOCKETS_INTERFACE SteamNetworkingMessage_t * SteamAPI_ISteamNetworkingUtils_AllocateMessage( ISteamNetworkingUtils* self, int cbAllocateBuffer )
+STEAMNETWORKINGSOCKETS_INTERFACE SteamNetworkingMessage_t * SteamAPI_IGameNetworkingUtils_AllocateMessage( IGameNetworkingUtils* self, int cbAllocateBuffer )
 {
 	return self->AllocateMessage( cbAllocateBuffer );
 }
 #ifdef STEAMNETWORKINGSOCKETS_ENABLE_SDR
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamAPI_ISteamNetworkingUtils_InitRelayNetworkAccess( ISteamNetworkingUtils* self )
+STEAMNETWORKINGSOCKETS_INTERFACE void SteamAPI_IGameNetworkingUtils_InitRelayNetworkAccess( IGameNetworkingUtils* self )
 {
 	self->InitRelayNetworkAccess(  );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE ESteamNetworkingAvailability SteamAPI_ISteamNetworkingUtils_GetRelayNetworkStatus( ISteamNetworkingUtils* self, SteamRelayNetworkStatus_t * pDetails )
+STEAMNETWORKINGSOCKETS_INTERFACE ESteamNetworkingAvailability SteamAPI_IGameNetworkingUtils_GetRelayNetworkStatus( IGameNetworkingUtils* self, SteamRelayNetworkStatus_t * pDetails )
 {
 	return self->GetRelayNetworkStatus( pDetails );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE float SteamAPI_ISteamNetworkingUtils_GetLocalPingLocation( ISteamNetworkingUtils* self, SteamNetworkPingLocation_t & result )
+STEAMNETWORKINGSOCKETS_INTERFACE float SteamAPI_IGameNetworkingUtils_GetLocalPingLocation( IGameNetworkingUtils* self, SteamNetworkPingLocation_t & result )
 {
 	return self->GetLocalPingLocation( result );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_ISteamNetworkingUtils_EstimatePingTimeBetweenTwoLocations( ISteamNetworkingUtils* self, const SteamNetworkPingLocation_t & location1, const SteamNetworkPingLocation_t & location2 )
+STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_IGameNetworkingUtils_EstimatePingTimeBetweenTwoLocations( IGameNetworkingUtils* self, const SteamNetworkPingLocation_t & location1, const SteamNetworkPingLocation_t & location2 )
 {
 	return self->EstimatePingTimeBetweenTwoLocations( location1,location2 );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_ISteamNetworkingUtils_EstimatePingTimeFromLocalHost( ISteamNetworkingUtils* self, const SteamNetworkPingLocation_t & remoteLocation )
+STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_IGameNetworkingUtils_EstimatePingTimeFromLocalHost( IGameNetworkingUtils* self, const SteamNetworkPingLocation_t & remoteLocation )
 {
 	return self->EstimatePingTimeFromLocalHost( remoteLocation );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamAPI_ISteamNetworkingUtils_ConvertPingLocationToString( ISteamNetworkingUtils* self, const SteamNetworkPingLocation_t & location, char * pszBuf, int cchBufSize )
+STEAMNETWORKINGSOCKETS_INTERFACE void SteamAPI_IGameNetworkingUtils_ConvertPingLocationToString( IGameNetworkingUtils* self, const SteamNetworkPingLocation_t & location, char * pszBuf, int cchBufSize )
 {
 	self->ConvertPingLocationToString( location,pszBuf,cchBufSize );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_ParsePingLocationString( ISteamNetworkingUtils* self, const char * pszString, SteamNetworkPingLocation_t & result )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_ParsePingLocationString( IGameNetworkingUtils* self, const char * pszString, SteamNetworkPingLocation_t & result )
 {
 	return self->ParsePingLocationString( pszString,result );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_CheckPingDataUpToDate( ISteamNetworkingUtils* self, float flMaxAgeSeconds )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_CheckPingDataUpToDate( IGameNetworkingUtils* self, float flMaxAgeSeconds )
 {
 	return self->CheckPingDataUpToDate( flMaxAgeSeconds );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_ISteamNetworkingUtils_GetPingToDataCenter( ISteamNetworkingUtils* self, SteamNetworkingPOPID popID, SteamNetworkingPOPID * pViaRelayPoP )
+STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_IGameNetworkingUtils_GetPingToDataCenter( IGameNetworkingUtils* self, SteamNetworkingPOPID popID, SteamNetworkingPOPID * pViaRelayPoP )
 {
 	return self->GetPingToDataCenter( popID,pViaRelayPoP );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_ISteamNetworkingUtils_GetDirectPingToPOP( ISteamNetworkingUtils* self, SteamNetworkingPOPID popID )
+STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_IGameNetworkingUtils_GetDirectPingToPOP( IGameNetworkingUtils* self, SteamNetworkingPOPID popID )
 {
 	return self->GetDirectPingToPOP( popID );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_ISteamNetworkingUtils_GetPOPCount( ISteamNetworkingUtils* self )
+STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_IGameNetworkingUtils_GetPOPCount( IGameNetworkingUtils* self )
 {
 	return self->GetPOPCount(  );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_ISteamNetworkingUtils_GetPOPList( ISteamNetworkingUtils* self, SteamNetworkingPOPID * list, int nListSz )
+STEAMNETWORKINGSOCKETS_INTERFACE int SteamAPI_IGameNetworkingUtils_GetPOPList( IGameNetworkingUtils* self, SteamNetworkingPOPID * list, int nListSz )
 {
 	return self->GetPOPList( list,nListSz );
 }
 #endif // #ifdef STEAMNETWORKINGSOCKETS_ENABLE_SDR
 
-STEAMNETWORKINGSOCKETS_INTERFACE SteamNetworkingMicroseconds SteamAPI_ISteamNetworkingUtils_GetLocalTimestamp( ISteamNetworkingUtils* self )
+STEAMNETWORKINGSOCKETS_INTERFACE SteamNetworkingMicroseconds SteamAPI_IGameNetworkingUtils_GetLocalTimestamp( IGameNetworkingUtils* self )
 {
 	return self->GetLocalTimestamp(  );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamAPI_ISteamNetworkingUtils_SetDebugOutputFunction( ISteamNetworkingUtils* self, ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc )
+STEAMNETWORKINGSOCKETS_INTERFACE void SteamAPI_IGameNetworkingUtils_SetDebugOutputFunction( IGameNetworkingUtils* self, ESteamNetworkingSocketsDebugOutputType eDetailLevel, FSteamNetworkingSocketsDebugOutput pfnFunc )
 {
 	self->SetDebugOutputFunction( eDetailLevel,pfnFunc );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetGlobalConfigValueInt32( ISteamNetworkingUtils* self, ESteamNetworkingConfigValue eValue, int32 val )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetGlobalConfigValueInt32( IGameNetworkingUtils* self, ESteamNetworkingConfigValue eValue, int32 val )
 {
 	return self->SetGlobalConfigValueInt32( eValue,val );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetGlobalConfigValueFloat( ISteamNetworkingUtils* self, ESteamNetworkingConfigValue eValue, float val )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetGlobalConfigValueFloat( IGameNetworkingUtils* self, ESteamNetworkingConfigValue eValue, float val )
 {
 	return self->SetGlobalConfigValueFloat( eValue,val );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetGlobalConfigValueString( ISteamNetworkingUtils* self, ESteamNetworkingConfigValue eValue, const char * val )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetGlobalConfigValueString( IGameNetworkingUtils* self, ESteamNetworkingConfigValue eValue, const char * val )
 {
 	return self->SetGlobalConfigValueString( eValue,val );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetGlobalConfigValuePtr( ISteamNetworkingUtils* self, ESteamNetworkingConfigValue eValue, void * val )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetGlobalConfigValuePtr( IGameNetworkingUtils* self, ESteamNetworkingConfigValue eValue, void * val )
 {
 	return self->SetGlobalConfigValuePtr( eValue,val );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetConnectionConfigValueInt32( ISteamNetworkingUtils* self, HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, int32 val )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetConnectionConfigValueInt32( IGameNetworkingUtils* self, HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, int32 val )
 {
 	return self->SetConnectionConfigValueInt32( hConn,eValue,val );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetConnectionConfigValueFloat( ISteamNetworkingUtils* self, HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, float val )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetConnectionConfigValueFloat( IGameNetworkingUtils* self, HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, float val )
 {
 	return self->SetConnectionConfigValueFloat( hConn,eValue,val );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetConnectionConfigValueString( ISteamNetworkingUtils* self, HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, const char * val )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetConnectionConfigValueString( IGameNetworkingUtils* self, HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, const char * val )
 {
 	return self->SetConnectionConfigValueString( hConn,eValue,val );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_SteamNetConnectionStatusChanged( ISteamNetworkingUtils* self, FnSteamNetConnectionStatusChanged fnCallback )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetGlobalCallback_SteamNetConnectionStatusChanged( IGameNetworkingUtils* self, FnSteamNetConnectionStatusChanged fnCallback )
 {
 	return self->SetGlobalCallback_SteamNetConnectionStatusChanged( fnCallback );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_SteamNetAuthenticationStatusChanged( ISteamNetworkingUtils* self, FnSteamNetAuthenticationStatusChanged fnCallback )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetGlobalCallback_SteamNetAuthenticationStatusChanged( IGameNetworkingUtils* self, FnSteamNetAuthenticationStatusChanged fnCallback )
 {
 	return self->SetGlobalCallback_SteamNetAuthenticationStatusChanged( fnCallback );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetGlobalCallback_SteamRelayNetworkStatusChanged( ISteamNetworkingUtils* self, FnSteamRelayNetworkStatusChanged fnCallback )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetGlobalCallback_SteamRelayNetworkStatusChanged( IGameNetworkingUtils* self, FnSteamRelayNetworkStatusChanged fnCallback )
 {
 	return self->SetGlobalCallback_SteamRelayNetworkStatusChanged( fnCallback );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetConfigValue( ISteamNetworkingUtils* self, ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj, ESteamNetworkingConfigDataType eDataType, const void * pArg )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetConfigValue( IGameNetworkingUtils* self, ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj, ESteamNetworkingConfigDataType eDataType, const void * pArg )
 {
 	return self->SetConfigValue( eValue,eScopeType,scopeObj,eDataType,pArg );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_SetConfigValueStruct( ISteamNetworkingUtils* self, const SteamNetworkingConfigValue_t & opt, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_SetConfigValueStruct( IGameNetworkingUtils* self, const SteamNetworkingConfigValue_t & opt, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj )
 {
 	return self->SetConfigValueStruct( opt,eScopeType,scopeObj );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE ESteamNetworkingGetConfigValueResult SteamAPI_ISteamNetworkingUtils_GetConfigValue( ISteamNetworkingUtils* self, ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj, ESteamNetworkingConfigDataType * pOutDataType, void * pResult, size_t * cbResult )
+STEAMNETWORKINGSOCKETS_INTERFACE ESteamNetworkingGetConfigValueResult SteamAPI_IGameNetworkingUtils_GetConfigValue( IGameNetworkingUtils* self, ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj, ESteamNetworkingConfigDataType * pOutDataType, void * pResult, size_t * cbResult )
 {
 	return self->GetConfigValue( eValue,eScopeType,scopeObj,pOutDataType,pResult,cbResult );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_ISteamNetworkingUtils_GetConfigValueInfo( ISteamNetworkingUtils* self, ESteamNetworkingConfigValue eValue, const char ** pOutName, ESteamNetworkingConfigDataType * pOutDataType, ESteamNetworkingConfigScope * pOutScope, ESteamNetworkingConfigValue * pOutNextValue )
+STEAMNETWORKINGSOCKETS_INTERFACE bool SteamAPI_IGameNetworkingUtils_GetConfigValueInfo( IGameNetworkingUtils* self, ESteamNetworkingConfigValue eValue, const char ** pOutName, ESteamNetworkingConfigDataType * pOutDataType, ESteamNetworkingConfigScope * pOutScope, ESteamNetworkingConfigValue * pOutNextValue )
 {
 	return self->GetConfigValueInfo( eValue,pOutName,pOutDataType,pOutScope,pOutNextValue );
 }
-STEAMNETWORKINGSOCKETS_INTERFACE ESteamNetworkingConfigValue SteamAPI_ISteamNetworkingUtils_GetFirstConfigValue( ISteamNetworkingUtils* self )
+STEAMNETWORKINGSOCKETS_INTERFACE ESteamNetworkingConfigValue SteamAPI_IGameNetworkingUtils_GetFirstConfigValue( IGameNetworkingUtils* self )
 {
 	return self->GetFirstConfigValue(  );
 }
