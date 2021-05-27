@@ -22,21 +22,21 @@
 
 #include "steamnetworkingsockets_snp.h"
 
-struct SteamNetConnectionStatusChangedCallback_t;
+struct GameNetConnectionStatusChangedCallback_t;
 class IGameNetworkingSocketsSerialized;
 
 namespace GameNetworkingSocketsLib {
 
-const SteamNetworkingMicroseconds k_usecConnectRetryInterval = k_nMillion/2;
-const SteamNetworkingMicroseconds k_usecFinWaitTimeout = 5*k_nMillion;
+const GameNetworkingMicroseconds k_usecConnectRetryInterval = k_nMillion/2;
+const GameNetworkingMicroseconds k_usecFinWaitTimeout = 5*k_nMillion;
 
-typedef char ConnectionEndDebugMsg[ k_cchSteamNetworkingMaxConnectionCloseReason ];
+typedef char ConnectionEndDebugMsg[ k_cchGameNetworkingMaxConnectionCloseReason ];
 typedef char ConnectionTypeDescription_t[64];
 
 class CGameNetworkingSockets;
-class CSteamNetworkingMessages;
-class CSteamNetworkConnectionBase;
-class CSteamNetworkConnectionP2P;
+class CGameNetworkingMessages;
+class CGameNetworkConnectionBase;
+class CGameNetworkConnectionP2P;
 class CSharedSocket;
 class CConnectionTransport;
 struct SNPAckSerializerHelper;
@@ -68,7 +68,7 @@ public:
 /// In various places, we need a key in a map of remote connections.
 struct RemoteConnectionKey_t
 {
-	SteamNetworkingIdentity m_identity;
+	GameNetworkingIdentity m_identity;
 	uint32 m_unConnectionID;
 
 	// NOTE: If we assume that peers are well behaved, then we
@@ -77,7 +77,7 @@ struct RemoteConnectionKey_t
 	// protect against malicious clients we might have to include
 	// some random private data so that they don't know how our hash
 	// function works.  We'll assume for now that this isn't a problem
-	struct Hash { uint32 operator()( const RemoteConnectionKey_t &x ) const { return SteamNetworkingIdentityHash{}( x.m_identity ) ^ x.m_unConnectionID; } };
+	struct Hash { uint32 operator()( const RemoteConnectionKey_t &x ) const { return GameNetworkingIdentityHash{}( x.m_identity ) ^ x.m_unConnectionID; } };
 	inline bool operator ==( const RemoteConnectionKey_t &x ) const
 	{
 		return m_unConnectionID == x.m_unConnectionID && m_identity == x.m_identity;
@@ -87,8 +87,8 @@ struct RemoteConnectionKey_t
 /// Base class for connection-type-specific context structure 
 struct SendPacketContext_t
 {
-	inline SendPacketContext_t( SteamNetworkingMicroseconds usecNow, const char *pszReason ) : m_usecNow( usecNow ), m_pszReason( pszReason ) {}
-	const SteamNetworkingMicroseconds m_usecNow;
+	inline SendPacketContext_t( GameNetworkingMicroseconds usecNow, const char *pszReason ) : m_usecNow( usecNow ), m_pszReason( pszReason ) {}
+	const GameNetworkingMicroseconds m_usecNow;
 	int m_cbMaxEncryptedPayload;
 	const char *m_pszReason; // Why are we sending this packet?
 };
@@ -102,7 +102,7 @@ struct RecvPacketContext_t
 //
 
 	/// Current time
-	SteamNetworkingMicroseconds m_usecNow;
+	GameNetworkingMicroseconds m_usecNow;
 
 	/// What transport is receiving this packet?
 	CConnectionTransport *m_pTransport;
@@ -132,7 +132,7 @@ struct RecvPacketContext_t
 template<typename TStatsMsg>
 struct SendPacketContext : SendPacketContext_t
 {
-	inline SendPacketContext( SteamNetworkingMicroseconds usecNow, const char *pszReason ) : SendPacketContext_t( usecNow, pszReason ) {}
+	inline SendPacketContext( GameNetworkingMicroseconds usecNow, const char *pszReason ) : SendPacketContext_t( usecNow, pszReason ) {}
 
 	uint32 m_nFlags; // Message flags that we need to set.
 	TStatsMsg msg; // Type-specific stats message
@@ -171,16 +171,16 @@ struct SendPacketContext : SendPacketContext_t
 		return true;
 	}
 
-	void CalcMaxEncryptedPayloadSize( size_t cbHdrReserve, CSteamNetworkConnectionBase *pConnection );
+	void CalcMaxEncryptedPayloadSize( size_t cbHdrReserve, CGameNetworkConnectionBase *pConnection );
 };
 
 /// Replace internal states that are not visible outside of the API with
 /// the corresponding state that we show the the application.
-inline ESteamNetworkingConnectionState CollapseConnectionStateToAPIState( ESteamNetworkingConnectionState eState )
+inline EGameNetworkingConnectionState CollapseConnectionStateToAPIState( EGameNetworkingConnectionState eState )
 {
 	// All the hidden internal states are assigned negative values
 	if ( eState < 0 )
-		return k_ESteamNetworkingConnectionState_None;
+		return k_EGameNetworkingConnectionState_None;
 	return eState;
 }
 
@@ -190,21 +190,21 @@ extern ShortDurationLock g_lockAllRecvMessageQueues;
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// CSteamNetworkPollGroup
+// CGameNetworkPollGroup
 //
 /////////////////////////////////////////////////////////////////////////////
 
-class CSteamNetworkPollGroup;
+class CGameNetworkPollGroup;
 struct PollGroupLock : Lock<RecursiveTimedMutexImpl> {
 	PollGroupLock() : Lock<RecursiveTimedMutexImpl>( "pollgroup", LockDebugInfo::k_nFlag_PollGroup ) {}
 };
 using PollGroupScopeLock = ScopeLock<PollGroupLock>;
 
-class CSteamNetworkPollGroup
+class CGameNetworkPollGroup
 {
 public:
-	CSteamNetworkPollGroup( CGameNetworkingSockets *pInterface );
-	~CSteamNetworkPollGroup();
+	CGameNetworkPollGroup( CGameNetworkingSockets *pInterface );
+	~CGameNetworkPollGroup();
 
 	PollGroupLock m_lock;
 
@@ -212,25 +212,25 @@ public:
 	CGameNetworkingSockets *const m_pGameNetworkingSocketsInterface;
 
 	/// Linked list of messages received through any connection on this listen socket
-	SteamNetworkingMessageQueue m_queueRecvMessages;
+	GameNetworkingMessageQueue m_queueRecvMessages;
 
 	/// Index into the global list
-	HSteamNetPollGroup m_hPollGroupSelf;
+	HGameNetPollGroup m_hPollGroupSelf;
 
 	/// List of connections that are in this poll group
-	CUtlVector<CSteamNetworkConnectionBase *> m_vecConnections;
+	CUtlVector<CGameNetworkConnectionBase *> m_vecConnections;
 
 	void AssignHandleAndAddToGlobalTable();
 };
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// CSteamNetworkListenSocketBase
+// CGameNetworkListenSocketBase
 //
 /////////////////////////////////////////////////////////////////////////////
 
 /// Abstract base class for a listen socket that can accept connections.
-class CSteamNetworkListenSocketBase
+class CGameNetworkListenSocketBase
 {
 public:
 
@@ -238,15 +238,15 @@ public:
 	virtual void Destroy();
 
 	/// Called when we receive a connection attempt, to setup the linkage.
-	bool BAddChildConnection( CSteamNetworkConnectionBase *pConn, SteamNetworkingErrMsg &errMsg );
+	bool BAddChildConnection( CGameNetworkConnectionBase *pConn, GameNetworkingErrMsg &errMsg );
 
 	/// This gets called on an accepted connection before it gets destroyed
-	virtual void AboutToDestroyChildConnection( CSteamNetworkConnectionBase *pConn );
+	virtual void AboutToDestroyChildConnection( CGameNetworkConnectionBase *pConn );
 
-	virtual bool APIGetAddress( SteamNetworkingIPAddr *pAddress );
+	virtual bool APIGetAddress( GameNetworkingIPAddr *pAddress );
 
 	/// Map of child connections
-	CUtlHashMap<RemoteConnectionKey_t, CSteamNetworkConnectionBase *, std::equal_to<RemoteConnectionKey_t>, RemoteConnectionKey_t::Hash > m_mapChildConnections;
+	CUtlHashMap<RemoteConnectionKey_t, CGameNetworkConnectionBase *, std::equal_to<RemoteConnectionKey_t>, RemoteConnectionKey_t::Hash > m_mapChildConnections;
 
 	/// Index into the global list
 	HSteamListenSocket m_hListenSocketSelf;
@@ -263,19 +263,19 @@ public:
 
 	/// For legacy interface.
 	#ifdef STEAMNETWORKINGSOCKETS_STEAMCLIENT
-	CSteamNetworkPollGroup m_legacyPollGroup;
+	CGameNetworkPollGroup m_legacyPollGroup;
 	#endif
 
 protected:
-	CSteamNetworkListenSocketBase( CGameNetworkingSockets *pGameNetworkingSocketsInterface );
-	virtual ~CSteamNetworkListenSocketBase(); // hidden destructor, don't call directly.  Use Destroy()
+	CGameNetworkListenSocketBase( CGameNetworkingSockets *pGameNetworkingSocketsInterface );
+	virtual ~CGameNetworkListenSocketBase(); // hidden destructor, don't call directly.  Use Destroy()
 
-	bool BInitListenSocketCommon( int nOptions, const SteamNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
+	bool BInitListenSocketCommon( int nOptions, const GameNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
 };
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// CSteamNetworkConnectionBase
+// CGameNetworkConnectionBase
 //
 /////////////////////////////////////////////////////////////////////////////
 
@@ -286,16 +286,16 @@ struct ConnectionScopeLock : ScopeLock<ConnectionLock>
 {
 	ConnectionScopeLock() = default;
 	ConnectionScopeLock( ConnectionLock &lock, const char *pszTag = nullptr ) : ScopeLock<ConnectionLock>( lock, pszTag ) {}
-	ConnectionScopeLock( CSteamNetworkConnectionBase &conn, const char *pszTag = nullptr );
+	ConnectionScopeLock( CGameNetworkConnectionBase &conn, const char *pszTag = nullptr );
 	void Lock( ConnectionLock &lock, const char *pszTag = nullptr ) { ScopeLock<ConnectionLock>::Lock( lock, pszTag ); }
-	void Lock( CSteamNetworkConnectionBase &conn, const char *pszTag = nullptr );
+	void Lock( CGameNetworkConnectionBase &conn, const char *pszTag = nullptr );
 };
 
 /// Abstract interface for a connection to a remote host over any underlying
 /// transport.  Most of the common functionality for implementing reliable
 /// connections on top of unreliable datagrams, connection quality measurement,
 /// etc is implemented here. 
-class CSteamNetworkConnectionBase : public ILockableThinker< ConnectionLock >
+class CGameNetworkConnectionBase : public ILockableThinker< ConnectionLock >
 {
 public:
 
@@ -310,29 +310,29 @@ public:
 	EResult APISendMessageToConnection( const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber );
 
 	/// Send a message.  Returns the assigned message number, or a negative EResult value
-	int64 APISendMessageToConnection( CSteamNetworkingMessage *pMsg, SteamNetworkingMicroseconds usecNow, bool *pbThinkImmediately = nullptr );
+	int64 APISendMessageToConnection( CGameNetworkingMessage *pMsg, GameNetworkingMicroseconds usecNow, bool *pbThinkImmediately = nullptr );
 
 	/// Flush any messages queued for Nagle
 	EResult APIFlushMessageOnConnection();
 
 	/// Receive the next message(s)
-	int APIReceiveMessages( SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages );
+	int APIReceiveMessages( GameNetworkingMessage_t **ppOutMessages, int nMaxMessages );
 
 	/// Accept a connection.  This will involve sending a message
 	/// to the client, and calling ConnectionState_Connected on the connection
 	/// to transition it to the connected state.
 	EResult APIAcceptConnection();
-	virtual EResult AcceptConnection( SteamNetworkingMicroseconds usecNow );
+	virtual EResult AcceptConnection( GameNetworkingMicroseconds usecNow );
 
 	/// Fill in quick connection stats
-	void APIGetQuickConnectionStatus( SteamNetworkingQuickConnectionStatus &stats );
+	void APIGetQuickConnectionStatus( GameNetworkingQuickConnectionStatus &stats );
 
 	/// Fill in detailed connection stats
-	virtual void APIGetDetailedConnectionStatus( SteamNetworkingDetailedConnectionStatus &stats, SteamNetworkingMicroseconds usecNow );
+	virtual void APIGetDetailedConnectionStatus( GameNetworkingDetailedConnectionStatus &stats, GameNetworkingMicroseconds usecNow );
 
 	/// Hook to allow connections to customize message sending.
 	/// (E.g. loopback.)
-	virtual int64 _APISendMessageToConnection( CSteamNetworkingMessage *pMsg, SteamNetworkingMicroseconds usecNow, bool *pbThinkImmediately );
+	virtual int64 _APISendMessageToConnection( CGameNetworkingMessage *pMsg, GameNetworkingMicroseconds usecNow, bool *pbThinkImmediately );
 
 //
 // Accessor
@@ -358,31 +358,31 @@ public:
 	void SetDescription();
 
 	/// High level state of the connection
-	ESteamNetworkingConnectionState GetState() const { return m_eConnectionState; }
-	ESteamNetworkingConnectionState GetWireState() const { return m_eConnectionWireState; }
+	EGameNetworkingConnectionState GetState() const { return m_eConnectionState; }
+	EGameNetworkingConnectionState GetWireState() const { return m_eConnectionWireState; }
 
 	/// Check if the connection is 'connected' from the perspective of the wire protocol.
 	/// (The wire protocol doesn't care about local states such as linger)
-	bool BStateIsConnectedForWirePurposes() const { return m_eConnectionWireState == k_ESteamNetworkingConnectionState_Connected; }
+	bool BStateIsConnectedForWirePurposes() const { return m_eConnectionWireState == k_EGameNetworkingConnectionState_Connected; }
 
 	/// Return true if the connection is still "active" in some way.
 	bool BStateIsActive() const
 	{
 		return
-			m_eConnectionWireState == k_ESteamNetworkingConnectionState_Connecting
-			|| m_eConnectionWireState == k_ESteamNetworkingConnectionState_FindingRoute
-			|| m_eConnectionWireState == k_ESteamNetworkingConnectionState_Connected;
+			m_eConnectionWireState == k_EGameNetworkingConnectionState_Connecting
+			|| m_eConnectionWireState == k_EGameNetworkingConnectionState_FindingRoute
+			|| m_eConnectionWireState == k_EGameNetworkingConnectionState_Connected;
 	}
 
 	/// Reason connection ended
-	ESteamNetConnectionEnd GetConnectionEndReason() const { return m_eEndReason; }
+	EGameNetConnectionEnd GetConnectionEndReason() const { return m_eEndReason; }
 	const char *GetConnectionEndDebugString() const { return m_szEndDebug; }
 
 	/// When did we enter the current state?
-	inline SteamNetworkingMicroseconds GetTimeEnteredConnectionState() const { return m_usecWhenEnteredConnectionState; }
+	inline GameNetworkingMicroseconds GetTimeEnteredConnectionState() const { return m_usecWhenEnteredConnectionState; }
 
 	/// Fill in connection details
-	void ConnectionPopulateInfo( SteamNetConnectionInfo_t &info ) const;
+	void ConnectionPopulateInfo( GameNetConnectionInfo_t &info ) const;
 
 //
 // Lifetime management
@@ -403,11 +403,11 @@ public:
 // Functions to transition to the specified state.
 //
 
-	void ConnectionState_ProblemDetectedLocally( ESteamNetConnectionEnd eReason, PRINTF_FORMAT_STRING const char *pszFmt, ... ) FMTFUNCTION( 3, 4 );
+	void ConnectionState_ProblemDetectedLocally( EGameNetConnectionEnd eReason, PRINTF_FORMAT_STRING const char *pszFmt, ... ) FMTFUNCTION( 3, 4 );
 	void ConnectionState_ClosedByPeer( int nReason, const char *pszDebug );
-	void ConnectionState_FindingRoute( SteamNetworkingMicroseconds usecNow );
-	bool BConnectionState_Connecting( SteamNetworkingMicroseconds usecNow, SteamNetworkingErrMsg &errMsg );
-	void ConnectionState_Connected( SteamNetworkingMicroseconds usecNow );
+	void ConnectionState_FindingRoute( GameNetworkingMicroseconds usecNow );
+	bool BConnectionState_Connecting( GameNetworkingMicroseconds usecNow, GameNetworkingErrMsg &errMsg );
+	void ConnectionState_Connected( GameNetworkingMicroseconds usecNow );
 	void ConnectionState_FinWait();
 
 //
@@ -423,22 +423,22 @@ public:
 	CConnectionTransport *m_pTransport;
 
 	/// Our public handle
-	HSteamNetConnection m_hConnectionSelf;
+	HGameNetConnection m_hConnectionSelf;
 
 	/// Who is on the other end?  This might be invalid if we don't know yet.  (E.g. direct UDP connections.)
-	SteamNetworkingIdentity m_identityRemote;
+	GameNetworkingIdentity m_identityRemote;
 
 	/// Who are we?
-	SteamNetworkingIdentity m_identityLocal;
+	GameNetworkingIdentity m_identityLocal;
 
 	/// The listen socket through which we were accepted, if any.
-	CSteamNetworkListenSocketBase *m_pParentListenSocket;
+	CGameNetworkListenSocketBase *m_pParentListenSocket;
 
 	/// What poll group are we assigned to?
-	CSteamNetworkPollGroup *m_pPollGroup;
+	CGameNetworkPollGroup *m_pPollGroup;
 
 	/// Assign poll group
-	void SetPollGroup( CSteamNetworkPollGroup *pPollGroup );
+	void SetPollGroup( CGameNetworkPollGroup *pPollGroup );
 
 	/// Remove us from the poll group we are in (if any)
 	void RemoveFromPollGroup();
@@ -451,7 +451,7 @@ public:
 	int m_hSelfInParentListenSocketMap;
 
 	// Linked list of received messages
-	SteamNetworkingMessageQueue m_queueRecvMessages;
+	GameNetworkingMessageQueue m_queueRecvMessages;
 
 	/// The unique 64-bit end-to-end connection ID.  Each side picks 32 bits
 	uint32 m_unConnectionIDLocal;
@@ -463,13 +463,13 @@ public:
 	/// When we accept a connection, they will send us a timestamp we should send back
 	/// to them, so that they can estimate the ping
 	uint64 m_ulHandshakeRemoteTimestamp;
-	SteamNetworkingMicroseconds m_usecWhenReceivedHandshakeRemoteTimestamp;
+	GameNetworkingMicroseconds m_usecWhenReceivedHandshakeRemoteTimestamp;
 
 	/// Connection configuration
 	ConnectionConfig m_connectionConfig;
 
 	/// The reason code for why the connection was closed.
-	ESteamNetConnectionEnd m_eEndReason;
+	EGameNetConnectionEnd m_eEndReason;
 	ConnectionEndDebugMsg m_szEndDebug;
 
 	/// MTU values for this connection
@@ -486,7 +486,7 @@ public:
 	ConnectionLock m_defaultLock;
 	void _AssertLocksHeldByCurrentThread( const char *pszFile, int line, const char *pszTag = nullptr ) const
 	{
-		SteamNetworkingGlobalLock::_AssertHeldByCurrentThread( pszFile, line, pszTag );
+		GameNetworkingGlobalLock::_AssertHeldByCurrentThread( pszFile, line, pszTag );
 		m_pLock->_AssertHeldByCurrentThread( pszFile, line );
 	}
 
@@ -500,13 +500,13 @@ public:
 	bool ProcessPlainTextDataChunk( int usecTimeSinceLast, RecvPacketContext_t &ctx );
 
 	/// Called when we receive an (end-to-end) packet with a sequence number
-	void RecvNonDataSequencedPacket( int64 nPktNum, SteamNetworkingMicroseconds usecNow );
+	void RecvNonDataSequencedPacket( int64 nPktNum, GameNetworkingMicroseconds usecNow );
 
 	// Called from SNP to update transmit/receive speeds
 	void UpdateSpeeds( int nTXSpeed, int nRXSpeed );
 
 	/// Called when the async process to request a cert has failed.
-	void CertRequestFailed( ESteamNetConnectionEnd nConnectionEndReason, const char *pszMsg );
+	void CertRequestFailed( EGameNetConnectionEnd nConnectionEndReason, const char *pszMsg );
 	bool BHasLocalCert() const { return m_msgSignedCertLocal.has_cert(); }
 	void SetLocalCert( const CMsgSteamDatagramCertificateSigned &msgSignedCert, const CECSigningPrivateKey &keyPrivate, bool bCertHasIdentity );
 	void InterfaceGotCert();
@@ -533,17 +533,17 @@ public:
 
 	/// Record that we sent a non-data packet.  This is so that if the peer acks,
 	/// we can record it as a ping
-	void SNP_SentNonDataPacket( CConnectionTransport *pTransport, int cbPkt, SteamNetworkingMicroseconds usecNow );
+	void SNP_SentNonDataPacket( CConnectionTransport *pTransport, int cbPkt, GameNetworkingMicroseconds usecNow );
 
 	/// Called after the connection state changes.  Default behavior is to notify
 	/// the active transport, if any
-	virtual void ConnectionStateChanged( ESteamNetworkingConnectionState eOldState );
+	virtual void ConnectionStateChanged( EGameNetworkingConnectionState eOldState );
 
 	/// Called to post a callback
 	int m_nSupressStateChangeCallbacks;
-	void PostConnectionStateChangedCallback( ESteamNetworkingConnectionState eOldAPIState, ESteamNetworkingConnectionState eNewAPIState );
+	void PostConnectionStateChangedCallback( EGameNetworkingConnectionState eOldAPIState, EGameNetworkingConnectionState eNewAPIState );
 
-	void QueueEndToEndAck( bool bImmediate, SteamNetworkingMicroseconds usecNow )
+	void QueueEndToEndAck( bool bImmediate, GameNetworkingMicroseconds usecNow )
 	{
 		if ( bImmediate )
 		{
@@ -556,7 +556,7 @@ public:
 		}
 	}
 
-	void QueueFlushAllAcks( SteamNetworkingMicroseconds usecWhen )
+	void QueueFlushAllAcks( GameNetworkingMicroseconds usecWhen )
 	{
 		m_receiverState.QueueFlushAllAcks( usecWhen );
 		EnsureMinThinkTime( m_receiverState.TimeWhenFlushAcks() );
@@ -568,7 +568,7 @@ public:
 	inline bool BCryptKeysValid() const { return m_bCryptKeysValid; }
 
 	/// Called when we send an end-to-end connect request
-	void SentEndToEndConnectRequest( SteamNetworkingMicroseconds usecNow )
+	void SentEndToEndConnectRequest( GameNetworkingMicroseconds usecNow )
 	{
 
 		// Reset timeout/retry for this reply.  But if it fails, we'll start
@@ -588,16 +588,16 @@ public:
 
 	/// Check state of connection.  Check for timeouts, and schedule time when we
 	/// should think next
-	void CheckConnectionStateAndSetNextThinkTime( SteamNetworkingMicroseconds usecNow );
+	void CheckConnectionStateAndSetNextThinkTime( GameNetworkingMicroseconds usecNow );
 
 	/// Same as CheckConnectionStateAndSetNextThinkTime, but can be called when we don't
 	/// already have the global lock.  If we can take the necessary locks now, without
 	/// blocking, then we'll go ahead and take action now.  If we cannot, we will
 	/// just schedule a wakeup call
-	void CheckConnectionStateOrScheduleWakeUp( SteamNetworkingMicroseconds usecNow );
+	void CheckConnectionStateOrScheduleWakeUp( GameNetworkingMicroseconds usecNow );
 
 	// Upcasts.  So we don't have to compile with RTTI
-	virtual CSteamNetworkConnectionP2P *AsSteamNetworkConnectionP2P();
+	virtual CGameNetworkConnectionP2P *AsGameNetworkConnectionP2P();
 
 	/// Check if this connection is an internal connection for the
 	/// ISteamMessages interface.  The messages layer *mostly* works
@@ -607,20 +607,20 @@ public:
 	inline bool IsConnectionForMessagesSession() const { return m_connectionConfig.m_LocalVirtualPort.Get() == k_nVirtualPort_Messages; }
 
 protected:
-	CSteamNetworkConnectionBase( CGameNetworkingSockets *pGameNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
-	virtual ~CSteamNetworkConnectionBase(); // hidden destructor, don't call directly.  Use ConnectionQueueDestroy()
+	CGameNetworkConnectionBase( CGameNetworkingSockets *pGameNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
+	virtual ~CGameNetworkConnectionBase(); // hidden destructor, don't call directly.  Use ConnectionQueueDestroy()
 
 	/// Initialize connection bookkeeping
-	bool BInitConnection( SteamNetworkingMicroseconds usecNow, int nOptions, const SteamNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
+	bool BInitConnection( GameNetworkingMicroseconds usecNow, int nOptions, const GameNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
 
 	/// Called from BInitConnection, to start obtaining certs, etc
-	virtual void InitConnectionCrypto( SteamNetworkingMicroseconds usecNow );
+	virtual void InitConnectionCrypto( GameNetworkingMicroseconds usecNow );
 
 	/// Name assigned by app (for debugging)
-	char m_szAppName[ k_cchSteamNetworkingMaxConnectionDescription ];
+	char m_szAppName[ k_cchGameNetworkingMaxConnectionDescription ];
 
 	/// More complete debug description (for debugging)
-	char m_szDescription[ k_cchSteamNetworkingMaxConnectionDescription ];
+	char m_szDescription[ k_cchGameNetworkingMaxConnectionDescription ];
 
 	/// Set the connection description.  Should include the connection type and peer address.
 	virtual void GetConnectionTypeDescription( ConnectionTypeDescription_t &szDescription ) const = 0;
@@ -628,7 +628,7 @@ protected:
 	/// Misc periodic processing.
 	/// Called from within CheckConnectionStateAndSetNextThinkTime.
 	/// Will be called in any connection state.
-	virtual void ThinkConnection( SteamNetworkingMicroseconds usecNow );
+	virtual void ThinkConnection( GameNetworkingMicroseconds usecNow );
 
 	/// Called from the connection Think() state machine, for connections that have been
 	/// initiated locally and that are in the connecting state.
@@ -639,34 +639,34 @@ protected:
 	///
 	/// Base class sends connect requests (including periodic retry) through the current
 	/// transport.
-	virtual SteamNetworkingMicroseconds ThinkConnection_ClientConnecting( SteamNetworkingMicroseconds usecNow );
+	virtual GameNetworkingMicroseconds ThinkConnection_ClientConnecting( GameNetworkingMicroseconds usecNow );
 
 	/// Called from the connection Think() state machine, when the connection is in the finding
 	/// route state.  The connection should return the next time when it needs to be woken up.
 	/// Or it can set the next think time directly, if it is awkward to return.  That is slightly
 	/// less efficient.
-	virtual SteamNetworkingMicroseconds ThinkConnection_FindingRoute( SteamNetworkingMicroseconds usecNow );
+	virtual GameNetworkingMicroseconds ThinkConnection_FindingRoute( GameNetworkingMicroseconds usecNow );
 
 	/// Called when a timeout is detected
-	void ConnectionTimedOut( SteamNetworkingMicroseconds usecNow );
+	void ConnectionTimedOut( GameNetworkingMicroseconds usecNow );
 
 	/// Called when a timeout is detected to tried to provide a more specific error
 	/// message.
-	virtual void ConnectionGuessTimeoutReason( ESteamNetConnectionEnd &nReasonCode, ConnectionEndDebugMsg &msg, SteamNetworkingMicroseconds usecNow );
+	virtual void ConnectionGuessTimeoutReason( EGameNetConnectionEnd &nReasonCode, ConnectionEndDebugMsg &msg, GameNetworkingMicroseconds usecNow );
 
 	/// Called when we receive a complete message.  Should allocate a message object and put it into the proper queues
-	bool ReceivedMessage( const void *pData, int cbData, int64 nMsgNum, int nFlags, SteamNetworkingMicroseconds usecNow );
-	void ReceivedMessage( CSteamNetworkingMessage *pMsg );
+	bool ReceivedMessage( const void *pData, int cbData, int64 nMsgNum, int nFlags, GameNetworkingMicroseconds usecNow );
+	void ReceivedMessage( CGameNetworkingMessage *pMsg );
 
 	/// Timestamp when we last sent an end-to-end connection request packet
-	SteamNetworkingMicroseconds m_usecWhenSentConnectRequest;
+	GameNetworkingMicroseconds m_usecWhenSentConnectRequest;
 
 	//
 	// Crypto
 	//
 
 	void ClearCrypto();
-	bool BThinkCryptoReady( SteamNetworkingMicroseconds usecNow );
+	bool BThinkCryptoReady( GameNetworkingMicroseconds usecNow );
 	void SetLocalCertUnsigned();
 	void ClearLocalCrypto();
 	void FinalizeLocalCrypto();
@@ -705,7 +705,7 @@ protected:
 	/// cert is not signed.  (The base class will check if this is allowed.)  If pCACertAuthScope
 	/// is present, the cert was signed and the chain of trust has been verified, and the CA trust
 	/// chain has authorized the specified rights.
-	virtual ESteamNetConnectionEnd CheckRemoteCert( const CertAuthScope *pCACertAuthScope, SteamNetworkingErrMsg &errMsg );
+	virtual EGameNetConnectionEnd CheckRemoteCert( const CertAuthScope *pCACertAuthScope, GameNetworkingErrMsg &errMsg );
 
 	/// Called when we the remote host presents us with an unsigned cert.
 	virtual EUnsignedCert AllowRemoteUnsignedCert();
@@ -718,30 +718,30 @@ protected:
 	//         The layer that does end-to-end reliability and bandwidth estimation
 	//
 
-	void SNP_InitializeConnection( SteamNetworkingMicroseconds usecNow );
+	void SNP_InitializeConnection( GameNetworkingMicroseconds usecNow );
 	void SNP_ShutdownConnection();
-	int64 SNP_SendMessage( CSteamNetworkingMessage *pSendMessage, SteamNetworkingMicroseconds usecNow, bool *pbThinkImmediately );
-	SteamNetworkingMicroseconds SNP_ThinkSendState( SteamNetworkingMicroseconds usecNow );
-	SteamNetworkingMicroseconds SNP_GetNextThinkTime( SteamNetworkingMicroseconds usecNow );
-	SteamNetworkingMicroseconds SNP_TimeWhenWantToSendNextPacket() const;
-	void SNP_PrepareFeedback( SteamNetworkingMicroseconds usecNow );
-	void SNP_ReceiveUnreliableSegment( int64 nMsgNum, int nOffset, const void *pSegmentData, int cbSegmentSize, bool bLastSegmentInMessage, SteamNetworkingMicroseconds usecNow );
-	bool SNP_ReceiveReliableSegment( int64 nPktNum, int64 nSegBegin, const uint8 *pSegmentData, int cbSegmentSize, SteamNetworkingMicroseconds usecNow );
+	int64 SNP_SendMessage( CGameNetworkingMessage *pSendMessage, GameNetworkingMicroseconds usecNow, bool *pbThinkImmediately );
+	GameNetworkingMicroseconds SNP_ThinkSendState( GameNetworkingMicroseconds usecNow );
+	GameNetworkingMicroseconds SNP_GetNextThinkTime( GameNetworkingMicroseconds usecNow );
+	GameNetworkingMicroseconds SNP_TimeWhenWantToSendNextPacket() const;
+	void SNP_PrepareFeedback( GameNetworkingMicroseconds usecNow );
+	void SNP_ReceiveUnreliableSegment( int64 nMsgNum, int nOffset, const void *pSegmentData, int cbSegmentSize, bool bLastSegmentInMessage, GameNetworkingMicroseconds usecNow );
+	bool SNP_ReceiveReliableSegment( int64 nPktNum, int64 nSegBegin, const uint8 *pSegmentData, int cbSegmentSize, GameNetworkingMicroseconds usecNow );
 	int SNP_ClampSendRate();
 	void SNP_PopulateDetailedStats( SteamDatagramLinkStats &info );
-	void SNP_PopulateQuickStats( SteamNetworkingQuickConnectionStatus &info, SteamNetworkingMicroseconds usecNow );
-	void SNP_RecordReceivedPktNum( int64 nPktNum, SteamNetworkingMicroseconds usecNow, bool bScheduleAck );
-	EResult SNP_FlushMessage( SteamNetworkingMicroseconds usecNow );
+	void SNP_PopulateQuickStats( GameNetworkingQuickConnectionStatus &info, GameNetworkingMicroseconds usecNow );
+	void SNP_RecordReceivedPktNum( int64 nPktNum, GameNetworkingMicroseconds usecNow, bool bScheduleAck );
+	EResult SNP_FlushMessage( GameNetworkingMicroseconds usecNow );
 
 	/// Accumulate "tokens" into our bucket base on the current calculated send rate
-	void SNP_TokenBucket_Accumulate( SteamNetworkingMicroseconds usecNow );
+	void SNP_TokenBucket_Accumulate( GameNetworkingMicroseconds usecNow );
 
 	/// Mark a packet as dropped
 	void SNP_SenderProcessPacketNack( int64 nPktNum, SNPInFlightPacket_t &pkt, const char *pszDebug );
 
 	/// Check in flight packets.  Expire any that need to be, and return the time when the
 	/// next one that is not yet expired will be expired.
-	SteamNetworkingMicroseconds SNP_SenderCheckInFlightPackets( SteamNetworkingMicroseconds usecNow );
+	GameNetworkingMicroseconds SNP_SenderCheckInFlightPackets( GameNetworkingMicroseconds usecNow );
 
 	SSNPSenderState m_senderState;
 	SSNPReceiverState m_receiverState;
@@ -754,12 +754,12 @@ protected:
 
 private:
 
-	void SNP_GatherAckBlocks( SNPAckSerializerHelper &helper, SteamNetworkingMicroseconds usecNow );
-	uint8 *SNP_SerializeAckBlocks( const SNPAckSerializerHelper &helper, uint8 *pOut, const uint8 *pOutEnd, SteamNetworkingMicroseconds usecNow );
-	uint8 *SNP_SerializeStopWaitingFrame( uint8 *pOut, const uint8 *pOutEnd, SteamNetworkingMicroseconds usecNow );
+	void SNP_GatherAckBlocks( SNPAckSerializerHelper &helper, GameNetworkingMicroseconds usecNow );
+	uint8 *SNP_SerializeAckBlocks( const SNPAckSerializerHelper &helper, uint8 *pOut, const uint8 *pOutEnd, GameNetworkingMicroseconds usecNow );
+	uint8 *SNP_SerializeStopWaitingFrame( uint8 *pOut, const uint8 *pOutEnd, GameNetworkingMicroseconds usecNow );
 
-	void SetState( ESteamNetworkingConnectionState eNewState, SteamNetworkingMicroseconds usecNow );
-	ESteamNetworkingConnectionState m_eConnectionState;
+	void SetState( EGameNetworkingConnectionState eNewState, GameNetworkingMicroseconds usecNow );
+	EGameNetworkingConnectionState m_eConnectionState;
 
 	/// State of the connection as our peer would observe it.
 	/// (Certain local state transitions are not meaningful.)
@@ -772,24 +772,24 @@ private:
 	///   will not change.  It will retain the previous state,
 	///   so that while we are in the FinWait state, we can send
 	///   appropriate cleanup messages.
-	ESteamNetworkingConnectionState m_eConnectionWireState;
+	EGameNetworkingConnectionState m_eConnectionWireState;
 
 	/// Timestamp when we entered the current state.  Used for various
 	/// timeouts.
-	SteamNetworkingMicroseconds m_usecWhenEnteredConnectionState;
+	GameNetworkingMicroseconds m_usecWhenEnteredConnectionState;
 
 	// !DEBUG! Log of packets we sent.
 	#ifdef SNP_ENABLE_PACKETSENDLOG
 	struct PacketSendLog
 	{
 		// State before we sent anything
-		SteamNetworkingMicroseconds m_usecTime;
+		GameNetworkingMicroseconds m_usecTime;
 		int m_cbPendingReliable;
 		int m_cbPendingUnreliable;
 		int m_nPacketGaps;
 		float m_fltokens;
 		int64 m_nPktNumNextPendingAck;
-		SteamNetworkingMicroseconds m_usecNextPendingAckTime;
+		GameNetworkingMicroseconds m_usecNextPendingAckTime;
 		int64 m_nMaxPktRecv;
 		int64 m_nMinPktNumToSendAcks;
 
@@ -808,7 +808,7 @@ private:
 	// Implements IThinker.
 	// Connections must not override this, or call it directly.
 	// Do any periodic work in ThinkConnection()
-	virtual void Think( SteamNetworkingMicroseconds usecNow ) override final;
+	virtual void Think( GameNetworkingMicroseconds usecNow ) override final;
 };
 
 /// Abstract base class for sending end-to-end data for a connection.
@@ -824,7 +824,7 @@ public:
 	/// is always created for a single connection (and that will not change,
 	/// hence this is a reference and not a pointer).  However, a connection may
 	/// create more than one transport.
-	CSteamNetworkConnectionBase &m_connection;
+	CGameNetworkConnectionBase &m_connection;
 
 	/// Use this function to actually delete the object.  Do not use operator delete
 	void TransportDestroySelfNow();
@@ -836,7 +836,7 @@ public:
 	/// Called by SNP pacing layer, when it has some data to send and there is bandwidth available.
 	/// The derived class should setup a context, reserving the space it needs, and then call SNP_SendPacket.
 	/// Returns true if a packet was sent successfully, false if there was a problem.
-	virtual bool SendDataPacket( SteamNetworkingMicroseconds usecNow ) = 0;
+	virtual bool SendDataPacket( GameNetworkingMicroseconds usecNow ) = 0;
 
 	/// Connection will call this to ask the transport to surround the
 	/// "chunk" with the appropriate framing, and route it to the 
@@ -853,26 +853,26 @@ public:
 	/// Return true if we are currently able to send end-to-end messages.
 	virtual bool BCanSendEndToEndConnectRequest() const;
 	virtual bool BCanSendEndToEndData() const = 0;
-	virtual void SendEndToEndConnectRequest( SteamNetworkingMicroseconds usecNow );
-	virtual void SendEndToEndStatsMsg( EStatsReplyRequest eRequest, SteamNetworkingMicroseconds usecNow, const char *pszReason ) = 0;
-	virtual void TransportPopulateConnectionInfo( SteamNetConnectionInfo_t &info ) const;
-	virtual void GetDetailedConnectionStatus( SteamNetworkingDetailedConnectionStatus &stats, SteamNetworkingMicroseconds usecNow );
+	virtual void SendEndToEndConnectRequest( GameNetworkingMicroseconds usecNow );
+	virtual void SendEndToEndStatsMsg( EStatsReplyRequest eRequest, GameNetworkingMicroseconds usecNow, const char *pszReason ) = 0;
+	virtual void TransportPopulateConnectionInfo( GameNetConnectionInfo_t &info ) const;
+	virtual void GetDetailedConnectionStatus( GameNetworkingDetailedConnectionStatus &stats, GameNetworkingMicroseconds usecNow );
 
 	/// Called when the connection state changes.  Some transports need to do stuff
-	virtual void TransportConnectionStateChanged( ESteamNetworkingConnectionState eOldState );
+	virtual void TransportConnectionStateChanged( EGameNetworkingConnectionState eOldState );
 
 	/// Called when a timeout is detected to tried to provide a more specific error
 	/// message
-	virtual void TransportGuessTimeoutReason( ESteamNetConnectionEnd &nReasonCode, ConnectionEndDebugMsg &msg, SteamNetworkingMicroseconds usecNow );
+	virtual void TransportGuessTimeoutReason( EGameNetConnectionEnd &nReasonCode, ConnectionEndDebugMsg &msg, GameNetworkingMicroseconds usecNow );
 
 	// Some accessors for commonly needed info
-	inline ESteamNetworkingConnectionState ConnectionState() const { return m_connection.GetState(); }
-	inline ESteamNetworkingConnectionState ConnectionWireState() const { return m_connection.GetWireState(); }
+	inline EGameNetworkingConnectionState ConnectionState() const { return m_connection.GetState(); }
+	inline EGameNetworkingConnectionState ConnectionWireState() const { return m_connection.GetWireState(); }
 	inline uint32 ConnectionIDLocal() const { return m_connection.m_unConnectionIDLocal; }
 	inline uint32 ConnectionIDRemote() const { return m_connection.m_unConnectionIDRemote; }
-	inline CSteamNetworkListenSocketBase *ListenSocket() const { return m_connection.m_pParentListenSocket; }
-	inline const SteamNetworkingIdentity &IdentityLocal() const { return m_connection.m_identityLocal; }
-	inline const SteamNetworkingIdentity &IdentityRemote() const { return m_connection.m_identityRemote; }
+	inline CGameNetworkListenSocketBase *ListenSocket() const { return m_connection.m_pParentListenSocket; }
+	inline const GameNetworkingIdentity &IdentityLocal() const { return m_connection.m_identityLocal; }
+	inline const GameNetworkingIdentity &IdentityRemote() const { return m_connection.m_identityRemote; }
 	inline const char *ConnectionDescription() const { return m_connection.GetDescription(); }
 
 	void _AssertLocksHeldByCurrentThread( const char *pszFile, int line, const char *pszTag = nullptr ) const
@@ -886,74 +886,74 @@ public:
 
 protected:
 
-	inline CConnectionTransport( CSteamNetworkConnectionBase &conn ) : m_connection( conn ) {}
+	inline CConnectionTransport( CGameNetworkConnectionBase &conn ) : m_connection( conn ) {}
 	virtual ~CConnectionTransport() {} // Destructor protected -- use TransportDestroySelfNow()
 };
 
 // Delayed inline
-inline ConnectionScopeLock::ConnectionScopeLock( CSteamNetworkConnectionBase &conn, const char *pszTag ) : ScopeLock<ConnectionLock>( *conn.m_pLock, pszTag ) {}
-inline void ConnectionScopeLock::Lock( CSteamNetworkConnectionBase &conn, const char *pszTag ) { ScopeLock<ConnectionLock>::Lock( *conn.m_pLock, pszTag ); }
+inline ConnectionScopeLock::ConnectionScopeLock( CGameNetworkConnectionBase &conn, const char *pszTag ) : ScopeLock<ConnectionLock>( *conn.m_pLock, pszTag ) {}
+inline void ConnectionScopeLock::Lock( CGameNetworkConnectionBase &conn, const char *pszTag ) { ScopeLock<ConnectionLock>::Lock( *conn.m_pLock, pszTag ); }
 
 /// Dummy loopback/pipe connection that doesn't actually do any network work.
 /// For these types of connections, the distinction between connection and transport
 /// is not really useful
-class CSteamNetworkConnectionPipe final : public CSteamNetworkConnectionBase, public CConnectionTransport
+class CGameNetworkConnectionPipe final : public CGameNetworkConnectionBase, public CConnectionTransport
 {
 public:
 
 	/// Create a pair of loopback connections that are immediately connected to each other
 	/// No callbacks are posted.
-	static bool APICreateSocketPair( CGameNetworkingSockets *pGameNetworkingSocketsInterface, CSteamNetworkConnectionPipe **pOutConnections, const SteamNetworkingIdentity pIdentity[2] );
+	static bool APICreateSocketPair( CGameNetworkingSockets *pGameNetworkingSocketsInterface, CGameNetworkConnectionPipe **pOutConnections, const GameNetworkingIdentity pIdentity[2] );
 
 	/// Create a pair of loopback connections that act like normal connections, but use internal transport.
 	/// The two connections will be placed in the "connecting" state, and will go through the ordinary
 	/// state machine.
 	///
 	/// The client connection is returned.
-	static CSteamNetworkConnectionPipe *CreateLoopbackConnection(
-		CGameNetworkingSockets *pClientInstance, int nOptions, const SteamNetworkingConfigValue_t *pOptions,
-		CSteamNetworkListenSocketBase *pListenSocket,
-		SteamNetworkingErrMsg &errMsg,
+	static CGameNetworkConnectionPipe *CreateLoopbackConnection(
+		CGameNetworkingSockets *pClientInstance, int nOptions, const GameNetworkingConfigValue_t *pOptions,
+		CGameNetworkListenSocketBase *pListenSocket,
+		GameNetworkingErrMsg &errMsg,
 		ConnectionScopeLock &scopeLock );
 
 	/// The guy who is on the other end.
-	CSteamNetworkConnectionPipe *m_pPartner;
+	CGameNetworkConnectionPipe *m_pPartner;
 
-	// CSteamNetworkConnectionBase overrides
-	virtual int64 _APISendMessageToConnection( CSteamNetworkingMessage *pMsg, SteamNetworkingMicroseconds usecNow, bool *pbThinkImmediately ) override;
-	virtual EResult AcceptConnection( SteamNetworkingMicroseconds usecNow ) override;
-	virtual void InitConnectionCrypto( SteamNetworkingMicroseconds usecNow ) override;
+	// CGameNetworkConnectionBase overrides
+	virtual int64 _APISendMessageToConnection( CGameNetworkingMessage *pMsg, GameNetworkingMicroseconds usecNow, bool *pbThinkImmediately ) override;
+	virtual EResult AcceptConnection( GameNetworkingMicroseconds usecNow ) override;
+	virtual void InitConnectionCrypto( GameNetworkingMicroseconds usecNow ) override;
 	virtual EUnsignedCert AllowRemoteUnsignedCert() override;
 	virtual EUnsignedCert AllowLocalUnsignedCert() override;
 	virtual void GetConnectionTypeDescription( ConnectionTypeDescription_t &szDescription ) const override;
 	virtual void DestroyTransport() override;
-	virtual void ConnectionStateChanged( ESteamNetworkingConnectionState eOldState ) override;
+	virtual void ConnectionStateChanged( EGameNetworkingConnectionState eOldState ) override;
 
-	// CSteamNetworkConnectionTransport
-	virtual bool SendDataPacket( SteamNetworkingMicroseconds usecNow ) override;
+	// CGameNetworkConnectionTransport
+	virtual bool SendDataPacket( GameNetworkingMicroseconds usecNow ) override;
 	virtual bool BCanSendEndToEndConnectRequest() const override;
 	virtual bool BCanSendEndToEndData() const override;
-	virtual void SendEndToEndConnectRequest( SteamNetworkingMicroseconds usecNow ) override;
-	virtual void SendEndToEndStatsMsg( EStatsReplyRequest eRequest, SteamNetworkingMicroseconds usecNow, const char *pszReason ) override;
+	virtual void SendEndToEndConnectRequest( GameNetworkingMicroseconds usecNow ) override;
+	virtual void SendEndToEndStatsMsg( EStatsReplyRequest eRequest, GameNetworkingMicroseconds usecNow, const char *pszReason ) override;
 	virtual int SendEncryptedDataChunk( const void *pChunk, int cbChunk, SendPacketContext_t &ctx ) override;
-	virtual void TransportPopulateConnectionInfo( SteamNetConnectionInfo_t &info ) const override;
+	virtual void TransportPopulateConnectionInfo( GameNetConnectionInfo_t &info ) const override;
 
 private:
 
 	// Use CreateSocketPair!
-	CSteamNetworkConnectionPipe( CGameNetworkingSockets *pGameNetworkingSocketsInterface, const SteamNetworkingIdentity &identity, ConnectionScopeLock &scopeLock );
-	virtual ~CSteamNetworkConnectionPipe();
+	CGameNetworkConnectionPipe( CGameNetworkingSockets *pGameNetworkingSocketsInterface, const GameNetworkingIdentity &identity, ConnectionScopeLock &scopeLock );
+	virtual ~CGameNetworkConnectionPipe();
 
 	/// Setup the server side of a loopback connection
-	bool BBeginAccept( CSteamNetworkListenSocketBase *pListenSocket, SteamNetworkingMicroseconds usecNow, SteamDatagramErrMsg &errMsg );
+	bool BBeginAccept( CGameNetworkListenSocketBase *pListenSocket, GameNetworkingMicroseconds usecNow, SteamDatagramErrMsg &errMsg );
 
 	/// Act like we sent a sequenced packet
-	void FakeSendStats( SteamNetworkingMicroseconds usecNow, int cbPktSize );
+	void FakeSendStats( GameNetworkingMicroseconds usecNow, int cbPktSize );
 };
 
-// Had to delay this until CSteamNetworkConnectionBase was defined
+// Had to delay this until CGameNetworkConnectionBase was defined
 template<typename TStatsMsg>
-inline void SendPacketContext<TStatsMsg>::CalcMaxEncryptedPayloadSize( size_t cbHdrReserve, CSteamNetworkConnectionBase *pConnection )
+inline void SendPacketContext<TStatsMsg>::CalcMaxEncryptedPayloadSize( size_t cbHdrReserve, CGameNetworkConnectionBase *pConnection )
 {
 	Assert( m_cbTotalSize >= 0 );
 	m_cbMaxEncryptedPayload = pConnection->m_cbMTUPacketSize - (int)cbHdrReserve - m_cbTotalSize;
@@ -966,8 +966,8 @@ inline void SendPacketContext<TStatsMsg>::CalcMaxEncryptedPayloadSize( size_t cb
 //
 /////////////////////////////////////////////////////////////////////////////
 
-extern CUtlHashMap<uint16, CSteamNetworkConnectionBase *, std::equal_to<uint16>, Identity<uint16> > g_mapConnections;
-extern CUtlHashMap<int, CSteamNetworkPollGroup *, std::equal_to<int>, Identity<int> > g_mapPollGroups;
+extern CUtlHashMap<uint16, CGameNetworkConnectionBase *, std::equal_to<uint16>, Identity<uint16> > g_mapConnections;
+extern CUtlHashMap<int, CGameNetworkPollGroup *, std::equal_to<int>, Identity<int> > g_mapPollGroups;
 
 // All of the tables above are projected by the same lock, since we expect to only access it briefly
 struct TableLock : Lock<RecursiveMutexImpl> {
@@ -977,17 +977,17 @@ using TableScopeLock = ScopeLock<TableLock>;
 extern TableLock g_tables_lock;
 
 // This table is protected by the global lock
-extern CUtlHashMap<int, CSteamNetworkListenSocketBase *, std::equal_to<int>, Identity<int> > g_mapListenSockets;
+extern CUtlHashMap<int, CGameNetworkListenSocketBase *, std::equal_to<int>, Identity<int> > g_mapListenSockets;
 
-extern bool BCheckGlobalSpamReplyRateLimit( SteamNetworkingMicroseconds usecNow );
-extern CSteamNetworkConnectionBase *GetConnectionByHandle( HSteamNetConnection sock, ConnectionScopeLock &scopeLock );
-extern CSteamNetworkPollGroup *GetPollGroupByHandle( HSteamNetPollGroup hPollGroup, PollGroupScopeLock &scopeLock, const char *pszLockTag );
+extern bool BCheckGlobalSpamReplyRateLimit( GameNetworkingMicroseconds usecNow );
+extern CGameNetworkConnectionBase *GetConnectionByHandle( HGameNetConnection sock, ConnectionScopeLock &scopeLock );
+extern CGameNetworkPollGroup *GetPollGroupByHandle( HGameNetPollGroup hPollGroup, PollGroupScopeLock &scopeLock, const char *pszLockTag );
 
-inline CSteamNetworkConnectionBase *FindConnectionByLocalID( uint32 nLocalConnectionID, ConnectionScopeLock &scopeLock )
+inline CGameNetworkConnectionBase *FindConnectionByLocalID( uint32 nLocalConnectionID, ConnectionScopeLock &scopeLock )
 {
 	// We use the wire connection ID as the API handle, so these two operations
 	// are currently the same.
-	return GetConnectionByHandle( HSteamNetConnection( nLocalConnectionID ), scopeLock );
+	return GetConnectionByHandle( HGameNetConnection( nLocalConnectionID ), scopeLock );
 }
 
 } // namespace GameNetworkingSocketsLib

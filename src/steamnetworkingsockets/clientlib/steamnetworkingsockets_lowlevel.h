@@ -96,19 +96,19 @@ public:
 		temp.iov_base = (void *)pPkt;
 		return BSendRawPacketGather( 1, &temp, adrTo );
 	}
-	inline bool BSendRawPacket( const void *pPkt, int cbPkt, const SteamNetworkingIPAddr &adrTo ) const
+	inline bool BSendRawPacket( const void *pPkt, int cbPkt, const GameNetworkingIPAddr &adrTo ) const
 	{
 		netadr_t netadrTo;
-		SteamNetworkingIPAddrToNetAdr( netadrTo, adrTo );
+		GameNetworkingIPAddrToNetAdr( netadrTo, adrTo );
 		return BSendRawPacket( pPkt, cbPkt, netadrTo );
 	}
 
 	/// Gather-based send.  Simulated lag, loss, etc are applied
 	virtual bool BSendRawPacketGather( int nChunks, const iovec *pChunks, const netadr_t &adrTo ) const = 0;
-	inline bool BSendRawPacketGather( int nChunks, const iovec *pChunks, const SteamNetworkingIPAddr &adrTo ) const
+	inline bool BSendRawPacketGather( int nChunks, const iovec *pChunks, const GameNetworkingIPAddr &adrTo ) const
 	{
 		netadr_t netadrTo;
-		SteamNetworkingIPAddrToNetAdr( netadrTo, adrTo );
+		GameNetworkingIPAddrToNetAdr( netadrTo, adrTo );
 		return BSendRawPacketGather( nChunks, pChunks, netadrTo );
 	}
 
@@ -118,7 +118,7 @@ public:
 	virtual void Close() = 0;
 
 	/// The local address we ended up binding to
-	SteamNetworkingIPAddr m_boundAddr;
+	GameNetworkingIPAddr m_boundAddr;
 
 protected:
 	IRawUDPSocket();
@@ -147,7 +147,7 @@ const int k_nAddressFamily_DualStack = k_nAddressFamily_IPv4|k_nAddressFamily_IP
 ///
 /// Upon exit, the address and address families are modified to contain the actual bound
 /// address (specifically, the port!) and available address families.
-extern IRawUDPSocket *OpenRawUDPSocket( CRecvPacketCallback callback, SteamDatagramErrMsg &errMsg, SteamNetworkingIPAddr *pAddrLocal, int *pnAddressFamilies );
+extern IRawUDPSocket *OpenRawUDPSocket( CRecvPacketCallback callback, SteamDatagramErrMsg &errMsg, GameNetworkingIPAddr *pAddrLocal, int *pnAddressFamilies );
 
 /// A single socket could, in theory, be used to communicate with every single remote host.
 /// Or we may decide to open up one socket per remote host, to workaround weird firewall/NAT
@@ -208,7 +208,7 @@ public:
 
 	/// Allocate a raw socket and setup bookkeeping structures so we can add
 	/// clients that will talk using it.
-	bool BInit( const SteamNetworkingIPAddr &localAddr, CRecvPacketCallback callbackDefault, SteamDatagramErrMsg &errMsg );
+	bool BInit( const GameNetworkingIPAddr &localAddr, CRecvPacketCallback callbackDefault, SteamDatagramErrMsg &errMsg );
 
 	/// Close all sockets and clean up all resources
 	void Kill();
@@ -224,7 +224,7 @@ public:
 		return m_pRawSock->BSendRawPacket( pPkt, cbPkt, adrTo );
 	}
 
-	const SteamNetworkingIPAddr *GetBoundAddr() const
+	const GameNetworkingIPAddr *GetBoundAddr() const
 	{
 		if ( !m_pRawSock )
 		{
@@ -282,11 +282,11 @@ private:
 extern void ProcessPendingDestroyClosedRawUDPSockets();
 
 /// Last time that we spewed something that was subject to rate limit 
-extern SteamNetworkingMicroseconds g_usecLastRateLimitSpew;
+extern GameNetworkingMicroseconds g_usecLastRateLimitSpew;
 extern int g_nRateLimitSpewCount;
 
 /// Check for rate limiting spew (e.g. when spew could be triggered by malicious sender.)
-inline bool BRateLimitSpew( SteamNetworkingMicroseconds usecNow )
+inline bool BRateLimitSpew( GameNetworkingMicroseconds usecNow )
 {
 	if ( g_nRateLimitSpewCount <= 0 )
 	{
@@ -523,10 +523,10 @@ using ShortDurationScopeLock = ScopeLock<ShortDurationLock>;
 #endif
 
 /// Special utilities for acquiring the global lock
-struct SteamNetworkingGlobalLock
+struct GameNetworkingGlobalLock
 {
-	inline SteamNetworkingGlobalLock( const char *pszTag = nullptr ) { Lock( pszTag ); }
-	inline ~SteamNetworkingGlobalLock() { Unlock(); }
+	inline GameNetworkingGlobalLock( const char *pszTag = nullptr ) { Lock( pszTag ); }
+	inline ~GameNetworkingGlobalLock() { Unlock(); }
 	static void Lock( const char *pszTag );
 	static bool TryLock( const char *pszTag, int msTimeout );
 	static void Unlock();
@@ -590,7 +590,7 @@ protected:
 /////////////////////////////////////////////////////////////////////////////
 
 /// Fetch current time
-extern SteamNetworkingMicroseconds GameNetworkingSockets_GetLocalTimestamp();
+extern GameNetworkingMicroseconds GameNetworkingSockets_GetLocalTimestamp();
 
 /// Set debug output hook
 extern void GameNetworkingSockets_SetDebugOutputFunction( EGameNetworkingSocketsDebugOutputType eDetailLevel, FGameNetworkingSocketsDebugOutput pfnFunc );
@@ -601,24 +601,24 @@ extern bool IsRouteToAddressProbablyLocal( netadr_t addr );
 #ifdef STEAMNETWORKINGSOCKETS_ENABLE_ETW
 	extern void ETW_Init();
 	extern void ETW_Kill();
-	extern void ETW_LongOp( const char *opName, SteamNetworkingMicroseconds usec, const char *pszInfo = nullptr );
+	extern void ETW_LongOp( const char *opName, GameNetworkingMicroseconds usec, const char *pszInfo = nullptr );
 	extern void ETW_UDPSendPacket( const netadr_t &adrTo, int cbPkt );
 	extern void ETW_UDPRecvPacket( const netadr_t &adrFrom, int cbPkt );
-	extern void ETW_ICESendPacket( HSteamNetConnection hConn, int cbPkt );
-	extern void ETW_ICERecvPacket( HSteamNetConnection hConn, int cbPkt );
-	extern void ETW_ICEProcessPacket( HSteamNetConnection hConn, int cbPkt );
+	extern void ETW_ICESendPacket( HGameNetConnection hConn, int cbPkt );
+	extern void ETW_ICERecvPacket( HGameNetConnection hConn, int cbPkt );
+	extern void ETW_ICEProcessPacket( HGameNetConnection hConn, int cbPkt );
 	extern void ETW_webrtc_setsockopt( int slevel, int sopt, int value );
 	extern void ETW_webrtc_send( int length );
 	extern void ETW_webrtc_sendto( void *addr, int length );
 #else
 	inline void ETW_Init() {}
 	inline void ETW_Kill() {}
-	inline void ETW_LongOp( const char *opName, SteamNetworkingMicroseconds usec, const char *pszInfo = nullptr ) {}
+	inline void ETW_LongOp( const char *opName, GameNetworkingMicroseconds usec, const char *pszInfo = nullptr ) {}
 	inline void ETW_UDPSendPacket( const netadr_t &adrTo, int cbPkt ) {}
 	inline void ETW_UDPRecvPacket( const netadr_t &adrFrom, int cbPkt ) {}
-	inline void ETW_ICESendPacket( HSteamNetConnection hConn, int cbPkt ) {}
-	inline void ETW_ICERecvPacket( HSteamNetConnection hConn, int cbPkt ) {}
-	inline void ETW_ICEProcessPacket( HSteamNetConnection hConn, int cbPkt ) {}
+	inline void ETW_ICESendPacket( HGameNetConnection hConn, int cbPkt ) {}
+	inline void ETW_ICERecvPacket( HGameNetConnection hConn, int cbPkt ) {}
+	inline void ETW_ICEProcessPacket( HGameNetConnection hConn, int cbPkt ) {}
 #endif
 
 } // namespace GameNetworkingSocketsLib

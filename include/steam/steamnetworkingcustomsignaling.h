@@ -20,8 +20,8 @@ class IGameNetworkingSockets;
 /// - For connections initiated locally, you will construct it and pass
 ///   it to IGameNetworkingSockets::ConnectP2PCustomSignaling.
 /// - For connections initiated remotely and "accepted" locally, you
-///   will return it from ISteamNetworkingSignalingRecvContext::OnConnectRequest
-class ISteamNetworkingConnectionSignaling
+///   will return it from IGameNetworkingSignalingRecvContext::OnConnectRequest
+class IGameNetworkingConnectionSignaling
 {
 public:
 	/// Called to send a rendezvous message to the remote peer.  This may be called
@@ -40,7 +40,7 @@ public:
 	/// Signaling objects will not be shared between connections.
 	/// You can assume that the same value of hConn will be used
 	/// every time.
-	virtual bool SendSignal( HSteamNetConnection hConn, const SteamNetConnectionInfo_t &info, const void *pMsg, int cbMsg ) = 0;
+	virtual bool SendSignal( HGameNetConnection hConn, const GameNetConnectionInfo_t &info, const void *pMsg, int cbMsg ) = 0;
 
 	/// Called when the connection no longer needs to send signals.
 	/// Note that this happens eventually (but not immediately) after
@@ -57,7 +57,7 @@ public:
 
 /// Interface used when a custom signal is received.
 /// See IGameNetworkingSockets::ReceivedP2PCustomSignal
-class ISteamNetworkingSignalingRecvContext
+class IGameNetworkingSignalingRecvContext
 {
 public:
 
@@ -87,22 +87,22 @@ public:
 	///
 	/// After accepting a connection (through either means), the connection
 	/// will transition into the "finding route" state.
-	virtual ISteamNetworkingConnectionSignaling *OnConnectRequest( HSteamNetConnection hConn, const SteamNetworkingIdentity &identityPeer, int nLocalVirtualPort ) = 0;
+	virtual IGameNetworkingConnectionSignaling *OnConnectRequest( HGameNetConnection hConn, const GameNetworkingIdentity &identityPeer, int nLocalVirtualPort ) = 0;
 
 	/// This is called to actively communicate rejection or failure
 	/// to the incoming message.  If you intend to ignore all incoming requests
 	/// that you do not wish to accept, then it's not strictly necessary to
 	/// implement this.
-	virtual void SendRejectionSignal( const SteamNetworkingIdentity &identityPeer, const void *pMsg, int cbMsg ) = 0;
+	virtual void SendRejectionSignal( const GameNetworkingIdentity &identityPeer, const void *pMsg, int cbMsg ) = 0;
 };
 
 /// The function signature of the callback used to obtain a signaling object
 /// for connections initiated locally.  These are used for
 /// IGameNetworkingSockets::ConnectP2P, and when using the
-/// ISteamNetworkingMessages interface.  To install the callback for all
+/// IGameNetworkingMessages interface.  To install the callback for all
 /// interfaces, do something like this:
-/// GameNetworkingUtils()->SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_CreateConnectionSignaling, (void*)fnCallback );
-typedef ISteamNetworkingConnectionSignaling * (*FnGameNetworkingSocketsCreateConnectionSignaling)( IGameNetworkingSockets *pLocalInterface, const SteamNetworkingIdentity &identityPeer, int nLocalVirtualPort, int nRemoteVirtualPort );
+/// GameNetworkingUtils()->SetGlobalConfigValuePtr( k_EGameNetworkingConfig_Callback_CreateConnectionSignaling, (void*)fnCallback );
+typedef IGameNetworkingConnectionSignaling * (*FnGameNetworkingSocketsCreateConnectionSignaling)( IGameNetworkingSockets *pLocalInterface, const GameNetworkingIdentity &identityPeer, int nLocalVirtualPort, int nRemoteVirtualPort );
 
 #endif // STEAMNETWORKINGCUSTOMSIGNALING
 

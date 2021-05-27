@@ -75,7 +75,7 @@ const int k_nDefaultExpiryDays = 365*2;
 
 CECSigningPrivateKey s_keyCAPriv;
 CECSigningPublicKey s_keyCertPub;
-std::vector<SteamNetworkingPOPID> s_vecPOPIDs;
+std::vector<GameNetworkingPOPID> s_vecPOPIDs;
 std::vector<AppId_t> s_vecAppIDs;
 int s_nExpiryDays = k_nDefaultExpiryDays;
 bool s_bOutputJSON;
@@ -190,10 +190,10 @@ void GenKeyPair()
 		sComment += szTemp;
 		sComment += '-';
 	}
-	for ( SteamNetworkingPOPID id: s_vecPOPIDs )
+	for ( GameNetworkingPOPID id: s_vecPOPIDs )
 	{
 		char szTemp[ 8 ];
-		GetSteamNetworkingLocationPOPStringFromID( id, szTemp );
+		GetGameNetworkingLocationPOPStringFromID( id, szTemp );
 		sComment += szTemp;
 		sComment += '-';
 	}
@@ -257,9 +257,9 @@ void PrintCertInfo( const CMsgSteamDatagramCertificateSigned &msgSigned, picojso
 	std::string sPOPIDs;
 	{
 		picojson::array pop_ids;
-		for ( SteamNetworkingPOPID id: msgCert.gameserver_datacenter_ids() )
+		for ( GameNetworkingPOPID id: msgCert.gameserver_datacenter_ids() )
 		{
-			GetSteamNetworkingLocationPOPStringFromID( id, szTemp );
+			GetGameNetworkingLocationPOPStringFromID( id, szTemp );
 
 			if ( !sPOPIDs.empty() )
 				sPOPIDs += ' ';
@@ -506,7 +506,7 @@ int main( int argc, char **argv )
 				int l = V_strlen( pszCode );
 				if ( l < 3 || l > 4 )
 					Plat_FatalError( "'%s' isn't a valid POP code\n", pszCode );
-				s_vecPOPIDs.push_back( CalculateSteamNetworkingPOPIDFromString( pszCode ) );
+				s_vecPOPIDs.push_back( CalculateGameNetworkingPOPIDFromString( pszCode ) );
 			}
 			continue;
 		}

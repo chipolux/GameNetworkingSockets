@@ -61,7 +61,7 @@ class CTrivialSignalingClient : public ITrivialSignalingClient
 
 	// This is the thing we'll actually create to send signals for a particular
 	// connection.
-	struct ConnectionSignaling : ISteamNetworkingConnectionSignaling
+	struct ConnectionSignaling : IGameNetworkingConnectionSignaling
 	{
 		CTrivialSignalingClient *const m_pOwner;
 		std::string const m_sPeerIdentity; // Save off the string encoding of the identity we're talking to
@@ -73,12 +73,12 @@ class CTrivialSignalingClient : public ITrivialSignalingClient
 		}
 
 		//
-		// Implements ISteamNetworkingConnectionSignaling
+		// Implements IGameNetworkingConnectionSignaling
 		//
 
 		// This is called from GameNetworkingSockets to send a signal.  This could be called from any thread,
 		// so we need to be threadsafe, and avoid duoing slow stuff or calling back into GameNetworkingSockets
-		virtual bool SendSignal( HSteamNetConnection hConn, const SteamNetConnectionInfo_t &info, const void *pMsg, int cbMsg ) override
+		virtual bool SendSignal( HGameNetConnection hConn, const GameNetConnectionInfo_t &info, const void *pMsg, int cbMsg ) override
 		{
 
 			// We'll use a dumb hex encoding.
@@ -165,11 +165,11 @@ public:
 		m_sock = INVALID_SOCKET;
 
 		// Save off our identity
-		SteamNetworkingIdentity identitySelf; identitySelf.Clear();
+		GameNetworkingIdentity identitySelf; identitySelf.Clear();
 		pGameNetworkingSockets->GetIdentity( &identitySelf );
 		assert( !identitySelf.IsInvalid() );
 		assert( !identitySelf.IsLocalHost() ); // We need something more specific than that
-		m_sGreeting = SteamNetworkingIdentityRender( identitySelf ).c_str();
+		m_sGreeting = GameNetworkingIdentityRender( identitySelf ).c_str();
 		assert( strchr( m_sGreeting.c_str(), ' ' ) == nullptr ); // Our protocol is dumb and doesn't support this
 		m_sGreeting.push_back( '\n' );
 
@@ -198,11 +198,11 @@ public:
 		sockMutex.unlock();
 	}
 
-	ISteamNetworkingConnectionSignaling *CreateSignalingForConnection(
-		const SteamNetworkingIdentity &identityPeer,
-		SteamNetworkingErrMsg &errMsg
+	IGameNetworkingConnectionSignaling *CreateSignalingForConnection(
+		const GameNetworkingIdentity &identityPeer,
+		GameNetworkingErrMsg &errMsg
 	) override {
-		SteamNetworkingIdentityRender sIdentityPeer( identityPeer );
+		GameNetworkingIdentityRender sIdentityPeer( identityPeer );
 
 		// FIXME - here we really ouight to confirm that the string version of the
 		// identity does not have spaces, since our protocol doesn't permit it.
@@ -307,13 +307,13 @@ public:
 				}
 
 				// Setup a context object that can respond if this signal is a connection request.
-				struct Context : ISteamNetworkingSignalingRecvContext
+				struct Context : IGameNetworkingSignalingRecvContext
 				{
 					CTrivialSignalingClient *m_pOwner;
 
-					virtual ISteamNetworkingConnectionSignaling *OnConnectRequest(
-						HSteamNetConnection hConn,
-						const SteamNetworkingIdentity &identityPeer,
+					virtual IGameNetworkingConnectionSignaling *OnConnectRequest(
+						HGameNetConnection hConn,
+						const GameNetworkingIdentity &identityPeer,
 						int nLocalVirtualPort
 					) override {
 
@@ -324,12 +324,12 @@ public:
 						// Also, note that if there was routing/session info, it should have been in
 						// our envelope that we know how to parse, and we should save it off in this
 						// context object.
-						SteamNetworkingErrMsg ignoreErrMsg;
+						GameNetworkingErrMsg ignoreErrMsg;
 						return m_pOwner->CreateSignalingForConnection( identityPeer, ignoreErrMsg );
 					}
 
 					virtual void SendRejectionSignal(
-						const SteamNetworkingIdentity &identityPeer,
+						const GameNetworkingIdentity &identityPeer,
 						const void *pMsg, int cbMsg
 					) override {
 
@@ -371,7 +371,7 @@ next_message:
 ITrivialSignalingClient *CreateTrivialSignalingClient(
 	const char *pszServerAddress, // Address of the server.
 	IGameNetworkingSockets *pGameNetworkingSockets, // Where should we send signals when we get them?
-	SteamNetworkingErrMsg &errMsg // Error message is retjrned here if we fail
+	GameNetworkingErrMsg &errMsg // Error message is retjrned here if we fail
 ) {
 
 	std::string sAddress( pszServerAddress );

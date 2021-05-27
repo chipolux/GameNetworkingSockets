@@ -15,7 +15,7 @@ struct LockDebugInfo;
 
 // Acks may be delayed.  This controls the precision used on the wire to encode the delay time.
 constexpr int k_nAckDelayPrecisionShift = 5;
-constexpr SteamNetworkingMicroseconds k_usecAckDelayPrecision = (1 << k_nAckDelayPrecisionShift );
+constexpr GameNetworkingMicroseconds k_usecAckDelayPrecision = (1 << k_nAckDelayPrecisionShift );
 
 // When a receiver detects a dropped packet, wait a bit before NACKing it, to give it time
 // to arrive out of order.  This is really important for many different types of connections
@@ -30,7 +30,7 @@ constexpr SteamNetworkingMicroseconds k_usecAckDelayPrecision = (1 << k_nAckDela
 // that a dropped packet will have arrived at time t.  Then you
 // adjust the NACK delay such that P(nack_delay) gives the best
 // balance between false positive and false negative rates.
-constexpr SteamNetworkingMicroseconds k_usecNackFlush = 3*1000;
+constexpr GameNetworkingMicroseconds k_usecNackFlush = 3*1000;
 
 // Max size of a message that we are wiling to *receive*.
 constexpr int k_cbMaxMessageSizeRecv = k_cbMaxGameNetworkingSocketsMessageSizeSend*2;
@@ -67,41 +67,41 @@ constexpr int k_cbMaxUnreliableSegmentSizeRecv = k_cbGameNetworkingSocketsMaxPla
 constexpr int k_cbMaxUnreliableMsgSizeRecv = k_nMaxBufferedUnreliableSegments*k_cbMaxUnreliableSegmentSizeRecv;
 COMPILE_TIME_ASSERT( k_cbMaxUnreliableMsgSizeRecv > k_cbMaxUnreliableMsgSizeSend + 4096 ); // Postel's law; confirm how much slack we have here
 
-class CSteamNetworkConnectionBase;
+class CGameNetworkConnectionBase;
 class CConnectionTransport;
-struct SteamNetworkingMessageQueue;
+struct GameNetworkingMessageQueue;
 
-/// Actual implementation of SteamNetworkingMessage_t, which is the API
+/// Actual implementation of GameNetworkingMessage_t, which is the API
 /// visible type.  Has extra fields needed to put the message into intrusive
 /// linked lists.
-class CSteamNetworkingMessage : public SteamNetworkingMessage_t
+class CGameNetworkingMessage : public GameNetworkingMessage_t
 {
 public:
 	STEAMNETWORKINGSOCKETS_DECLARE_CLASS_OPERATOR_NEW
-	static CSteamNetworkingMessage *New( CSteamNetworkConnectionBase *pParent, uint32 cbSize, int64 nMsgNum, int nFlags, SteamNetworkingMicroseconds usecNow );
-	static CSteamNetworkingMessage *New( uint32 cbSize );
-	static void DefaultFreeData( SteamNetworkingMessage_t *pMsg );
+	static CGameNetworkingMessage *New( CGameNetworkConnectionBase *pParent, uint32 cbSize, int64 nMsgNum, int nFlags, GameNetworkingMicroseconds usecNow );
+	static CGameNetworkingMessage *New( uint32 cbSize );
+	static void DefaultFreeData( GameNetworkingMessage_t *pMsg );
 
 	/// OK to delay sending this message until this time.  Set to zero to explicitly force
 	/// Nagle timer to expire and send now (but this should behave the same as if the
 	/// timer < usecNow).  If the timer is cleared, then all messages with lower message numbers
 	/// are also cleared.
 	// NOTE: Intentionally reusing the m_usecTimeReceived field, which is not used on outbound messages
-	inline SteamNetworkingMicroseconds SNPSend_UsecNagle() const { return m_usecTimeReceived; }
-	inline void SNPSend_SetUsecNagle( SteamNetworkingMicroseconds x ) { m_usecTimeReceived = x; }
+	inline GameNetworkingMicroseconds SNPSend_UsecNagle() const { return m_usecTimeReceived; }
+	inline void SNPSend_SetUsecNagle( GameNetworkingMicroseconds x ) { m_usecTimeReceived = x; }
 
 	/// Offset in reliable stream of the header byte.  0 if we're not reliable.
 	inline int64 SNPSend_ReliableStreamPos() const { return m_nConnUserData; }
 	inline void SNPSend_SetReliableStreamPos( int64 x ) { m_nConnUserData = x; }
 	inline int SNPSend_ReliableStreamSize() const
 	{
-		DbgAssert( m_nFlags & k_nSteamNetworkingSend_Reliable && m_nConnUserData > 0 && m_cbSNPSendReliableHeader > 0 && m_cbSize >= m_cbSNPSendReliableHeader );
+		DbgAssert( m_nFlags & k_nGameNetworkingSend_Reliable && m_nConnUserData > 0 && m_cbSNPSendReliableHeader > 0 && m_cbSize >= m_cbSNPSendReliableHeader );
 		return m_cbSize;
 	}
 
 	inline bool SNPSend_IsReliable() const
 	{
-		if ( m_nFlags & k_nSteamNetworkingSend_Reliable )
+		if ( m_nFlags & k_nGameNetworkingSend_Reliable )
 		{
 			DbgAssert( m_nConnUserData > 0 && m_cbSNPSendReliableHeader > 0 && m_cbSize >= m_cbSNPSendReliableHeader );
 			return true;
@@ -123,9 +123,9 @@ public:
 
 	struct Links
 	{
-		SteamNetworkingMessageQueue *m_pQueue;
-		CSteamNetworkingMessage *m_pPrev;
-		CSteamNetworkingMessage *m_pNext;
+		GameNetworkingMessageQueue *m_pQueue;
+		CGameNetworkingMessage *m_pPrev;
+		CGameNetworkingMessage *m_pNext;
 
 		inline void Clear() { m_pQueue = nullptr; m_pPrev = nullptr; m_pNext = nullptr; }
 	};
@@ -137,22 +137,22 @@ public:
 	/// P2P channel, depending on message type)
 	Links m_linksSecondaryQueue;
 
-	void LinkBefore( CSteamNetworkingMessage *pSuccessor, Links CSteamNetworkingMessage::*pMbrLinks, SteamNetworkingMessageQueue *pQueue );
-	void LinkToQueueTail( Links CSteamNetworkingMessage::*pMbrLinks, SteamNetworkingMessageQueue *pQueue );
-	void UnlinkFromQueue( Links CSteamNetworkingMessage::*pMbrLinks );
+	void LinkBefore( CGameNetworkingMessage *pSuccessor, Links CGameNetworkingMessage::*pMbrLinks, GameNetworkingMessageQueue *pQueue );
+	void LinkToQueueTail( Links CGameNetworkingMessage::*pMbrLinks, GameNetworkingMessageQueue *pQueue );
+	void UnlinkFromQueue( Links CGameNetworkingMessage::*pMbrLinks );
 
 private:
 	// Use New and Release()!!
-	inline CSteamNetworkingMessage() {}
-	inline ~CSteamNetworkingMessage() {}
-	static void ReleaseFunc( SteamNetworkingMessage_t *pIMsg );
+	inline CGameNetworkingMessage() {}
+	inline ~CGameNetworkingMessage() {}
+	static void ReleaseFunc( GameNetworkingMessage_t *pIMsg );
 };
 
-/// A doubly-linked list of CSteamNetworkingMessage
-struct SteamNetworkingMessageQueue
+/// A doubly-linked list of CGameNetworkingMessage
+struct GameNetworkingMessageQueue
 {
-	CSteamNetworkingMessage *m_pFirst = nullptr;
-	CSteamNetworkingMessage *m_pLast = nullptr;
+	CGameNetworkingMessage *m_pFirst = nullptr;
+	CGameNetworkingMessage *m_pLast = nullptr;
 	LockDebugInfo *m_pRequiredLock = nullptr; // Is there a lock that is required to be held while we access this queue?
 
 	inline bool empty() const
@@ -167,7 +167,7 @@ struct SteamNetworkingMessageQueue
 	}
 
 	/// Remove the first messages out of the queue (up to nMaxMessages).  Returns the number returned
-	int RemoveMessages( SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages );
+	int RemoveMessages( GameNetworkingMessage_t **ppOutMessages, int nMaxMessages );
 
 	/// Delete all queued messages
 	void PurgeMessages();
@@ -221,7 +221,7 @@ struct SNPInFlightPacket_t
 	//
 
 	/// Local timestamp when we sent it
-	SteamNetworkingMicroseconds m_usecWhenSent;
+	GameNetworkingMicroseconds m_usecWhenSent;
 
 	/// Did we get an ack block from peer that explicitly marked this
 	/// packet as being skipped?  Note that we might subsequently get an
@@ -239,15 +239,15 @@ struct SNPInFlightPacket_t
 	vstd::small_vector<SNPRange_t,1> m_vecReliableSegments;
 };
 
-struct SSNPSendMessageList : public SteamNetworkingMessageQueue
+struct SSNPSendMessageList : public GameNetworkingMessageQueue
 {
 
 	/// Unlink the message at the head, if any and return it.
 	/// Unlike STL pop_front, this will return nullptr if the
 	/// list is empty
-	CSteamNetworkingMessage *pop_front()
+	CGameNetworkingMessage *pop_front()
 	{
-		CSteamNetworkingMessage *pResult = m_pFirst;
+		CGameNetworkingMessage *pResult = m_pFirst;
 		if ( pResult )
 		{
 			Assert( m_pLast );
@@ -272,7 +272,7 @@ struct SSNPSendMessageList : public SteamNetworkingMessageQueue
 	}
 
 	/// Optimized insertion when we know it goes at the end
-	void push_back( CSteamNetworkingMessage *pMsg )
+	void push_back( CGameNetworkingMessage *pMsg )
 	{
 		if ( m_pFirst == nullptr )
 		{
@@ -321,17 +321,17 @@ struct SSendRateData
 	float m_flTokenBucket = 0;
 
 	/// Last time that we added tokens to m_flTokenBucket
-	SteamNetworkingMicroseconds m_usecTokenBucketTime = 0;
+	GameNetworkingMicroseconds m_usecTokenBucketTime = 0;
 
 	/// Calculate time until we could send our next packet, checking our token
 	/// bucket and the current send rate
-	SteamNetworkingMicroseconds CalcTimeUntilNextSend() const
+	GameNetworkingMicroseconds CalcTimeUntilNextSend() const
 	{
 		// Do we have tokens to burn right now?
 		if ( m_flTokenBucket >= 0.0f )
 			return 0;
 
-		return SteamNetworkingMicroseconds( m_flTokenBucket * -1e6f / m_flCurrentSendRateUsed ) + 1; // +1 to make sure that if we don't have any tokens, we never return 0, since zero means "ready right now"
+		return GameNetworkingMicroseconds( m_flTokenBucket * -1e6f / m_flCurrentSendRateUsed ) + 1; // +1 to make sure that if we don't have any tokens, we never return 0, since zero means "ready right now"
 	}
 };
 
@@ -346,7 +346,7 @@ struct SSNPSenderState
 	/// Nagle timer on all pending messages
 	void ClearNagleTimers()
 	{
-		CSteamNetworkingMessage *pMsg = m_messagesQueued.m_pLast;
+		CGameNetworkingMessage *pMsg = m_messagesQueued.m_pLast;
 		while ( pMsg && pMsg->SNPSend_UsecNagle() )
 		{
 			pMsg->SNPSend_SetUsecNagle( 0 );
@@ -375,7 +375,7 @@ struct SSNPSenderState
 	/// as soon as they are no longer needed.)
 	SSNPSendMessageList m_unackedReliableMessages;
 
-	// Buffered data counters.  See SteamNetworkingQuickConnectionStatus for more info
+	// Buffered data counters.  See GameNetworkingQuickConnectionStatus for more info
 	int m_cbPendingUnreliable = 0;
 	int m_cbPendingReliable = 0;
 	int m_cbSentUnackedReliable = 0;
@@ -401,11 +401,11 @@ struct SSNPSenderState
 	///
 	/// The "value" portion of the map is the message that has the first bit of
 	/// reliable data we need for this message
-	std_map<SNPRange_t,CSteamNetworkingMessage*,SNPRange_t::NonOverlappingLess> m_listInFlightReliableRange;
+	std_map<SNPRange_t,CGameNetworkingMessage*,SNPRange_t::NonOverlappingLess> m_listInFlightReliableRange;
 
 	/// Ordered list of ranges that have been put on the wire,
 	/// but have been detected as dropped, and now need to be retried.
-	std_map<SNPRange_t,CSteamNetworkingMessage*,SNPRange_t::NonOverlappingLess> m_listReadyRetryReliableRange;
+	std_map<SNPRange_t,CGameNetworkingMessage*,SNPRange_t::NonOverlappingLess> m_listReadyRetryReliableRange;
 
 	/// Oldest packet sequence number that we are still asking peer
 	/// to send acks for.
@@ -450,9 +450,9 @@ struct SSNPRecvUnreliableSegmentData
 struct SSNPPacketGap
 {
 	int64 m_nEnd; // just after the last packet received
-	SteamNetworkingMicroseconds m_usecWhenReceivedPktBefore; // So we can send RTT data in our acks
-	SteamNetworkingMicroseconds m_usecWhenAckPrior; // We need to send an ack for everything with lower packet numbers than this gap by this time.  (Earlier is OK.)
-	SteamNetworkingMicroseconds m_usecWhenOKToNack; // Don't give up on the gap being filed before this time
+	GameNetworkingMicroseconds m_usecWhenReceivedPktBefore; // So we can send RTT data in our acks
+	GameNetworkingMicroseconds m_usecWhenAckPrior; // We need to send an ack for everything with lower packet numbers than this gap by this time.  (Earlier is OK.)
+	GameNetworkingMicroseconds m_usecWhenOKToNack; // Don't give up on the gap being filed before this time
 };
 
 struct SSNPReceiverState
@@ -548,11 +548,11 @@ struct SSNPReceiverState
 	/// will still be honered.  We will ack up to that packet number,
 	/// and then we we may report higher numbered blocks, or we may
 	/// stop and wait to report more acks until later.
-	void QueueFlushAllAcks( SteamNetworkingMicroseconds usecWhen );
+	void QueueFlushAllAcks( GameNetworkingMicroseconds usecWhen );
 
 	/// Return the time when we need to flush out acks, or INT64_MAX
 	/// if we don't have any acks pending right now.
-	inline SteamNetworkingMicroseconds TimeWhenFlushAcks() const
+	inline GameNetworkingMicroseconds TimeWhenFlushAcks() const
 	{
 		// Paranoia
 		if ( m_mapPacketGaps.empty() )

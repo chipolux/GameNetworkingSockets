@@ -89,7 +89,7 @@ void ETW_Kill()
 	EventUnregisterValve_GameNetworkingSockets();
 }
 
-void ETW_LongOp( const char *opName, SteamNetworkingMicroseconds usec, const char *pszInfo )
+void ETW_LongOp( const char *opName, GameNetworkingMicroseconds usec, const char *pszInfo )
 {
 	EventWriteLongOp( opName, usec, pszInfo ? pszInfo : "" );
 }
@@ -104,17 +104,17 @@ void ETW_UDPRecvPacket( const netadr_t &adrFrom, int cbPkt )
 	EventWriteUDPRecvPacket( CUtlNetAdrRender( adrFrom ).String(), cbPkt );
 }
 
-void ETW_ICESendPacket( HSteamNetConnection hConn, int cbPkt )
+void ETW_ICESendPacket( HGameNetConnection hConn, int cbPkt )
 {
 	EventWriteICESendPacket( hConn, cbPkt );
 }
 
-void ETW_ICERecvPacket( HSteamNetConnection hConn, int cbPkt )
+void ETW_ICERecvPacket( HGameNetConnection hConn, int cbPkt )
 {
 	EventWriteICERecvPacket( hConn, cbPkt );
 }
 
-void ETW_ICEProcessPacket( HSteamNetConnection hConn, int cbPkt )
+void ETW_ICEProcessPacket( HGameNetConnection hConn, int cbPkt )
 {
 	EventWriteICEProcessPacket( hConn, cbPkt );
 }

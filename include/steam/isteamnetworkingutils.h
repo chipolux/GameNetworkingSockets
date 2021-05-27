@@ -38,7 +38,7 @@ public:
 	/// If cbAllocateBuffer=0, then no buffer is allocated.  m_pData will be NULL,
 	/// m_cbSize will be zero, and m_pfnFreeData will be NULL.  You will need to
 	/// set each of these.
-	virtual SteamNetworkingMessage_t *AllocateMessage( int cbAllocateBuffer ) = 0;
+	virtual GameNetworkingMessage_t *AllocateMessage( int cbAllocateBuffer ) = 0;
 
 	//
 	// Access to Steam Datagram Relay (SDR) network
@@ -78,7 +78,7 @@ public:
 	///
 	/// SteamRelayNetworkStatus_t::m_eAvail is returned.  If you want
 	/// more details, you can pass a non-NULL value.
-	virtual ESteamNetworkingAvailability GetRelayNetworkStatus( SteamRelayNetworkStatus_t *pDetails ) = 0;
+	virtual EGameNetworkingAvailability GetRelayNetworkStatus( SteamRelayNetworkStatus_t *pDetails ) = 0;
 
 	//
 	// "Ping location" functions
@@ -107,7 +107,7 @@ public:
 	///
 	/// This always return the most up-to-date information we have available
 	/// right now, even if we are in the middle of re-calculating ping times.
-	virtual float GetLocalPingLocation( SteamNetworkPingLocation_t &result ) = 0;
+	virtual float GetLocalPingLocation( GameNetworkPingLocation_t &result ) = 0;
 
 	/// Estimate the round-trip latency between two arbitrary locations, in
 	/// milliseconds.  This is a conservative estimate, based on routing through
@@ -124,14 +124,14 @@ public:
 	/// of returning immediately and not sending any packets.)
 	///
 	/// In a few cases we might not able to estimate the route.  In this case
-	/// a negative value is returned.  k_nSteamNetworkingPing_Failed means
+	/// a negative value is returned.  k_nGameNetworkingPing_Failed means
 	/// the reason was because of some networking difficulty.  (Failure to
-	/// ping, etc)  k_nSteamNetworkingPing_Unknown is returned if we cannot
+	/// ping, etc)  k_nGameNetworkingPing_Unknown is returned if we cannot
 	/// currently answer the question for some other reason.
 	///
 	/// Do you need to be able to do this from a backend/matchmaking server?
 	/// You are looking for the "ticketgen" library.
-	virtual int EstimatePingTimeBetweenTwoLocations( const SteamNetworkPingLocation_t &location1, const SteamNetworkPingLocation_t &location2 ) = 0;
+	virtual int EstimatePingTimeBetweenTwoLocations( const GameNetworkPingLocation_t &location1, const GameNetworkPingLocation_t &location2 ) = 0;
 
 	/// Same as EstimatePingTime, but assumes that one location is the local host.
 	/// This is a bit faster, especially if you need to calculate a bunch of
@@ -141,17 +141,17 @@ public:
 	/// GetLocalPingLocation with EstimatePingTimeBetweenTwoLocations.  That's because
 	/// this function uses a slightly more complete set of information about what
 	/// route would be taken.
-	virtual int EstimatePingTimeFromLocalHost( const SteamNetworkPingLocation_t &remoteLocation ) = 0;
+	virtual int EstimatePingTimeFromLocalHost( const GameNetworkPingLocation_t &remoteLocation ) = 0;
 
 	/// Convert a ping location into a text format suitable for sending over the wire.
 	/// The format is a compact and human readable.  However, it is subject to change
 	/// so please do not parse it yourself.  Your buffer must be at least
-	/// k_cchMaxSteamNetworkingPingLocationString bytes.
-	virtual void ConvertPingLocationToString( const SteamNetworkPingLocation_t &location, char *pszBuf, int cchBufSize ) = 0;
+	/// k_cchMaxGameNetworkingPingLocationString bytes.
+	virtual void ConvertPingLocationToString( const GameNetworkPingLocation_t &location, char *pszBuf, int cchBufSize ) = 0;
 
-	/// Parse back SteamNetworkPingLocation_t string.  Returns false if we couldn't understand
+	/// Parse back GameNetworkPingLocation_t string.  Returns false if we couldn't understand
 	/// the string.
-	virtual bool ParsePingLocationString( const char *pszString, SteamNetworkPingLocation_t &result ) = 0;
+	virtual bool ParsePingLocationString( const char *pszString, GameNetworkPingLocation_t &result ) = 0;
 
 	/// Check if the ping data of sufficient recency is available, and if
 	/// it's too old, start refreshing it.
@@ -181,17 +181,17 @@ public:
 
 	/// Fetch ping time of best available relayed route from this host to
 	/// the specified data center.
-	virtual int GetPingToDataCenter( SteamNetworkingPOPID popID, SteamNetworkingPOPID *pViaRelayPoP ) = 0;
+	virtual int GetPingToDataCenter( GameNetworkingPOPID popID, GameNetworkingPOPID *pViaRelayPoP ) = 0;
 
 	/// Get *direct* ping time to the relays at the data center.
-	virtual int GetDirectPingToPOP( SteamNetworkingPOPID popID ) = 0;
+	virtual int GetDirectPingToPOP( GameNetworkingPOPID popID ) = 0;
 
 	/// Get number of network points of presence in the config
 	virtual int GetPOPCount() = 0;
 
 	/// Get list of all POP IDs.  Returns the number of entries that were filled into
 	/// your list.
-	virtual int GetPOPList( SteamNetworkingPOPID *list, int nListSz ) = 0;
+	virtual int GetPOPList( GameNetworkingPOPID *list, int nListSz ) = 0;
 
 	//
 	// Misc
@@ -214,7 +214,7 @@ public:
 	///
 	/// The value is only meaningful for this run of the process.  Don't compare
 	/// it to values obtained on another computer, or other runs of the same process.
-	virtual SteamNetworkingMicroseconds GetLocalTimestamp() = 0;
+	virtual GameNetworkingMicroseconds GetLocalTimestamp() = 0;
 
 	/// Set a function to receive network-related information that is useful for debugging.
 	/// This can be very useful during development, but it can also be useful for troubleshooting
@@ -228,7 +228,7 @@ public:
 	///
 	/// The value here controls the detail level for most messages.  You can control the
 	/// detail level for various subsystems (perhaps only for certain connections) by
-	/// adjusting the configuration values k_ESteamNetworkingConfig_LogLevel_Xxxxx.
+	/// adjusting the configuration values k_EGameNetworkingConfig_LogLevel_Xxxxx.
 	///
 	/// Except when debugging, you should only use k_EGameNetworkingSocketsDebugOutputType_Msg
 	/// or k_EGameNetworkingSocketsDebugOutputType_Warning.  For best performance, do NOT
@@ -242,17 +242,17 @@ public:
 	virtual void SetDebugOutputFunction( EGameNetworkingSocketsDebugOutputType eDetailLevel, FGameNetworkingSocketsDebugOutput pfnFunc ) = 0;
 
 	//
-	// Set and get configuration values, see ESteamNetworkingConfigValue for individual descriptions.
+	// Set and get configuration values, see EGameNetworkingConfigValue for individual descriptions.
 	//
 
 	// Shortcuts for common cases.  (Implemented as inline functions below)
-	bool SetGlobalConfigValueInt32( ESteamNetworkingConfigValue eValue, int32 val );
-	bool SetGlobalConfigValueFloat( ESteamNetworkingConfigValue eValue, float val );
-	bool SetGlobalConfigValueString( ESteamNetworkingConfigValue eValue, const char *val );
-	bool SetGlobalConfigValuePtr( ESteamNetworkingConfigValue eValue, void *val );
-	bool SetConnectionConfigValueInt32( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, int32 val );
-	bool SetConnectionConfigValueFloat( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, float val );
-	bool SetConnectionConfigValueString( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, const char *val );
+	bool SetGlobalConfigValueInt32( EGameNetworkingConfigValue eValue, int32 val );
+	bool SetGlobalConfigValueFloat( EGameNetworkingConfigValue eValue, float val );
+	bool SetGlobalConfigValueString( EGameNetworkingConfigValue eValue, const char *val );
+	bool SetGlobalConfigValuePtr( EGameNetworkingConfigValue eValue, void *val );
+	bool SetConnectionConfigValueInt32( HGameNetConnection hConn, EGameNetworkingConfigValue eValue, int32 val );
+	bool SetConnectionConfigValueFloat( HGameNetConnection hConn, EGameNetworkingConfigValue eValue, float val );
+	bool SetConnectionConfigValueString( HGameNetConnection hConn, EGameNetworkingConfigValue eValue, const char *val );
 
 	//
 	// Set global callbacks.  If you do not want to use Steam's callback dispatch mechanism and you
@@ -260,11 +260,11 @@ public:
 	// simply install these callbacks first thing, and you are good to go.
 	// See IGameNetworkingSockets::RunCallbacks
 	//
-	bool SetGlobalCallback_SteamNetConnectionStatusChanged( FnSteamNetConnectionStatusChanged fnCallback );
-	bool SetGlobalCallback_SteamNetAuthenticationStatusChanged( FnSteamNetAuthenticationStatusChanged fnCallback );
+	bool SetGlobalCallback_GameNetConnectionStatusChanged( FnGameNetConnectionStatusChanged fnCallback );
+	bool SetGlobalCallback_GameNetAuthenticationStatusChanged( FnGameNetAuthenticationStatusChanged fnCallback );
 	bool SetGlobalCallback_SteamRelayNetworkStatusChanged( FnSteamRelayNetworkStatusChanged fnCallback );
-	bool SetGlobalCallback_MessagesSessionRequest( FnSteamNetworkingMessagesSessionRequest fnCallback );
-	bool SetGlobalCallback_MessagesSessionFailed( FnSteamNetworkingMessagesSessionFailed fnCallback );
+	bool SetGlobalCallback_MessagesSessionRequest( FnGameNetworkingMessagesSessionRequest fnCallback );
+	bool SetGlobalCallback_MessagesSessionFailed( FnGameNetworkingMessagesSessionFailed fnCallback );
 
 	/// Set a configuration value.
 	/// - eValue: which value is being set
@@ -276,46 +276,46 @@ public:
 	///   will reset any custom value and restore it to the system default.
 	///   NOTE: When setting pointers (e.g. callback functions), do not pass the function pointer directly.
 	///   Your argument should be a pointer to a function pointer.
-	virtual bool SetConfigValue( ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj,
-		ESteamNetworkingConfigDataType eDataType, const void *pArg ) = 0;
+	virtual bool SetConfigValue( EGameNetworkingConfigValue eValue, EGameNetworkingConfigScope eScopeType, intptr_t scopeObj,
+		EGameNetworkingConfigDataType eDataType, const void *pArg ) = 0;
 
     virtual AppId_t GetAppID() = 0;
     virtual void SetAppID( AppId_t nAppID ) = 0;
 
 	/// Set a configuration value, using a struct to pass the value.
 	/// (This is just a convenience shortcut; see below for the implementation and
-	/// a little insight into how SteamNetworkingConfigValue_t is used when
+	/// a little insight into how GameNetworkingConfigValue_t is used when
 	/// setting config options during listen socket and connection creation.)
-	bool SetConfigValueStruct( const SteamNetworkingConfigValue_t &opt, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj );
+	bool SetConfigValueStruct( const GameNetworkingConfigValue_t &opt, EGameNetworkingConfigScope eScopeType, intptr_t scopeObj );
 
 	/// Get a configuration value.
 	/// - eValue: which value to fetch
 	/// - eScopeType: query setting on what type of object
 	/// - eScopeArg: the object to query the setting for
 	/// - pOutDataType: If non-NULL, the data type of the value is returned.
-	/// - pResult: Where to put the result.  Pass NULL to query the required buffer size.  (k_ESteamNetworkingGetConfigValue_BufferTooSmall will be returned.)
+	/// - pResult: Where to put the result.  Pass NULL to query the required buffer size.  (k_EGameNetworkingGetConfigValue_BufferTooSmall will be returned.)
 	/// - cbResult: IN: the size of your buffer.  OUT: the number of bytes filled in or required.
-	virtual ESteamNetworkingGetConfigValueResult GetConfigValue( ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj,
-		ESteamNetworkingConfigDataType *pOutDataType, void *pResult, size_t *cbResult ) = 0;
+	virtual EGameNetworkingGetConfigValueResult GetConfigValue( EGameNetworkingConfigValue eValue, EGameNetworkingConfigScope eScopeType, intptr_t scopeObj,
+		EGameNetworkingConfigDataType *pOutDataType, void *pResult, size_t *cbResult ) = 0;
 
 	/// Returns info about a configuration value.  Returns false if the value does not exist.
 	/// pOutNextValue can be used to iterate through all of the known configuration values.
-	/// (Use GetFirstConfigValue() to begin the iteration, will be k_ESteamNetworkingConfig_Invalid on the last value)
+	/// (Use GetFirstConfigValue() to begin the iteration, will be k_EGameNetworkingConfig_Invalid on the last value)
 	/// Any of the output parameters can be NULL if you do not need that information.
 	///
-	/// See k_ESteamNetworkingConfig_EnumerateDevVars for some more info about "dev" variables,
+	/// See k_EGameNetworkingConfig_EnumerateDevVars for some more info about "dev" variables,
 	/// which are usually excluded from the set of variables enumerated using this function.
-	virtual bool GetConfigValueInfo( ESteamNetworkingConfigValue eValue, const char **pOutName, ESteamNetworkingConfigDataType *pOutDataType, ESteamNetworkingConfigScope *pOutScope, ESteamNetworkingConfigValue *pOutNextValue ) = 0;
+	virtual bool GetConfigValueInfo( EGameNetworkingConfigValue eValue, const char **pOutName, EGameNetworkingConfigDataType *pOutDataType, EGameNetworkingConfigScope *pOutScope, EGameNetworkingConfigValue *pOutNextValue ) = 0;
 
 	/// Return the lowest numbered configuration value available in the current environment.
-	virtual ESteamNetworkingConfigValue GetFirstConfigValue() = 0;
+	virtual EGameNetworkingConfigValue GetFirstConfigValue() = 0;
 
 	// String conversions.  You'll usually access these using the respective
 	// inline methods.
-	virtual void SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort ) = 0;
-	virtual bool SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr ) = 0;
-	virtual void SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity &identity, char *buf, size_t cbBuf ) = 0;
-	virtual bool SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, const char *pszStr ) = 0;
+	virtual void GameNetworkingIPAddr_ToString( const GameNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort ) = 0;
+	virtual bool GameNetworkingIPAddr_ParseString( GameNetworkingIPAddr *pAddr, const char *pszStr ) = 0;
+	virtual void GameNetworkingIdentity_ToString( const GameNetworkingIdentity &identity, char *buf, size_t cbBuf ) = 0;
+	virtual bool GameNetworkingIdentity_ParseString( GameNetworkingIdentity *pIdentity, const char *pszStr ) = 0;
 
 protected:
 	~IGameNetworkingUtils(); // Silence some warnings
@@ -363,7 +363,7 @@ struct SteamRelayNetworkStatus_t
 	/// Summary status.  When this is "current", initialization has
 	/// completed.  Anything else means you are not ready yet, or
 	/// there is a significant problem.
-	ESteamNetworkingAvailability m_eAvail;
+	EGameNetworkingAvailability m_eAvail;
 
 	/// Nonzero if latency measurement is in progress (or pending,
 	/// awaiting a prerequisite).
@@ -374,37 +374,37 @@ struct SteamRelayNetworkStatus_t
 	///
 	/// Failure to obtain the network config almost always indicates
 	/// a problem with the local internet connection.
-	ESteamNetworkingAvailability m_eAvailNetworkConfig;
+	EGameNetworkingAvailability m_eAvailNetworkConfig;
 
 	/// Current ability to communicate with ANY relay.  Note that
 	/// the complete failure to communicate with any relays almost
 	/// always indicates a problem with the local Internet connection.
 	/// (However, just because you can reach a single relay doesn't
 	/// mean that the local connection is in perfect health.)
-	ESteamNetworkingAvailability m_eAvailAnyRelay;
+	EGameNetworkingAvailability m_eAvailAnyRelay;
 
 	/// Non-localized English language status.  For diagnostic/debugging
 	/// purposes only.
 	char m_debugMsg[ 256 ];
 };
 
-/// Utility class for printing a SteamNetworkingIdentity.
-/// E.g. printf( "Identity is '%s'\n", SteamNetworkingIdentityRender( identity ).c_str() );
-struct SteamNetworkingIdentityRender
+/// Utility class for printing a GameNetworkingIdentity.
+/// E.g. printf( "Identity is '%s'\n", GameNetworkingIdentityRender( identity ).c_str() );
+struct GameNetworkingIdentityRender
 {
-	SteamNetworkingIdentityRender( const SteamNetworkingIdentity &x ) { x.ToString( buf, sizeof(buf) ); }
+	GameNetworkingIdentityRender( const GameNetworkingIdentity &x ) { x.ToString( buf, sizeof(buf) ); }
 	inline const char *c_str() const { return buf; }
 private:
-	char buf[ SteamNetworkingIdentity::k_cchMaxString ];
+	char buf[ GameNetworkingIdentity::k_cchMaxString ];
 };
 
-/// Utility class for printing a SteamNetworkingIPAddrRender.
-struct SteamNetworkingIPAddrRender
+/// Utility class for printing a GameNetworkingIPAddrRender.
+struct GameNetworkingIPAddrRender
 {
-	SteamNetworkingIPAddrRender( const SteamNetworkingIPAddr &x, bool bWithPort = true ) { x.ToString( buf, sizeof(buf), bWithPort ); }
+	GameNetworkingIPAddrRender( const GameNetworkingIPAddr &x, bool bWithPort = true ) { x.ToString( buf, sizeof(buf), bWithPort ); }
 	inline const char *c_str() const { return buf; }
 private:
-	char buf[ SteamNetworkingIPAddr::k_cchMaxString ];
+	char buf[ GameNetworkingIPAddr::k_cchMaxString ];
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -412,26 +412,26 @@ private:
 // Internal stuff
 
 inline void IGameNetworkingUtils::InitRelayNetworkAccess() { CheckPingDataUpToDate( 1e10f ); }
-inline bool IGameNetworkingUtils::SetGlobalConfigValueInt32( ESteamNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Int32, &val ); }
-inline bool IGameNetworkingUtils::SetGlobalConfigValueFloat( ESteamNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Float, &val ); }
-inline bool IGameNetworkingUtils::SetGlobalConfigValueString( ESteamNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_String, val ); }
-inline bool IGameNetworkingUtils::SetGlobalConfigValuePtr( ESteamNetworkingConfigValue eValue, void *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Global, 0, k_ESteamNetworkingConfig_Ptr, &val ); } // Note: passing pointer to pointer.
-inline bool IGameNetworkingUtils::SetConnectionConfigValueInt32( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_Int32, &val ); }
-inline bool IGameNetworkingUtils::SetConnectionConfigValueFloat( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_Float, &val ); }
-inline bool IGameNetworkingUtils::SetConnectionConfigValueString( HSteamNetConnection hConn, ESteamNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_ESteamNetworkingConfig_Connection, hConn, k_ESteamNetworkingConfig_String, val ); }
-inline bool IGameNetworkingUtils::SetGlobalCallback_SteamNetConnectionStatusChanged( FnSteamNetConnectionStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)fnCallback ); }
-inline bool IGameNetworkingUtils::SetGlobalCallback_SteamNetAuthenticationStatusChanged( FnSteamNetAuthenticationStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_AuthStatusChanged, (void*)fnCallback ); }
-inline bool IGameNetworkingUtils::SetGlobalCallback_SteamRelayNetworkStatusChanged( FnSteamRelayNetworkStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_RelayNetworkStatusChanged, (void*)fnCallback ); }
-inline bool IGameNetworkingUtils::SetGlobalCallback_MessagesSessionRequest( FnSteamNetworkingMessagesSessionRequest fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionRequest, (void*)fnCallback ); }
-inline bool IGameNetworkingUtils::SetGlobalCallback_MessagesSessionFailed( FnSteamNetworkingMessagesSessionFailed fnCallback ) { return SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionFailed, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalConfigValueInt32( EGameNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_EGameNetworkingConfig_Global, 0, k_EGameNetworkingConfig_Int32, &val ); }
+inline bool IGameNetworkingUtils::SetGlobalConfigValueFloat( EGameNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_EGameNetworkingConfig_Global, 0, k_EGameNetworkingConfig_Float, &val ); }
+inline bool IGameNetworkingUtils::SetGlobalConfigValueString( EGameNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_EGameNetworkingConfig_Global, 0, k_EGameNetworkingConfig_String, val ); }
+inline bool IGameNetworkingUtils::SetGlobalConfigValuePtr( EGameNetworkingConfigValue eValue, void *val ) { return SetConfigValue( eValue, k_EGameNetworkingConfig_Global, 0, k_EGameNetworkingConfig_Ptr, &val ); } // Note: passing pointer to pointer.
+inline bool IGameNetworkingUtils::SetConnectionConfigValueInt32( HGameNetConnection hConn, EGameNetworkingConfigValue eValue, int32 val ) { return SetConfigValue( eValue, k_EGameNetworkingConfig_Connection, hConn, k_EGameNetworkingConfig_Int32, &val ); }
+inline bool IGameNetworkingUtils::SetConnectionConfigValueFloat( HGameNetConnection hConn, EGameNetworkingConfigValue eValue, float val ) { return SetConfigValue( eValue, k_EGameNetworkingConfig_Connection, hConn, k_EGameNetworkingConfig_Float, &val ); }
+inline bool IGameNetworkingUtils::SetConnectionConfigValueString( HGameNetConnection hConn, EGameNetworkingConfigValue eValue, const char *val ) { return SetConfigValue( eValue, k_EGameNetworkingConfig_Connection, hConn, k_EGameNetworkingConfig_String, val ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_GameNetConnectionStatusChanged( FnGameNetConnectionStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_EGameNetworkingConfig_Callback_ConnectionStatusChanged, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_GameNetAuthenticationStatusChanged( FnGameNetAuthenticationStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_EGameNetworkingConfig_Callback_AuthStatusChanged, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_SteamRelayNetworkStatusChanged( FnSteamRelayNetworkStatusChanged fnCallback ) { return SetGlobalConfigValuePtr( k_EGameNetworkingConfig_Callback_RelayNetworkStatusChanged, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_MessagesSessionRequest( FnGameNetworkingMessagesSessionRequest fnCallback ) { return SetGlobalConfigValuePtr( k_EGameNetworkingConfig_Callback_MessagesSessionRequest, (void*)fnCallback ); }
+inline bool IGameNetworkingUtils::SetGlobalCallback_MessagesSessionFailed( FnGameNetworkingMessagesSessionFailed fnCallback ) { return SetGlobalConfigValuePtr( k_EGameNetworkingConfig_Callback_MessagesSessionFailed, (void*)fnCallback ); }
 
-inline bool IGameNetworkingUtils::SetConfigValueStruct( const SteamNetworkingConfigValue_t &opt, ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj )
+inline bool IGameNetworkingUtils::SetConfigValueStruct( const GameNetworkingConfigValue_t &opt, EGameNetworkingConfigScope eScopeType, intptr_t scopeObj )
 {
 	// Locate the argument.  Strings are a special case, since the
 	// "value" (the whole string buffer) doesn't fit in the struct
 	// NOTE: for pointer values, we pass a pointer to the pointer,
 	// we do not pass the pointer directly.
-	const void *pVal = ( opt.m_eDataType == k_ESteamNetworkingConfig_String ) ? (const void *)opt.m_val.m_string : (const void *)&opt.m_val;
+	const void *pVal = ( opt.m_eDataType == k_EGameNetworkingConfig_String ) ? (const void *)opt.m_val.m_string : (const void *)&opt.m_val;
 	return SetConfigValue( opt.m_eValue, eScopeType, scopeObj, opt.m_eDataType, pVal );
 }
 
@@ -439,21 +439,21 @@ inline bool IGameNetworkingUtils::SetConfigValueStruct( const SteamNetworkingCon
 #if defined( STEAMNETWORKINGSOCKETS_STATIC_LINK ) || defined( STEAMNETWORKINGSOCKETS_STANDALONELIB )
 
 	// Call direct to static functions
-	STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr *pAddr, char *buf, size_t cbBuf, bool bWithPort );
-	STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr );
-	STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity *pIdentity, char *buf, size_t cbBuf );
-	STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, size_t sizeofIdentity, const char *pszStr );
-	inline void SteamNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { SteamNetworkingIPAddr_ToString( this, buf, cbBuf, bWithPort ); }
-	inline bool SteamNetworkingIPAddr::ParseString( const char *pszStr ) { return SteamNetworkingIPAddr_ParseString( this, pszStr ); }
-	inline void SteamNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { SteamNetworkingIdentity_ToString( this, buf, cbBuf ); }
-	inline bool SteamNetworkingIdentity::ParseString( const char *pszStr ) { return SteamNetworkingIdentity_ParseString( this, sizeof(*this), pszStr ); }
+	STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingIPAddr_ToString( const GameNetworkingIPAddr *pAddr, char *buf, size_t cbBuf, bool bWithPort );
+	STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingIPAddr_ParseString( GameNetworkingIPAddr *pAddr, const char *pszStr );
+	STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingIdentity_ToString( const GameNetworkingIdentity *pIdentity, char *buf, size_t cbBuf );
+	STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingIdentity_ParseString( GameNetworkingIdentity *pIdentity, size_t sizeofIdentity, const char *pszStr );
+	inline void GameNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { GameNetworkingIPAddr_ToString( this, buf, cbBuf, bWithPort ); }
+	inline bool GameNetworkingIPAddr::ParseString( const char *pszStr ) { return GameNetworkingIPAddr_ParseString( this, pszStr ); }
+	inline void GameNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { GameNetworkingIdentity_ToString( this, buf, cbBuf ); }
+	inline bool GameNetworkingIdentity::ParseString( const char *pszStr ) { return GameNetworkingIdentity_ParseString( this, sizeof(*this), pszStr ); }
 
 #elif defined( STEAMNETWORKINGSOCKETS_STEAMAPI )
 	// Using steamworks SDK - go through GameNetworkingUtils()
-	inline void SteamNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { GameNetworkingUtils()->SteamNetworkingIPAddr_ToString( *this, buf, cbBuf, bWithPort ); }
-	inline bool SteamNetworkingIPAddr::ParseString( const char *pszStr ) { return GameNetworkingUtils()->SteamNetworkingIPAddr_ParseString( this, pszStr ); }
-	inline void SteamNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { GameNetworkingUtils()->SteamNetworkingIdentity_ToString( *this, buf, cbBuf ); }
-	inline bool SteamNetworkingIdentity::ParseString( const char *pszStr ) { return GameNetworkingUtils()->SteamNetworkingIdentity_ParseString( this, pszStr ); }
+	inline void GameNetworkingIPAddr::ToString( char *buf, size_t cbBuf, bool bWithPort ) const { GameNetworkingUtils()->GameNetworkingIPAddr_ToString( *this, buf, cbBuf, bWithPort ); }
+	inline bool GameNetworkingIPAddr::ParseString( const char *pszStr ) { return GameNetworkingUtils()->GameNetworkingIPAddr_ParseString( this, pszStr ); }
+	inline void GameNetworkingIdentity::ToString( char *buf, size_t cbBuf ) const { GameNetworkingUtils()->GameNetworkingIdentity_ToString( *this, buf, cbBuf ); }
+	inline bool GameNetworkingIdentity::ParseString( const char *pszStr ) { return GameNetworkingUtils()->GameNetworkingIdentity_ParseString( this, pszStr ); }
 #else
 	#error "Invalid config"
 #endif

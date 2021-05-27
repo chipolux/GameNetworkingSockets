@@ -35,11 +35,11 @@ right, especially when authentication, encryption, ICE roles, etc
 are involved.  With symmetric connect mode, sorting out these race
 conditions and producing a single connection is handled by the API.
 
-See the ``k_ESteamNetworkingConfig_SymmetricConnect``
+See the ``k_EGameNetworkingConfig_SymmetricConnect``
 connection flag in [steamnetworkingtypes.h](include/steam/steamnetworkingtypes.h)
 for more info.
 
-## ISteamNetworkingMessages
+## IGameNetworkingMessages
 
 Most P2P libraries, such as google WebRTC, and indeed our own
 [IGameNetworkingSockets](include/steam/isteamnetworkingsockets.h), are *connection
@@ -49,15 +49,15 @@ when you send and receive messages, the peer is identified by the connection han
 Much existing network code is based on UDP with a single socket, where
  connection handles are not used.  Instead, packets are sent with the IP address
  of the recipeient specified for each packet.   (E.g. ``sentto()`` and ``recvfrom()``).
-[ISteamNetworkingMessages](include/steam/isteamnetworkingmessages.h) was created
+[IGameNetworkingMessages](include/steam/isteamnetworkingmessages.h) was created
 to provide a more "ad-hoc" interface like UDP.  It can be useful when adding P2P
 support to existing code, depending on the abstraction you are working with.  If
 the code you are modifing already has the concept of a connection, then you might
-find it easier to use ISteamNetworkinSockets directly.  But if you are modifying code
+find it easier to use IGameNetworkinSockets directly.  But if you are modifying code
 at a lower level, you may find that you need to maintain a table of active connections,
 and each time you send a packet, use the existing connection if one exists, or
 create a new connection if one does not exist.  This is exactly what
-ISteamNetworkingMessages does for you.  It creates symmetric-mode connections on
+IGameNetworkingMessages does for you.  It creates symmetric-mode connections on
 demand the first time you communicate with a given peer, and idle connections are
 automatically closed when they are no longer needed.
 

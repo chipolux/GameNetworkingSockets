@@ -14,8 +14,8 @@ namespace GameNetworkingSocketsLib {
 //
 /////////////////////////////////////////////////////////////////////////////
 
-const SteamNetworkingMicroseconds k_nThinkTime_Never = INT64_MAX;
-const SteamNetworkingMicroseconds k_nThinkTime_ASAP = 1; // by convention, we do not allow setting a think time to 0, since 0 is often an uninitialized variable.
+const GameNetworkingMicroseconds k_nThinkTime_Never = INT64_MAX;
+const GameNetworkingMicroseconds k_nThinkTime_ASAP = 1; // by convention, we do not allow setting a think time to 0, since 0 is often an uninitialized variable.
 class ThinkerSetIndex;
 
 class IThinker
@@ -27,11 +27,11 @@ public:
 	/// Called to set when you next want to get your Think() callback.
 	/// You should assume that, due to scheduler inaccuracy, you could
 	/// get your callback 1 or 2 ms late.
-	void SetNextThinkTime( SteamNetworkingMicroseconds usecTargetThinkTime );
+	void SetNextThinkTime( GameNetworkingMicroseconds usecTargetThinkTime );
 
 	/// Adjust schedule time to the earlier of the current schedule time,
 	/// or the given time.
-	inline void EnsureMinThinkTime( SteamNetworkingMicroseconds usecTargetThinkTime )
+	inline void EnsureMinThinkTime( GameNetworkingMicroseconds usecTargetThinkTime )
 	{
 		if ( usecTargetThinkTime < m_usecNextThinkTime )
 			InternalEnsureMinThinkTime( usecTargetThinkTime );
@@ -45,7 +45,7 @@ public:
 
 	/// Fetch time when the next Think() call is currently scheduled to
 	/// happen.
-	inline SteamNetworkingMicroseconds GetNextThinkTime() const { return m_usecNextThinkTime; }
+	inline GameNetworkingMicroseconds GetNextThinkTime() const { return m_usecNextThinkTime; }
 
 	/// Return true if we are scheduled to get our callback
 	inline bool IsScheduled() const { return m_usecNextThinkTime != k_nThinkTime_Never; }
@@ -54,7 +54,7 @@ public:
 	virtual bool TryLock() const;
 
 	static void Thinker_ProcessThinkers();
-	static SteamNetworkingMicroseconds Thinker_GetNextScheduledThinkTime();
+	static GameNetworkingMicroseconds Thinker_GetNextScheduledThinkTime();
 protected:
 	IThinker();
 
@@ -67,15 +67,15 @@ protected:
 	///
 	/// Note that we assume a limited precision of the thread scheduler,
 	/// and you won't get your callback exactly when you request.
-	virtual void Think( SteamNetworkingMicroseconds usecNow ) = 0;
+	virtual void Think( GameNetworkingMicroseconds usecNow ) = 0;
 
 private:
-	SteamNetworkingMicroseconds m_usecNextThinkTime;
+	GameNetworkingMicroseconds m_usecNextThinkTime;
 	int m_queueIndex;
 	friend class ThinkerSetIndex;
 
-	void InternalSetNextThinkTime( SteamNetworkingMicroseconds usecTargetThinkTime );
-	void InternalEnsureMinThinkTime( SteamNetworkingMicroseconds usecTargetThinkTime );
+	void InternalSetNextThinkTime( GameNetworkingMicroseconds usecTargetThinkTime );
+	void InternalEnsureMinThinkTime( GameNetworkingMicroseconds usecTargetThinkTime );
 };
 template <typename L>
 class ILockableThinker : public IThinker
@@ -100,7 +100,7 @@ class ScheduledMethodThinker : private IThinker
 public:
 
 	/// Required method signature accepts the current time as the only argument.  (Other than implicit "this")
-	typedef void (TOuter::*TMethod)( SteamNetworkingMicroseconds );
+	typedef void (TOuter::*TMethod)( GameNetworkingMicroseconds );
 
 	/// Default constructor doesn't set outer object or method
 	ScheduledMethodThinker() : m_pOuter( nullptr ), m_method( nullptr ) {}
@@ -110,11 +110,11 @@ public:
 
 	/// Schedule to invoke the method at the specified time.  You must have previously specified
 	/// the target object and method.
-	inline void Schedule( SteamNetworkingMicroseconds usecWhen ) { Assert( m_pOuter && m_method ); IThinker::SetNextThinkTime( usecWhen ); }
+	inline void Schedule( GameNetworkingMicroseconds usecWhen ) { Assert( m_pOuter && m_method ); IThinker::SetNextThinkTime( usecWhen ); }
 	inline void ScheduleASAP() { Schedule( k_nThinkTime_ASAP ); }
 
 	/// Schedule to invoke the specified method on the specified object, at the specified time.
-	inline void Schedule( TOuter *pOuter, TMethod method, SteamNetworkingMicroseconds usecWhen )
+	inline void Schedule( TOuter *pOuter, TMethod method, GameNetworkingMicroseconds usecWhen )
 	{
 		Cancel(); // !SPEED! If we wrapped this whole thing with the thinker lock, we could avoid this
 		m_pOuter = pOuter;
@@ -125,8 +125,8 @@ public:
 
 	/// Adjust schedule time to the earlier of the current schedule time,
 	/// or the given time.
-	inline void EnsureMinScheduleTime( SteamNetworkingMicroseconds usecWhen ) { Assert( m_pOuter && m_method ); EnsureMinThinkTime( usecWhen ); }
-	inline void EnsureMinScheduleTime( TOuter *pOuter, TMethod method, SteamNetworkingMicroseconds usecWhen )
+	inline void EnsureMinScheduleTime( GameNetworkingMicroseconds usecWhen ) { Assert( m_pOuter && m_method ); EnsureMinThinkTime( usecWhen ); }
+	inline void EnsureMinScheduleTime( TOuter *pOuter, TMethod method, GameNetworkingMicroseconds usecWhen )
 	{
 		Cancel(); // !SPEED! If we wrapped this whole thing with the thinker lock, we could avoid this
 		m_pOuter = pOuter;
@@ -141,14 +141,14 @@ public:
 	using IThinker::IsScheduled;
 
 	/// Return current time that we are scheduled to be called.  (Returns k_nThinkTime_Never if not scheduled.)
-	inline SteamNetworkingMicroseconds GetScheduleTime() const { return IThinker::GetNextThinkTime(); }
+	inline GameNetworkingMicroseconds GetScheduleTime() const { return IThinker::GetNextThinkTime(); }
 
 protected:
 	TOuter *m_pOuter;
 	TMethod m_method;
 
 	// Think Thunk
-	virtual void Think( SteamNetworkingMicroseconds usecNow )
+	virtual void Think( GameNetworkingMicroseconds usecNow )
 	{
 		if ( m_pOuter )
 			(m_pOuter->*m_method)( usecNow );
@@ -168,7 +168,7 @@ public:
 		return !super::m_pOuter || super::m_pOuter->TryLock();
 	}
 
-	virtual void Think( SteamNetworkingMicroseconds usecNow ) override
+	virtual void Think( GameNetworkingMicroseconds usecNow ) override
 	{
 		if ( super::m_pOuter )
 		{

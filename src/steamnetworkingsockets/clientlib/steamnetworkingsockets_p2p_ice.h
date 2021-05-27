@@ -18,7 +18,7 @@ namespace GameNetworkingSocketsLib {
 
 constexpr int k_nMinPingTimeLocalTolerance = 5;
 
-class CSteamNetworkConnectionP2P;
+class CGameNetworkConnectionP2P;
 struct UDPSendPacketContext_t;
 
 /// Transport for peer-to-peer connection using WebRTC
@@ -28,27 +28,27 @@ class CConnectionTransportP2PICE final
 , private IICESessionDelegate
 {
 public:
-	CConnectionTransportP2PICE( CSteamNetworkConnectionP2P &connection );
+	CConnectionTransportP2PICE( CGameNetworkConnectionP2P &connection );
 	virtual ~CConnectionTransportP2PICE();
 
-	inline CSteamNetworkConnectionP2P &Connection() const { return *assert_cast< CSteamNetworkConnectionP2P *>( &m_connection ); }
-	inline ISteamNetworkingConnectionSignaling *Signaling() const { return Connection().m_pSignaling; }
+	inline CGameNetworkConnectionP2P &Connection() const { return *assert_cast< CGameNetworkConnectionP2P *>( &m_connection ); }
+	inline IGameNetworkingConnectionSignaling *Signaling() const { return Connection().m_pSignaling; }
 
 	void Init();
 
 	// CConnectionTransport overrides
-	virtual void TransportPopulateConnectionInfo( SteamNetConnectionInfo_t &info ) const override;
-	virtual void GetDetailedConnectionStatus( SteamNetworkingDetailedConnectionStatus &stats, SteamNetworkingMicroseconds usecNow ) override;
+	virtual void TransportPopulateConnectionInfo( GameNetConnectionInfo_t &info ) const override;
+	virtual void GetDetailedConnectionStatus( GameNetworkingDetailedConnectionStatus &stats, GameNetworkingMicroseconds usecNow ) override;
 	virtual void TransportFreeResources() override;
 	virtual bool BCanSendEndToEndData() const override;
 
 	// CConnectionTransportP2PBase
-	virtual void P2PTransportUpdateRouteMetrics( SteamNetworkingMicroseconds usecNow ) override;
-	virtual void P2PTransportThink( SteamNetworkingMicroseconds usecNow ) override;
+	virtual void P2PTransportUpdateRouteMetrics( GameNetworkingMicroseconds usecNow ) override;
+	virtual void P2PTransportThink( GameNetworkingMicroseconds usecNow ) override;
 
 	/// Fill in SDR-specific fields to signal
-	void PopulateRendezvousMsg( CMsgSteamNetworkingP2PRendezvous &msg, SteamNetworkingMicroseconds usecNow );
-	void RecvRendezvous( const CMsgICERendezvous &msg, SteamNetworkingMicroseconds usecNow );
+	void PopulateRendezvousMsg( CMsgGameNetworkingP2PRendezvous &msg, GameNetworkingMicroseconds usecNow );
+	void RecvRendezvous( const CMsgICERendezvous &msg, GameNetworkingMicroseconds usecNow );
 
 	inline int LogLevel_P2PRendezvous() const { return m_connection.m_connectionConfig.m_LogLevel_P2PRendezvous.Get(); }
 
@@ -58,8 +58,8 @@ public:
 
 	//EICECandidateType m_eCurrentRouteLocalCandidateType;
 	//EICECandidateType m_eCurrentRouteRemoteCandidateType;
-	SteamNetworkingIPAddr m_currentRouteRemoteAddress;
-	ESteamNetTransportKind m_eCurrentRouteKind;
+	GameNetworkingIPAddr m_currentRouteRemoteAddress;
+	EGameNetTransportKind m_eCurrentRouteKind;
 	int m_nAllowedCandidateTypes; // k_EICECandidate_xxx
 
 private:
@@ -75,8 +75,8 @@ private:
 	void RouteOrWritableStateChanged();
 	void UpdateRoute();
 
-	void DrainPacketQueue( SteamNetworkingMicroseconds usecNow );
-	void ProcessPacket( const uint8_t *pData, int cbPkt, SteamNetworkingMicroseconds usecNow );
+	void DrainPacketQueue( GameNetworkingMicroseconds usecNow );
+	void ProcessPacket( const uint8_t *pData, int cbPkt, GameNetworkingMicroseconds usecNow );
 
 	// Implements CConnectionTransportUDPBase
 	virtual bool SendPacket( const void *pkt, int cbPkt ) override;

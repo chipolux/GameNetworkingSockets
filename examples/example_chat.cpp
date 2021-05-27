@@ -37,7 +37,7 @@
 
 bool g_bQuit = false;
 
-SteamNetworkingMicroseconds g_logTimeZero;
+GameNetworkingMicroseconds g_logTimeZero;
 
 // We do this because I won't want to figure out how to cleanly shut
 // down the thread that is reading from stdin.
@@ -53,7 +53,7 @@ static void NukeProcess( int rc )
 
 static void DebugOutput( EGameNetworkingSocketsDebugOutputType eType, const char *pszMsg )
 {
-	SteamNetworkingMicroseconds time = GameNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
+	GameNetworkingMicroseconds time = GameNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
 	printf( "%10.6f %s\n", time*1e-6, pszMsg );
 	fflush(stdout);
 	if ( eType == k_EGameNetworkingSocketsDebugOutputType_Bug )
@@ -110,7 +110,7 @@ static void InitSteamDatagramConnectionSockets()
 		// Authentication is disabled automatically in the open-source
 		// version since we don't have a trusted third party to issue
 		// certs.
-		GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_IP_AllowWithoutAuth, 1 );
+		GameNetworkingUtils()->SetGlobalConfigValueInt32( k_EGameNetworkingConfig_IP_AllowWithoutAuth, 1 );
 	#endif
 
 	g_logTimeZero = GameNetworkingUtils()->GetLocalTimestamp();
@@ -238,16 +238,16 @@ public:
 		m_pInterface = GameNetworkingSockets();
 
 		// Start listening
-		SteamNetworkingIPAddr serverLocalAddr;
+		GameNetworkingIPAddr serverLocalAddr;
 		serverLocalAddr.Clear();
 		serverLocalAddr.m_port = nPort;
-		SteamNetworkingConfigValue_t opt;
-		opt.SetPtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback );
+		GameNetworkingConfigValue_t opt;
+		opt.SetPtr( k_EGameNetworkingConfig_Callback_ConnectionStatusChanged, (void*)GameNetConnectionStatusChangedCallback );
 		m_hListenSock = m_pInterface->CreateListenSocketIP( serverLocalAddr, 1, &opt );
 		if ( m_hListenSock == k_HSteamListenSocket_Invalid )
 			FatalError( "Failed to listen on port %d", nPort );
 		m_hPollGroup = m_pInterface->CreatePollGroup();
-		if ( m_hPollGroup == k_HSteamNetPollGroup_Invalid )
+		if ( m_hPollGroup == k_HGameNetPollGroup_Invalid )
 			FatalError( "Failed to listen on port %d", nPort );
 		Printf( "Server listening on port %d\n", nPort );
 
@@ -279,12 +279,12 @@ public:
 		m_hListenSock = k_HSteamListenSocket_Invalid;
 
 		m_pInterface->DestroyPollGroup( m_hPollGroup );
-		m_hPollGroup = k_HSteamNetPollGroup_Invalid;
+		m_hPollGroup = k_HGameNetPollGroup_Invalid;
 	}
 private:
 
 	HSteamListenSocket m_hListenSock;
-	HSteamNetPollGroup m_hPollGroup;
+	HGameNetPollGroup m_hPollGroup;
 	IGameNetworkingSockets *m_pInterface;
 
 	struct Client_t
@@ -292,14 +292,14 @@ private:
 		std::string m_sNick;
 	};
 
-	std::map< HSteamNetConnection, Client_t > m_mapClients;
+	std::map< HGameNetConnection, Client_t > m_mapClients;
 
-	void SendStringToClient( HSteamNetConnection conn, const char *str )
+	void SendStringToClient( HGameNetConnection conn, const char *str )
 	{
-		m_pInterface->SendMessageToConnection( conn, str, (uint32)strlen(str), k_nSteamNetworkingSend_Reliable, nullptr );
+		m_pInterface->SendMessageToConnection( conn, str, (uint32)strlen(str), k_nGameNetworkingSend_Reliable, nullptr );
 	}
 
-	void SendStringToAllClients( const char *str, HSteamNetConnection except = k_HSteamNetConnection_Invalid )
+	void SendStringToAllClients( const char *str, HGameNetConnection except = k_HGameNetConnection_Invalid )
 	{
 		for ( auto &c: m_mapClients )
 		{
@@ -314,7 +314,7 @@ private:
 
 		while ( !g_bQuit )
 		{
-			ISteamNetworkingMessage *pIncomingMsg = nullptr;
+			IGameNetworkingMessage *pIncomingMsg = nullptr;
 			int numMsgs = m_pInterface->ReceiveMessagesOnPollGroup( m_hPollGroup, &pIncomingMsg, 1 );
 			if ( numMsgs == 0 )
 				break;
@@ -377,7 +377,7 @@ private:
 		}
 	}
 
-	void SetClientNick( HSteamNetConnection hConn, const char *nick )
+	void SetClientNick( HGameNetConnection hConn, const char *nick )
 	{
 
 		// Remember their nick
@@ -387,23 +387,23 @@ private:
 		m_pInterface->SetConnectionName( hConn, nick );
 	}
 
-	void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pInfo )
+	void OnGameNetConnectionStatusChanged( GameNetConnectionStatusChangedCallback_t *pInfo )
 	{
 		char temp[1024];
 
 		// What's the state of the connection?
 		switch ( pInfo->m_info.m_eState )
 		{
-			case k_ESteamNetworkingConnectionState_None:
+			case k_EGameNetworkingConnectionState_None:
 				// NOTE: We will get callbacks here when we destroy connections.  You can ignore these.
 				break;
 
-			case k_ESteamNetworkingConnectionState_ClosedByPeer:
-			case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+			case k_EGameNetworkingConnectionState_ClosedByPeer:
+			case k_EGameNetworkingConnectionState_ProblemDetectedLocally:
 			{
 				// Ignore if they were not previously connected.  (If they disconnected
 				// before we accepted the connection.)
-				if ( pInfo->m_eOldState == k_ESteamNetworkingConnectionState_Connected )
+				if ( pInfo->m_eOldState == k_EGameNetworkingConnectionState_Connected )
 				{
 
 					// Locate the client.  Note that it should have been found, because this
@@ -414,7 +414,7 @@ private:
 
 					// Select appropriate log messages
 					const char *pszDebugLogAction;
-					if ( pInfo->m_info.m_eState == k_ESteamNetworkingConnectionState_ProblemDetectedLocally )
+					if ( pInfo->m_info.m_eState == k_EGameNetworkingConnectionState_ProblemDetectedLocally )
 					{
 						pszDebugLogAction = "problem detected locally";
 						sprintf( temp, "Alas, %s hath fallen into shadow.  (%s)", itClient->second.m_sNick.c_str(), pInfo->m_info.m_szEndDebug );
@@ -444,7 +444,7 @@ private:
 				}
 				else
 				{
-					assert( pInfo->m_eOldState == k_ESteamNetworkingConnectionState_Connecting );
+					assert( pInfo->m_eOldState == k_EGameNetworkingConnectionState_Connecting );
 				}
 
 				// Clean up the connection.  This is important!
@@ -457,7 +457,7 @@ private:
 				break;
 			}
 
-			case k_ESteamNetworkingConnectionState_Connecting:
+			case k_EGameNetworkingConnectionState_Connecting:
 			{
 				// This must be a new connection
 				assert( m_mapClients.find( pInfo->m_hConn ) == m_mapClients.end() );
@@ -519,7 +519,7 @@ private:
 				break;
 			}
 
-			case k_ESteamNetworkingConnectionState_Connected:
+			case k_EGameNetworkingConnectionState_Connected:
 				// We will get a callback immediately after accepting the connection.
 				// Since we are the server, we can ignore this, it's not news to us.
 				break;
@@ -531,9 +531,9 @@ private:
 	}
 
 	static ChatServer *s_pCallbackInstance;
-	static void SteamNetConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t *pInfo )
+	static void GameNetConnectionStatusChangedCallback( GameNetConnectionStatusChangedCallback_t *pInfo )
 	{
-		s_pCallbackInstance->OnSteamNetConnectionStatusChanged( pInfo );
+		s_pCallbackInstance->OnGameNetConnectionStatusChanged( pInfo );
 	}
 
 	void PollConnectionStateChanges()
@@ -554,19 +554,19 @@ ChatServer *ChatServer::s_pCallbackInstance = nullptr;
 class ChatClient
 {
 public:
-	void Run( const SteamNetworkingIPAddr &serverAddr )
+	void Run( const GameNetworkingIPAddr &serverAddr )
 	{
 		// Select instance to use.  For now we'll always use the default.
 		m_pInterface = GameNetworkingSockets();
 
 		// Start connecting
-		char szAddr[ SteamNetworkingIPAddr::k_cchMaxString ];
+		char szAddr[ GameNetworkingIPAddr::k_cchMaxString ];
 		serverAddr.ToString( szAddr, sizeof(szAddr), true );
 		Printf( "Connecting to chat server at %s", szAddr );
-		SteamNetworkingConfigValue_t opt;
-		opt.SetPtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback );
+		GameNetworkingConfigValue_t opt;
+		opt.SetPtr( k_EGameNetworkingConfig_Callback_ConnectionStatusChanged, (void*)GameNetConnectionStatusChangedCallback );
 		m_hConnection = m_pInterface->ConnectByIPAddress( serverAddr, 1, &opt );
-		if ( m_hConnection == k_HSteamNetConnection_Invalid )
+		if ( m_hConnection == k_HGameNetConnection_Invalid )
 			FatalError( "Failed to create connection" );
 
 		while ( !g_bQuit )
@@ -579,14 +579,14 @@ public:
 	}
 private:
 
-	HSteamNetConnection m_hConnection;
+	HGameNetConnection m_hConnection;
 	IGameNetworkingSockets *m_pInterface;
 
 	void PollIncomingMessages()
 	{
 		while ( !g_bQuit )
 		{
-			ISteamNetworkingMessage *pIncomingMsg = nullptr;
+			IGameNetworkingMessage *pIncomingMsg = nullptr;
 			int numMsgs = m_pInterface->ReceiveMessagesOnConnection( m_hConnection, &pIncomingMsg, 1 );
 			if ( numMsgs == 0 )
 				break;
@@ -623,34 +623,34 @@ private:
 			}
 
 			// Anything else, just send it to the server and let them parse it
-			m_pInterface->SendMessageToConnection( m_hConnection, cmd.c_str(), (uint32)cmd.length(), k_nSteamNetworkingSend_Reliable, nullptr );
+			m_pInterface->SendMessageToConnection( m_hConnection, cmd.c_str(), (uint32)cmd.length(), k_nGameNetworkingSend_Reliable, nullptr );
 		}
 	}
 
-	void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pInfo )
+	void OnGameNetConnectionStatusChanged( GameNetConnectionStatusChangedCallback_t *pInfo )
 	{
-		assert( pInfo->m_hConn == m_hConnection || m_hConnection == k_HSteamNetConnection_Invalid );
+		assert( pInfo->m_hConn == m_hConnection || m_hConnection == k_HGameNetConnection_Invalid );
 
 		// What's the state of the connection?
 		switch ( pInfo->m_info.m_eState )
 		{
-			case k_ESteamNetworkingConnectionState_None:
+			case k_EGameNetworkingConnectionState_None:
 				// NOTE: We will get callbacks here when we destroy connections.  You can ignore these.
 				break;
 
-			case k_ESteamNetworkingConnectionState_ClosedByPeer:
-			case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+			case k_EGameNetworkingConnectionState_ClosedByPeer:
+			case k_EGameNetworkingConnectionState_ProblemDetectedLocally:
 			{
 				g_bQuit = true;
 
 				// Print an appropriate message
-				if ( pInfo->m_eOldState == k_ESteamNetworkingConnectionState_Connecting )
+				if ( pInfo->m_eOldState == k_EGameNetworkingConnectionState_Connecting )
 				{
 					// Note: we could distinguish between a timeout, a rejected connection,
 					// or some other transport problem.
 					Printf( "We sought the remote host, yet our efforts were met with defeat.  (%s)", pInfo->m_info.m_szEndDebug );
 				}
-				else if ( pInfo->m_info.m_eState == k_ESteamNetworkingConnectionState_ProblemDetectedLocally )
+				else if ( pInfo->m_info.m_eState == k_EGameNetworkingConnectionState_ProblemDetectedLocally )
 				{
 					Printf( "Alas, troubles beset us; we have lost contact with the host.  (%s)", pInfo->m_info.m_szEndDebug );
 				}
@@ -667,16 +667,16 @@ private:
 				// and we cannot linger because it's already closed on the other end,
 				// so we just pass 0's.
 				m_pInterface->CloseConnection( pInfo->m_hConn, 0, nullptr, false );
-				m_hConnection = k_HSteamNetConnection_Invalid;
+				m_hConnection = k_HGameNetConnection_Invalid;
 				break;
 			}
 
-			case k_ESteamNetworkingConnectionState_Connecting:
+			case k_EGameNetworkingConnectionState_Connecting:
 				// We will get this callback when we start connecting.
 				// We can ignore this.
 				break;
 
-			case k_ESteamNetworkingConnectionState_Connected:
+			case k_EGameNetworkingConnectionState_Connected:
 				Printf( "Connected to server OK" );
 				break;
 
@@ -687,9 +687,9 @@ private:
 	}
 
 	static ChatClient *s_pCallbackInstance;
-	static void SteamNetConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t *pInfo )
+	static void GameNetConnectionStatusChangedCallback( GameNetConnectionStatusChangedCallback_t *pInfo )
 	{
-		s_pCallbackInstance->OnSteamNetConnectionStatusChanged( pInfo );
+		s_pCallbackInstance->OnGameNetConnectionStatusChanged( pInfo );
 	}
 
 	void PollConnectionStateChanges()
@@ -721,7 +721,7 @@ int main( int argc, const char *argv[] )
 	bool bServer = false;
 	bool bClient = false;
 	int nPort = DEFAULT_SERVER_PORT;
-	SteamNetworkingIPAddr addrServer; addrServer.Clear();
+	GameNetworkingIPAddr addrServer; addrServer.Clear();
 
 	for ( int i = 1 ; i < argc ; ++i )
 	{

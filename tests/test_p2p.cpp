@@ -14,7 +14,7 @@
 #include "../examples/trivial_signaling_client.h"
 
 HSteamListenSocket g_hListenSock;
-HSteamNetConnection g_hConnection;
+HGameNetConnection g_hConnection;
 enum ETestRole
 {
 	k_ETestRole_Undefined,
@@ -56,22 +56,22 @@ void SendMessageToPeer( const char *pszMsg )
 {
 	TEST_Printf( "Sending msg '%s'\n", pszMsg );
 	EResult r = GameNetworkingSockets()->SendMessageToConnection(
-		g_hConnection, pszMsg, (int)strlen(pszMsg)+1, k_nSteamNetworkingSend_Reliable, nullptr );
+		g_hConnection, pszMsg, (int)strlen(pszMsg)+1, k_nGameNetworkingSend_Reliable, nullptr );
 	assert( r == k_EResultOK );
 }
 
 // Called when a connection undergoes a state transition.
-void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pInfo )
+void OnGameNetConnectionStatusChanged( GameNetConnectionStatusChangedCallback_t *pInfo )
 {
 	// What's the state of the connection?
 	switch ( pInfo->m_info.m_eState )
 	{
-	case k_ESteamNetworkingConnectionState_ClosedByPeer:
-	case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+	case k_EGameNetworkingConnectionState_ClosedByPeer:
+	case k_EGameNetworkingConnectionState_ProblemDetectedLocally:
 
 		TEST_Printf( "[%s] %s, reason %d: %s\n",
 			pInfo->m_info.m_szConnectionDescription,
-			( pInfo->m_info.m_eState == k_ESteamNetworkingConnectionState_ClosedByPeer ? "closed by peer" : "problem detected locally" ),
+			( pInfo->m_info.m_eState == k_EGameNetworkingConnectionState_ClosedByPeer ? "closed by peer" : "problem detected locally" ),
 			pInfo->m_info.m_eEndReason,
 			pInfo->m_info.m_szEndDebug
 		);
@@ -81,12 +81,12 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 
 		if ( g_hConnection == pInfo->m_hConn )
 		{
-			g_hConnection = k_HSteamNetConnection_Invalid;
+			g_hConnection = k_HGameNetConnection_Invalid;
 
 			// In this example, we will bail the test whenever this happens.
 			// Was this a normal termination?
 			int rc = 0;
-			if ( rc == k_ESteamNetworkingConnectionState_ProblemDetectedLocally || pInfo->m_info.m_eEndReason != k_ESteamNetConnectionEnd_App_Generic )
+			if ( rc == k_EGameNetworkingConnectionState_ProblemDetectedLocally || pInfo->m_info.m_eEndReason != k_EGameNetConnectionEnd_App_Generic )
 				rc = 1; // failure
 			Quit( rc );
 		}
@@ -98,19 +98,19 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 
 		break;
 
-	case k_ESteamNetworkingConnectionState_None:
+	case k_EGameNetworkingConnectionState_None:
 		// Notification that a connection was destroyed.  (By us, presumably.)
 		// We don't need this, so ignore it.
 		break;
 
-	case k_ESteamNetworkingConnectionState_Connecting:
+	case k_EGameNetworkingConnectionState_Connecting:
 
 		// Is this a connection we initiated, or one that we are receiving?
 		if ( g_hListenSock != k_HSteamListenSocket_Invalid && pInfo->m_info.m_hListenSocket == g_hListenSock )
 		{
 			// Somebody's knocking
 			// Note that we assume we will only ever receive a single connection
-			assert( g_hConnection == k_HSteamNetConnection_Invalid ); // not really a bug in this code, but a bug in the test
+			assert( g_hConnection == k_HGameNetConnection_Invalid ); // not really a bug in this code, but a bug in the test
 
 			TEST_Printf( "[%s] Accepting\n", pInfo->m_info.m_szConnectionDescription );
 			g_hConnection = pInfo->m_hConn;
@@ -125,13 +125,13 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 		}
 		break;
 
-	case k_ESteamNetworkingConnectionState_FindingRoute:
+	case k_EGameNetworkingConnectionState_FindingRoute:
 		// P2P connections will spend a bried time here where they swap addresses
 		// and try to find a route.
 		TEST_Printf( "[%s] finding route\n", pInfo->m_info.m_szConnectionDescription );
 		break;
 
-	case k_ESteamNetworkingConnectionState_Connected:
+	case k_EGameNetworkingConnectionState_Connected:
 		// We got fully connected
 		assert( pInfo->m_hConn == g_hConnection ); // We don't initiate or accept any other connections, so this should be out own connection
 		TEST_Printf( "[%s] connected\n", pInfo->m_info.m_szConnectionDescription );
@@ -145,8 +145,8 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 
 int main( int argc, const char **argv )
 {
-	SteamNetworkingIdentity identityLocal; identityLocal.Clear();
-	SteamNetworkingIdentity identityRemote; identityRemote.Clear();
+	GameNetworkingIdentity identityLocal; identityLocal.Clear();
+	GameNetworkingIdentity identityRemote; identityRemote.Clear();
 	const char *pszTrivialSignalingService = "localhost:10000";
 
 	// Parse the command line
@@ -159,7 +159,7 @@ int main( int argc, const char **argv )
 				TEST_Fatal( "Expected argument after %s", pszSwitch );
 			return argv[++idxArg];
 		};
-		auto ParseIdentity = [&]( SteamNetworkingIdentity &x ) {
+		auto ParseIdentity = [&]( GameNetworkingIdentity &x ) {
 			const char *pszArg = GetArg();
 			if ( !x.ParseString( pszArg ) )
 				TEST_Fatal( "'%s' is not a valid identity string", pszArg );
@@ -192,25 +192,25 @@ int main( int argc, const char **argv )
 	TEST_Init( &identityLocal );
 
 	// Hardcode STUN servers
-	GameNetworkingUtils()->SetGlobalConfigValueString( k_ESteamNetworkingConfig_P2P_STUN_ServerList, "stun.l.google.com:19302" );
+	GameNetworkingUtils()->SetGlobalConfigValueString( k_EGameNetworkingConfig_P2P_STUN_ServerList, "stun.l.google.com:19302" );
 
 	// Allow sharing of any kind of ICE address.
 	// We don't have any method of relaying (TURN) in this example, so we are essentially
 	// forced to disclose our public address if we want to pierce NAT.  But if we
 	// had relay fallback, or if we only wanted to connect on the LAN, we could restrict
 	// to only sharing private addresses.
-	GameNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_P2P_Transport_ICE_Enable, k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_All );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32(k_EGameNetworkingConfig_P2P_Transport_ICE_Enable, k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_All );
 
 	// Create the signaling service
-	SteamNetworkingErrMsg errMsg;
+	GameNetworkingErrMsg errMsg;
 	ITrivialSignalingClient *pSignaling = CreateTrivialSignalingClient( pszTrivialSignalingService, GameNetworkingSockets(), errMsg );
 	if ( pSignaling == nullptr )
 		TEST_Fatal( "Failed to initializing signaling client.  %s", errMsg );
 
-	GameNetworkingUtils()->SetGlobalCallback_SteamNetConnectionStatusChanged( OnSteamNetConnectionStatusChanged );
+	GameNetworkingUtils()->SetGlobalCallback_GameNetConnectionStatusChanged( OnGameNetConnectionStatusChanged );
 
 	// Comment this line in for more detailed spew about signals, route finding, ICE, etc
-	//GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_LogLevel_P2PRendezvous, k_EGameNetworkingSocketsDebugOutputType_Verbose );
+	//GameNetworkingUtils()->SetGlobalConfigValueInt32( k_EGameNetworkingConfig_LogLevel_P2PRendezvous, k_EGameNetworkingSocketsDebugOutputType_Verbose );
 
 	// Create listen socket to receive connections on, unless we are the client
 	if ( g_eTestRole == k_ETestRole_Server )
@@ -236,8 +236,8 @@ int main( int argc, const char **argv )
 		// to ignore it, as the app has given no indication that it desires to
 		// receive inbound connections at all.
 		TEST_Printf( "Creating listen socket in symmetric mode, local virtual port %d\n", g_nVirtualPortLocal );
-		SteamNetworkingConfigValue_t opt;
-		opt.SetInt32( k_ESteamNetworkingConfig_SymmetricConnect, 1 ); // << Note we set symmetric mode on the listen socket
+		GameNetworkingConfigValue_t opt;
+		opt.SetInt32( k_EGameNetworkingConfig_SymmetricConnect, 1 ); // << Note we set symmetric mode on the listen socket
 		g_hListenSock = GameNetworkingSockets()->CreateListenSocketP2P( g_nVirtualPortLocal, 1, &opt );
 		assert( g_hListenSock != k_HSteamListenSocket_Invalid  );
 	}
@@ -245,7 +245,7 @@ int main( int argc, const char **argv )
 	// Begin connecting to peer, unless we are the server
 	if ( g_eTestRole != k_ETestRole_Server )
 	{
-		std::vector< SteamNetworkingConfigValue_t > vecOpts;
+		std::vector< GameNetworkingConfigValue_t > vecOpts;
 
 		// If we want the local and virtual port to differ, we must set
 		// an option.  This is a pretty rare use case, and usually not needed.
@@ -255,8 +255,8 @@ int main( int argc, const char **argv )
 		// needed them to differ.
 		if ( g_nVirtualPortRemote != g_nVirtualPortLocal )
 		{
-			SteamNetworkingConfigValue_t opt;
-			opt.SetInt32( k_ESteamNetworkingConfig_LocalVirtualPort, g_nVirtualPortLocal );
+			GameNetworkingConfigValue_t opt;
+			opt.SetInt32( k_EGameNetworkingConfig_LocalVirtualPort, g_nVirtualPortLocal );
 			vecOpts.push_back( opt );
 		}
 
@@ -267,17 +267,17 @@ int main( int argc, const char **argv )
 		// explicit.
 		if ( g_eTestRole == k_ETestRole_Symmetric )
 		{
-			SteamNetworkingConfigValue_t opt;
-			opt.SetInt32( k_ESteamNetworkingConfig_SymmetricConnect, 1 );
+			GameNetworkingConfigValue_t opt;
+			opt.SetInt32( k_EGameNetworkingConfig_SymmetricConnect, 1 );
 			vecOpts.push_back( opt );
 			TEST_Printf( "Connecting to '%s' in symmetric mode, virtual port %d, from local virtual port %d.\n",
-				SteamNetworkingIdentityRender( identityRemote ).c_str(), g_nVirtualPortRemote,
+				GameNetworkingIdentityRender( identityRemote ).c_str(), g_nVirtualPortRemote,
 				g_nVirtualPortLocal );
 		}
 		else
 		{
 			TEST_Printf( "Connecting to '%s', virtual port %d, from local virtual port %d.\n",
-				SteamNetworkingIdentityRender( identityRemote ).c_str(), g_nVirtualPortRemote,
+				GameNetworkingIdentityRender( identityRemote ).c_str(), g_nVirtualPortRemote,
 				g_nVirtualPortLocal );
 		}
 
@@ -286,14 +286,14 @@ int main( int argc, const char **argv )
 		// since we don't need it.  (Your signaling object already
 		// knows how to talk to the peer) and then the peer identity
 		// will be confirmed via rendezvous.
-		SteamNetworkingErrMsg errMsg;
-		ISteamNetworkingConnectionSignaling *pConnSignaling = pSignaling->CreateSignalingForConnection(
+		GameNetworkingErrMsg errMsg;
+		IGameNetworkingConnectionSignaling *pConnSignaling = pSignaling->CreateSignalingForConnection(
 			identityRemote,
 			errMsg
 		);
 		assert( pConnSignaling );
 		g_hConnection = GameNetworkingSockets()->ConnectP2PCustomSignaling( pConnSignaling, &identityRemote, g_nVirtualPortRemote, (int)vecOpts.size(), vecOpts.data() );
-		assert( g_hConnection != k_HSteamNetConnection_Invalid );
+		assert( g_hConnection != k_HGameNetConnection_Invalid );
 
 		// Go ahead and send a message now.  The message will be queued until route finding
 		// completes.
@@ -310,9 +310,9 @@ int main( int argc, const char **argv )
 		TEST_PumpCallbacks();
 
 		// If we have a connection, then poll it for messages
-		if ( g_hConnection != k_HSteamNetConnection_Invalid )
+		if ( g_hConnection != k_HGameNetConnection_Invalid )
 		{
-			SteamNetworkingMessage_t *pMessage;
+			GameNetworkingMessage_t *pMessage;
 			int r = GameNetworkingSockets()->ReceiveMessagesOnConnection( g_hConnection, &pMessage, 1 );
 			assert( r == 0 || r == 1 ); // <0 indicates an error
 			if ( r == 1 )

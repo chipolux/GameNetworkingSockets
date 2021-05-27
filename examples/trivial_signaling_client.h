@@ -14,9 +14,9 @@ class ITrivialSignalingClient
 public:
 
 	/// Create signaling object for a connection to peer
-    virtual ISteamNetworkingConnectionSignaling *CreateSignalingForConnection(
-        const SteamNetworkingIdentity &identityPeer,
-        SteamNetworkingErrMsg &errMsg ) = 0;
+    virtual IGameNetworkingConnectionSignaling *CreateSignalingForConnection(
+        const GameNetworkingIdentity &identityPeer,
+        GameNetworkingErrMsg &errMsg ) = 0;
 
 	/// Poll the server for incoming signals and dispatch them.
 	/// We use polling in this example just to keep it simple.
@@ -31,7 +31,7 @@ public:
 ITrivialSignalingClient *CreateTrivialSignalingClient(
 	const char *address, // Address:port
 	IGameNetworkingSockets *pGameNetworkingSockets, // Where should we send signals when we get them?
-	SteamNetworkingErrMsg &errMsg // Error message is retjrned here if we fail
+	GameNetworkingErrMsg &errMsg // Error message is retjrned here if we fail
 );
 
 	

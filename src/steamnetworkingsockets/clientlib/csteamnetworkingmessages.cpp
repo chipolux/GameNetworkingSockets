@@ -29,13 +29,13 @@ COMPILE_TIME_ASSERT( sizeof(P2PMessageHeader) == 5 );
 // Put everything in a namespace, so we don't violate the one definition rule
 namespace GameNetworkingSocketsLib {
 
-const SteamNetworkingMicroseconds k_usecSteamNetworkingP2PSessionIdleTimeout = 3*60*k_nMillion;
-const int k_ESteamNetConnectionEnd_P2P_SessionClosed = k_ESteamNetConnectionEnd_App_Min + 1;
-const int k_ESteamNetConnectionEnd_P2P_SessionIdleTimeout = k_ESteamNetConnectionEnd_App_Min + 2;
+const GameNetworkingMicroseconds k_usecGameNetworkingP2PSessionIdleTimeout = 3*60*k_nMillion;
+const int k_EGameNetConnectionEnd_P2P_SessionClosed = k_EGameNetConnectionEnd_App_Min + 1;
+const int k_EGameNetConnectionEnd_P2P_SessionIdleTimeout = k_EGameNetConnectionEnd_App_Min + 2;
 
 // These tables are protected by global lock
-static CUtlHashMap<HSteamNetConnection,SteamNetworkingMessagesSession*,std::equal_to<HSteamNetConnection>,std::hash<HSteamNetConnection>> g_mapSessionsByConnection;
-static CUtlHashMap<HSteamListenSocket,CSteamNetworkingMessages*,std::equal_to<HSteamListenSocket>,std::hash<HSteamListenSocket>> g_mapMessagesInterfaceByListenSocket;
+static CUtlHashMap<HGameNetConnection,GameNetworkingMessagesSession*,std::equal_to<HGameNetConnection>,std::hash<HGameNetConnection>> g_mapSessionsByConnection;
+static CUtlHashMap<HSteamListenSocket,CGameNetworkingMessages*,std::equal_to<HSteamListenSocket>,std::hash<HSteamListenSocket>> g_mapMessagesInterfaceByListenSocket;
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -43,37 +43,37 @@ static CUtlHashMap<HSteamListenSocket,CSteamNetworkingMessages*,std::equal_to<HS
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CSteamNetworkingMessages *CGameNetworkingSockets::GetSteamNetworkingMessages()
+CGameNetworkingMessages *CGameNetworkingSockets::GetGameNetworkingMessages()
 {
 	// Already exist?
-	if ( !m_pSteamNetworkingMessages )
+	if ( !m_pGameNetworkingMessages )
 	{
-		SteamNetworkingGlobalLock scopeLock;
-		SteamNetworkingGlobalLock::SetLongLockWarningThresholdMS( "CreateSteamNetworkingMessages", 10 );
-		m_pSteamNetworkingMessages = new CSteamNetworkingMessages( *this );
-		if ( !m_pSteamNetworkingMessages->BInit() )
+		GameNetworkingGlobalLock scopeLock;
+		GameNetworkingGlobalLock::SetLongLockWarningThresholdMS( "CreateGameNetworkingMessages", 10 );
+		m_pGameNetworkingMessages = new CGameNetworkingMessages( *this );
+		if ( !m_pGameNetworkingMessages->BInit() )
 		{
 			// NOTE: We re gonna keep trying to do this and failing repeatedly.
-			delete m_pSteamNetworkingMessages;
-			m_pSteamNetworkingMessages = nullptr;
+			delete m_pGameNetworkingMessages;
+			m_pGameNetworkingMessages = nullptr;
 		}
 	}
-	return m_pSteamNetworkingMessages;
+	return m_pGameNetworkingMessages;
 }
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// CSteamNetworkingMessages
+// CGameNetworkingMessages
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CSteamNetworkingMessages::Channel::Channel()
+CGameNetworkingMessages::Channel::Channel()
 {
 	m_queueRecvMessages.m_pRequiredLock = &g_lockAllRecvMessageQueues;
 		
 }
 
-CSteamNetworkingMessages::Channel::~Channel()
+CGameNetworkingMessages::Channel::~Channel()
 {
 	ShortDurationScopeLock scopeLock( g_lockAllRecvMessageQueues );
 
@@ -84,20 +84,20 @@ CSteamNetworkingMessages::Channel::~Channel()
 	m_queueRecvMessages.PurgeMessages();
 }
 
-CSteamNetworkingMessages::CSteamNetworkingMessages( CGameNetworkingSockets &steamNetworkingSockets )
+CGameNetworkingMessages::CGameNetworkingMessages( CGameNetworkingSockets &steamNetworkingSockets )
 : m_steamNetworkingSockets( steamNetworkingSockets )
 {
 }
 
-bool CSteamNetworkingMessages::BInit()
+bool CGameNetworkingMessages::BInit()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 
 	// Create listen socket
 	{
-		SteamNetworkingConfigValue_t opt[2];
-		opt[0].SetPtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)ConnectionStatusChangedCallback );
-		opt[1].SetInt32( k_ESteamNetworkingConfig_SymmetricConnect, 1 );
+		GameNetworkingConfigValue_t opt[2];
+		opt[0].SetPtr( k_EGameNetworkingConfig_Callback_ConnectionStatusChanged, (void*)ConnectionStatusChangedCallback );
+		opt[1].SetInt32( k_EGameNetworkingConfig_SymmetricConnect, 1 );
 		m_pListenSocket = m_steamNetworkingSockets.InternalCreateListenSocketP2P( k_nVirtualPort_Messages, 2, opt );
 		if ( !m_pListenSocket )
 			return false;
@@ -119,9 +119,9 @@ bool CSteamNetworkingMessages::BInit()
 	return true;
 }
 
-void CSteamNetworkingMessages::FreeResources()
+void CGameNetworkingMessages::FreeResources()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingMessages::FreeResources" );
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingMessages::FreeResources" );
 
 	// Destroy all of our sessions.  This will detach all of our connections
 	FOR_EACH_HASHMAP( m_mapSessions, i )
@@ -166,35 +166,35 @@ void CSteamNetworkingMessages::FreeResources()
 }
 
 
-CSteamNetworkingMessages::~CSteamNetworkingMessages()
+CGameNetworkingMessages::~CGameNetworkingMessages()
 {
-	SteamNetworkingGlobalLock scopeLock;
+	GameNetworkingGlobalLock scopeLock;
 
 	FreeResources();
 
 	// make sure our parent knows we have been destroyed
-	if ( m_steamNetworkingSockets.m_pSteamNetworkingMessages == this )
+	if ( m_steamNetworkingSockets.m_pGameNetworkingMessages == this )
 	{
-		m_steamNetworkingSockets.m_pSteamNetworkingMessages = nullptr;
+		m_steamNetworkingSockets.m_pGameNetworkingMessages = nullptr;
 	}
 	else
 	{
 		// We should never create more than one messages interface for any given sockets interface!
-		Assert( m_steamNetworkingSockets.m_pSteamNetworkingMessages == nullptr );
+		Assert( m_steamNetworkingSockets.m_pGameNetworkingMessages == nullptr );
 	}
 }
 
-void CSteamNetworkingMessages::ConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t *pInfo )
+void CGameNetworkingMessages::ConnectionStatusChangedCallback( GameNetConnectionStatusChangedCallback_t *pInfo )
 {
 	// These callbacks should happen synchronously, while we have the lock
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingMessages::ConnectionStatusChangedCallback" );
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingMessages::ConnectionStatusChangedCallback" );
 
 	// New connection?
-	if ( pInfo->m_eOldState == k_ESteamNetworkingConnectionState_None )
+	if ( pInfo->m_eOldState == k_EGameNetworkingConnectionState_None )
 	{
 
 		// New connections should only ever transition into to the "connecting" state
-		if ( pInfo->m_info.m_eState != k_ESteamNetworkingConnectionState_Connecting )
+		if ( pInfo->m_info.m_eState != k_EGameNetworkingConnectionState_Connecting )
 		{
 			AssertMsg( false, "Unexpected state transition from 'none' to %d", pInfo->m_info.m_eState );
 			return;
@@ -214,13 +214,13 @@ void CSteamNetworkingMessages::ConnectionStatusChangedCallback( SteamNetConnecti
 			return;
 		}
 		ConnectionScopeLock connectionLock;
-		CSteamNetworkConnectionBase *pConn = GetConnectionByHandle( pInfo->m_hConn, connectionLock );
+		CGameNetworkConnectionBase *pConn = GetConnectionByHandle( pInfo->m_hConn, connectionLock );
 		if ( !pConn )
 		{
 			AssertMsg( false, "Can't find connection by handle?" );
 			return;
 		}
-		Assert( pConn->GetState() == k_ESteamNetworkingConnectionState_Connecting );
+		Assert( pConn->GetState() == k_EGameNetworkingConnectionState_Connecting );
 		g_mapMessagesInterfaceByListenSocket[h]->NewConnection( pConn );
 		return;
 	}
@@ -234,12 +234,12 @@ void CSteamNetworkingMessages::ConnectionStatusChangedCallback( SteamNetConnecti
 	}
 }
 
-EResult CSteamNetworkingMessages::SendMessageToUser( const SteamNetworkingIdentity &identityRemote, const void *pubData, uint32 cubData, int nSendFlags, int nRemoteChannel )
+EResult CGameNetworkingMessages::SendMessageToUser( const GameNetworkingIdentity &identityRemote, const void *pubData, uint32 cubData, int nSendFlags, int nRemoteChannel )
 {
-	// FIXME SteamNetworkingIdentity
+	// FIXME GameNetworkingIdentity
 	if ( identityRemote.GetSteamID64() == 0 )
 	{
-		AssertMsg1( false, "Identity %s isn't valid for Messages sessions.  (Only SteamIDs currently supported).", SteamNetworkingIdentityRender( identityRemote ).c_str() );
+		AssertMsg1( false, "Identity %s isn't valid for Messages sessions.  (Only SteamIDs currently supported).", GameNetworkingIdentityRender( identityRemote ).c_str() );
 		return k_EResultInvalidSteamID;
 	}
 	if ( !IsValidSteamIDForIdentity( identityRemote.GetSteamID() ) )
@@ -248,22 +248,22 @@ EResult CSteamNetworkingMessages::SendMessageToUser( const SteamNetworkingIdenti
 		return k_EResultInvalidSteamID;
 	}
 
-	SteamNetworkingGlobalLock scopeLock( "SendMessageToUser" ); // NOTE - Messages sessions are protected by the global lock.  We have not optimized for more granular locking of the Messages interface
+	GameNetworkingGlobalLock scopeLock( "SendMessageToUser" ); // NOTE - Messages sessions are protected by the global lock.  We have not optimized for more granular locking of the Messages interface
 	ConnectionScopeLock connectionLock;
-	SteamNetworkingMessagesSession *pSess = FindOrCreateSession( identityRemote, connectionLock );
-	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
+	GameNetworkingMessagesSession *pSess = FindOrCreateSession( identityRemote, connectionLock );
+	GameNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	// Check on connection if needed
 	pSess->CheckConnection( usecNow );
 
-	CSteamNetworkConnectionBase *pConn = pSess->m_pConnection;
+	CGameNetworkConnectionBase *pConn = pSess->m_pConnection;
 	if ( pConn )
 	{
 
 		// Implicit accept?
-		if ( pConn->m_bConnectionInitiatedRemotely && pConn->GetState() == k_ESteamNetworkingConnectionState_Connecting )
+		if ( pConn->m_bConnectionInitiatedRemotely && pConn->GetState() == k_EGameNetworkingConnectionState_Connecting )
 		{
-			SpewVerbose( "Messages session %s: Implicitly accepted connection %s via SendMessageToUser\n", SteamNetworkingIdentityRender( identityRemote ).c_str(), pConn->GetDescription() );
+			SpewVerbose( "Messages session %s: Implicitly accepted connection %s via SendMessageToUser\n", GameNetworkingIdentityRender( identityRemote ).c_str(), pConn->GetDescription() );
 			pConn->APIAcceptConnection();
 			pSess->UpdateConnectionInfo();
 		}
@@ -273,10 +273,10 @@ EResult CSteamNetworkingMessages::SendMessageToUser( const SteamNetworkingIdenti
 
 		// No active connection.
 		// Did the previous one fail?
-		SteamNetConnectionInfo_t &info = pSess->m_lastConnectionInfo;
-		if ( info.m_eState != k_ESteamNetworkingConnectionState_None )
+		GameNetConnectionInfo_t &info = pSess->m_lastConnectionInfo;
+		if ( info.m_eState != k_EGameNetworkingConnectionState_None )
 		{
-			if ( !( nSendFlags & k_nSteamNetworkingSend_AutoRestartBrokenSession ) )
+			if ( !( nSendFlags & k_nGameNetworkingSend_AutoRestartBrokenSession ) )
 			{
 				SpewVerbose( "Previous messages connection %s broken (%d, %s), rejecting SendMessageToUser\n",
 					info.m_szConnectionDescription, info.m_eEndReason, info.m_szEndDebug );
@@ -290,13 +290,13 @@ EResult CSteamNetworkingMessages::SendMessageToUser( const SteamNetworkingIdenti
 		}
 
 		// Try to create one
-		SteamNetworkingConfigValue_t opt[2];
-		opt[0].SetPtr( k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)ConnectionStatusChangedCallback );
-		opt[1].SetInt32( k_ESteamNetworkingConfig_SymmetricConnect, 1 );
+		GameNetworkingConfigValue_t opt[2];
+		opt[0].SetPtr( k_EGameNetworkingConfig_Callback_ConnectionStatusChanged, (void*)ConnectionStatusChangedCallback );
+		opt[1].SetInt32( k_EGameNetworkingConfig_SymmetricConnect, 1 );
 		pConn = m_steamNetworkingSockets.InternalConnectP2PDefaultSignaling( identityRemote, k_nVirtualPort_Messages, 2, opt, connectionLock );
 		if ( !pConn )
 		{
-			AssertMsg( false, "Failed to create connection to '%s' for new messages session", SteamNetworkingIdentityRender( identityRemote ).c_str() );
+			AssertMsg( false, "Failed to create connection to '%s' for new messages session", GameNetworkingIdentityRender( identityRemote ).c_str() );
 			return k_EResultFail;
 		}
 
@@ -308,15 +308,15 @@ EResult CSteamNetworkingMessages::SendMessageToUser( const SteamNetworkingIdenti
 	// (It had to do with better buffering or something.)  If we change this,
 	// we are almost certainly going to break some games that depend on it.
 	// Yes, this is kind of crazy, we should try to scope it tighter.
-	if ( pConn->GetState() != k_ESteamNetworkingConnectionState_Connected )
-		nSendFlags = k_nSteamNetworkingSend_Reliable;
+	if ( pConn->GetState() != k_EGameNetworkingConnectionState_Connected )
+		nSendFlags = k_nGameNetworkingSend_Reliable;
 
 	// Allocate a message, and put our header in front.
 	int cbSend = cubData + sizeof(P2PMessageHeader);
-	CSteamNetworkingMessage *pMsg = (CSteamNetworkingMessage *)m_steamNetworkingSockets.m_pGameNetworkingUtils->AllocateMessage( cbSend );
+	CGameNetworkingMessage *pMsg = (CGameNetworkingMessage *)m_steamNetworkingSockets.m_pGameNetworkingUtils->AllocateMessage( cbSend );
 	if ( !pMsg )
 	{
-		pSess->m_pConnection->ConnectionState_ProblemDetectedLocally( k_ESteamNetConnectionEnd_AppException_Generic, "Failed to allocate message" );
+		pSess->m_pConnection->ConnectionState_ProblemDetectedLocally( k_EGameNetConnectionEnd_AppException_Generic, "Failed to allocate message" );
 		return k_EResultFail;
 	}
 	pMsg->m_nFlags = nSendFlags;
@@ -336,9 +336,9 @@ EResult CSteamNetworkingMessages::SendMessageToUser( const SteamNetworkingIdenti
 	return EResult( -nMsgNumberOrResult );
 }
 
-int CSteamNetworkingMessages::ReceiveMessagesOnChannel( int nLocalChannel, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
+int CGameNetworkingMessages::ReceiveMessagesOnChannel( int nLocalChannel, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages )
 {
-	SteamNetworkingGlobalLock scopeLock( "ReceiveMessagesOnChannel" );
+	GameNetworkingGlobalLock scopeLock( "ReceiveMessagesOnChannel" );
 
 	Channel *pChan = FindOrCreateChannel( nLocalChannel );
 
@@ -349,7 +349,7 @@ int CSteamNetworkingMessages::ReceiveMessagesOnChannel( int nLocalChannel, Steam
 	{
 		for (;;)
 		{
-			CSteamNetworkingMessage *pMsg = m_pPollGroup->m_queueRecvMessages.m_pFirst;
+			CGameNetworkingMessage *pMsg = m_pPollGroup->m_queueRecvMessages.m_pFirst;
 			if ( !pMsg )
 				break;
 			pMsg->Unlink();
@@ -361,7 +361,7 @@ int CSteamNetworkingMessages::ReceiveMessagesOnChannel( int nLocalChannel, Steam
 				continue;
 			}
 
-			SteamNetworkingMessagesSession *pSess = g_mapSessionsByConnection[ idxSession ];
+			GameNetworkingMessagesSession *pSess = g_mapSessionsByConnection[ idxSession ];
 			Assert( pSess->m_pConnection );
 			Assert( this == &pSess->m_steamNetworkingMessagesOwner );
 			pSess->ReceivedMessage( pMsg );
@@ -371,45 +371,45 @@ int CSteamNetworkingMessages::ReceiveMessagesOnChannel( int nLocalChannel, Steam
 	return pChan->m_queueRecvMessages.RemoveMessages( ppOutMessages, nMaxMessages );
 }
 
-bool CSteamNetworkingMessages::AcceptSessionWithUser( const SteamNetworkingIdentity &identityRemote )
+bool CGameNetworkingMessages::AcceptSessionWithUser( const GameNetworkingIdentity &identityRemote )
 {
-	SteamNetworkingGlobalLock scopeLock( "AcceptSessionWithUser" );
+	GameNetworkingGlobalLock scopeLock( "AcceptSessionWithUser" );
 	ConnectionScopeLock connectionLock;
-	SteamNetworkingMessagesSession *pSession = FindSession( identityRemote, connectionLock );
+	GameNetworkingMessagesSession *pSession = FindSession( identityRemote, connectionLock );
 	if ( !pSession )
 		return false;
 
-	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
+	GameNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	// Then there should be a connection
-	CSteamNetworkConnectionBase *pConn = pSession->m_pConnection;
+	CGameNetworkConnectionBase *pConn = pSession->m_pConnection;
 	if ( !pConn )
 		return false;
-	if ( pConn->m_bConnectionInitiatedRemotely && pConn->GetState() == k_ESteamNetworkingConnectionState_Connecting )
+	if ( pConn->m_bConnectionInitiatedRemotely && pConn->GetState() == k_EGameNetworkingConnectionState_Connecting )
 		pConn->APIAcceptConnection();
 	pSession->MarkUsed( usecNow );
 	return true;
 }
 
-bool CSteamNetworkingMessages::CloseSessionWithUser( const SteamNetworkingIdentity &identityRemote )
+bool CGameNetworkingMessages::CloseSessionWithUser( const GameNetworkingIdentity &identityRemote )
 {
-	SteamNetworkingGlobalLock scopeLock( "CloseSessionWithUser" );
+	GameNetworkingGlobalLock scopeLock( "CloseSessionWithUser" );
 	ConnectionScopeLock connectionLock;
-	SteamNetworkingMessagesSession *pSession = FindSession( identityRemote, connectionLock );
+	GameNetworkingMessagesSession *pSession = FindSession( identityRemote, connectionLock );
 	if ( !pSession )
 		return false;
 
-	pSession->CloseConnection( k_ESteamNetConnectionEnd_P2P_SessionClosed, "CloseSessionWithUser" );
+	pSession->CloseConnection( k_EGameNetConnectionEnd_P2P_SessionClosed, "CloseSessionWithUser" );
 
 	DestroySession( identityRemote );
 	return true;
 }
 
-bool CSteamNetworkingMessages::CloseChannelWithUser( const SteamNetworkingIdentity &identityRemote, int nChannel )
+bool CGameNetworkingMessages::CloseChannelWithUser( const GameNetworkingIdentity &identityRemote, int nChannel )
 {
-	SteamNetworkingGlobalLock scopeLock( "CloseChannelWithUser" );
+	GameNetworkingGlobalLock scopeLock( "CloseChannelWithUser" );
 	ConnectionScopeLock connectionLock;
-	SteamNetworkingMessagesSession *pSession = FindSession( identityRemote, connectionLock );
+	GameNetworkingMessagesSession *pSession = FindSession( identityRemote, connectionLock );
 	if ( !pSession )
 		return false;
 
@@ -420,10 +420,10 @@ bool CSteamNetworkingMessages::CloseChannelWithUser( const SteamNetworkingIdenti
 	pSession->m_mapOpenChannels.RemoveAt(h);
 
 	// Destroy all unread messages on this channel from this user
-	CSteamNetworkingMessage **ppMsg = &pSession->m_queueRecvMessages.m_pFirst;
+	CGameNetworkingMessage **ppMsg = &pSession->m_queueRecvMessages.m_pFirst;
 	for (;;)
 	{
-		CSteamNetworkingMessage *pMsg = *ppMsg;
+		CGameNetworkingMessage *pMsg = *ppMsg;
 		if ( pMsg == nullptr )
 			break;
 		Assert( pMsg->m_identityPeer == identityRemote );
@@ -445,18 +445,18 @@ bool CSteamNetworkingMessages::CloseChannelWithUser( const SteamNetworkingIdenti
 	return true;
 }
 
-ESteamNetworkingConnectionState CSteamNetworkingMessages::GetSessionConnectionInfo( const SteamNetworkingIdentity &identityRemote, SteamNetConnectionInfo_t *pConnectionInfo, SteamNetworkingQuickConnectionStatus *pQuickStatus )
+EGameNetworkingConnectionState CGameNetworkingMessages::GetSessionConnectionInfo( const GameNetworkingIdentity &identityRemote, GameNetConnectionInfo_t *pConnectionInfo, GameNetworkingQuickConnectionStatus *pQuickStatus )
 {
-	SteamNetworkingGlobalLock scopeLock( "GetSessionConnectionInfo" );
+	GameNetworkingGlobalLock scopeLock( "GetSessionConnectionInfo" );
 	if ( pConnectionInfo )
 		memset( pConnectionInfo, 0, sizeof(*pConnectionInfo) );
 	if ( pQuickStatus )
 		memset( pQuickStatus, 0, sizeof(*pQuickStatus) );
 
 	ConnectionScopeLock connectionLock;
-	SteamNetworkingMessagesSession *pSess = FindSession( identityRemote, connectionLock );
+	GameNetworkingMessagesSession *pSess = FindSession( identityRemote, connectionLock );
 	if ( pSess == nullptr )
-		return k_ESteamNetworkingConnectionState_None;
+		return k_EGameNetworkingConnectionState_None;
 
 	pSess->UpdateConnectionInfo();
 
@@ -468,27 +468,27 @@ ESteamNetworkingConnectionState CSteamNetworkingMessages::GetSessionConnectionIn
 	return pSess->m_lastConnectionInfo.m_eState;
 }
 
-SteamNetworkingMessagesSession *CSteamNetworkingMessages::FindSession( const SteamNetworkingIdentity &identityRemote, ConnectionScopeLock &connectionLock )
+GameNetworkingMessagesSession *CGameNetworkingMessages::FindSession( const GameNetworkingIdentity &identityRemote, ConnectionScopeLock &connectionLock )
 {
 	Assert( !connectionLock.IsLocked() );
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 	int h = m_mapSessions.Find( identityRemote );
 	if ( h == m_mapSessions.InvalidIndex() )
 		return nullptr;
-	SteamNetworkingMessagesSession *pResult = m_mapSessions[ h ];
+	GameNetworkingMessagesSession *pResult = m_mapSessions[ h ];
 	Assert( pResult->m_identityRemote == identityRemote );
 	if ( pResult->m_pConnection )
 		connectionLock.Lock( *pResult->m_pConnection );
 	return pResult;
 }
 
-SteamNetworkingMessagesSession *CSteamNetworkingMessages::FindOrCreateSession( const SteamNetworkingIdentity &identityRemote, ConnectionScopeLock &connectionLock )
+GameNetworkingMessagesSession *CGameNetworkingMessages::FindOrCreateSession( const GameNetworkingIdentity &identityRemote, ConnectionScopeLock &connectionLock )
 {
-	SteamNetworkingMessagesSession *pResult = FindSession( identityRemote, connectionLock );
+	GameNetworkingMessagesSession *pResult = FindSession( identityRemote, connectionLock );
 	if ( !pResult )
 	{
-		SpewVerbose( "Messages session %s: created\n", SteamNetworkingIdentityRender( identityRemote ).c_str() );
-		pResult = new SteamNetworkingMessagesSession( identityRemote, *this );
+		SpewVerbose( "Messages session %s: created\n", GameNetworkingIdentityRender( identityRemote ).c_str() );
+		pResult = new GameNetworkingMessagesSession( identityRemote, *this );
 		m_mapSessions.Insert( identityRemote, pResult );
 	}
 
@@ -497,7 +497,7 @@ SteamNetworkingMessagesSession *CSteamNetworkingMessages::FindOrCreateSession( c
 	return pResult;
 }
 
-CSteamNetworkingMessages::Channel *CSteamNetworkingMessages::FindOrCreateChannel( int nChannel )
+CGameNetworkingMessages::Channel *CGameNetworkingMessages::FindOrCreateChannel( int nChannel )
 {
 	int h = m_mapChannels.Find( nChannel );
 	if ( h != m_mapChannels.InvalidIndex() )
@@ -507,13 +507,13 @@ CSteamNetworkingMessages::Channel *CSteamNetworkingMessages::FindOrCreateChannel
 	return pChan;
 }
 
-void CSteamNetworkingMessages::DestroySession( const SteamNetworkingIdentity &identityRemote )
+void CGameNetworkingMessages::DestroySession( const GameNetworkingIdentity &identityRemote )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CSteamNetworkingMessages::DestroySession" );
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingMessages::DestroySession" );
 	int h = m_mapSessions.Find( identityRemote );
 	if ( h == m_mapSessions.InvalidIndex() )
 		return;
-	SteamNetworkingMessagesSession *pSess = m_mapSessions[ h ];
+	GameNetworkingMessagesSession *pSess = m_mapSessions[ h ];
 	Assert( pSess->m_identityRemote == identityRemote );
 
 	// Remove from table
@@ -524,14 +524,14 @@ void CSteamNetworkingMessages::DestroySession( const SteamNetworkingIdentity &id
 	delete pSess;
 }
 
-void CSteamNetworkingMessages::NewConnection( CSteamNetworkConnectionBase *pConn )
+void CGameNetworkingMessages::NewConnection( CGameNetworkConnectionBase *pConn )
 {
 	// All of our connections should have this flag set
 	Assert( pConn->BSymmetricMode() );
 
 	// Check if we already have a session with an open connection
 	ConnectionScopeLock connectionLock;
-	SteamNetworkingMessagesSession *pSess = FindOrCreateSession( pConn->m_identityRemote, connectionLock );
+	GameNetworkingMessagesSession *pSess = FindOrCreateSession( pConn->m_identityRemote, connectionLock );
 	if ( pSess->m_pConnection )
 	{
 		AssertMsg( false, "Got incoming messages session connection request when we already had a connection.  This could happen legit, but we aren't handling it right now." );
@@ -543,14 +543,14 @@ void CSteamNetworkingMessages::NewConnection( CSteamNetworkConnectionBase *pConn
 	pSess->LinkConnection( pConn );
 
 	// Post a callback
-	SteamNetworkingMessagesSessionRequest_t callback;
+	GameNetworkingMessagesSessionRequest_t callback;
 	callback.m_identityRemote = pConn->m_identityRemote;
 	m_steamNetworkingSockets.QueueCallback( callback, g_Config_Callback_MessagesSessionRequest.Get() );
 }
 
 #ifdef DBGFLAG_VALIDATE
 
-void CSteamNetworkingMessages::Validate( CValidator &validator, const char *pchName )
+void CGameNetworkingMessages::Validate( CValidator &validator, const char *pchName )
 {
 	ValidateRecursive( m_mapSessions );
 	ValidateRecursive( m_mapChannels );
@@ -560,11 +560,11 @@ void CSteamNetworkingMessages::Validate( CValidator &validator, const char *pchN
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// SteamNetworkingMessagesSession
+// GameNetworkingMessagesSession
 //
 /////////////////////////////////////////////////////////////////////////////
 
-SteamNetworkingMessagesSession::SteamNetworkingMessagesSession( const SteamNetworkingIdentity &identityRemote, CSteamNetworkingMessages &steamNetworkingP2P )
+GameNetworkingMessagesSession::GameNetworkingMessagesSession( const GameNetworkingIdentity &identityRemote, CGameNetworkingMessages &steamNetworkingP2P )
 : m_steamNetworkingMessagesOwner( steamNetworkingP2P )
 , m_identityRemote( identityRemote )
 {
@@ -580,7 +580,7 @@ SteamNetworkingMessagesSession::SteamNetworkingMessagesSession( const SteamNetwo
 	MarkUsed( GameNetworkingSockets_GetLocalTimestamp() );
 }
 
-SteamNetworkingMessagesSession::~SteamNetworkingMessagesSession()
+GameNetworkingMessagesSession::~GameNetworkingMessagesSession()
 {
 	// Discard messages
 	g_lockAllRecvMessageQueues.lock();
@@ -588,12 +588,12 @@ SteamNetworkingMessagesSession::~SteamNetworkingMessagesSession()
 	g_lockAllRecvMessageQueues.unlock();
 
 	// If we have a connection, then nuke it now
-	CloseConnection( k_ESteamNetConnectionEnd_P2P_SessionClosed, "P2PSession destroyed" );
+	CloseConnection( k_EGameNetConnectionEnd_P2P_SessionClosed, "P2PSession destroyed" );
 }
 
-void SteamNetworkingMessagesSession::CloseConnection( int nReason, const char *pszDebug )
+void GameNetworkingMessagesSession::CloseConnection( int nReason, const char *pszDebug )
 {
-	CSteamNetworkConnectionBase *pConn = m_pConnection;
+	CGameNetworkConnectionBase *pConn = m_pConnection;
 	if ( pConn )
 	{
 		UpdateConnectionInfo();
@@ -603,32 +603,32 @@ void SteamNetworkingMessagesSession::CloseConnection( int nReason, const char *p
 	ScheduleThink();
 }
 
-void SteamNetworkingMessagesSession::MarkUsed( SteamNetworkingMicroseconds usecNow )
+void GameNetworkingMessagesSession::MarkUsed( GameNetworkingMicroseconds usecNow )
 {
-	m_usecIdleTimeout = usecNow + k_usecSteamNetworkingP2PSessionIdleTimeout;
+	m_usecIdleTimeout = usecNow + k_usecGameNetworkingP2PSessionIdleTimeout;
 	ScheduleThink();
 }
 
-void SteamNetworkingMessagesSession::ScheduleThink()
+void GameNetworkingMessagesSession::ScheduleThink()
 {
 	Assert( m_usecIdleTimeout > 0 ); // We should always have an idle timeout set!
 	EnsureMinThinkTime( m_usecIdleTimeout );
 }
 
-void SteamNetworkingMessagesSession::UpdateConnectionInfo()
+void GameNetworkingMessagesSession::UpdateConnectionInfo()
 {
 	if ( !m_pConnection )
 		return;
-	if ( CollapseConnectionStateToAPIState( m_pConnection->GetState() ) == k_ESteamNetworkingConnectionState_None )
+	if ( CollapseConnectionStateToAPIState( m_pConnection->GetState() ) == k_EGameNetworkingConnectionState_None )
 		return;
 	m_pConnection->ConnectionPopulateInfo( m_lastConnectionInfo );
 	m_lastConnectionInfo.m_hListenSocket = k_HSteamListenSocket_Invalid; // Always clear this, we don't want users of the API to know this is a thing
 	m_pConnection->APIGetQuickConnectionStatus( m_lastQuickStatus );
-	if ( m_lastConnectionInfo.m_eState == k_ESteamNetworkingConnectionState_Connected )
+	if ( m_lastConnectionInfo.m_eState == k_EGameNetworkingConnectionState_Connected )
 		m_bConnectionWasEverConnected = true;
 }
 
-void SteamNetworkingMessagesSession::CheckConnection( SteamNetworkingMicroseconds usecNow )
+void GameNetworkingMessagesSession::CheckConnection( GameNetworkingMicroseconds usecNow )
 {
 	if ( !m_pConnection || !m_bConnectionStateChanged )
 		return;
@@ -639,11 +639,11 @@ void SteamNetworkingMessagesSession::CheckConnection( SteamNetworkingMicrosecond
 		&& !m_pConnection->SNP_BHasAnyUnackedSentReliableData();
 
 	// Check if the connection died
-	if ( m_lastConnectionInfo.m_eState == k_ESteamNetworkingConnectionState_ProblemDetectedLocally || m_lastConnectionInfo.m_eState == k_ESteamNetworkingConnectionState_ClosedByPeer )
+	if ( m_lastConnectionInfo.m_eState == k_EGameNetworkingConnectionState_ProblemDetectedLocally || m_lastConnectionInfo.m_eState == k_EGameNetworkingConnectionState_ClosedByPeer )
 	{
 		SpewVerbose( "[%s] messages session %s: %d %s\n",
 			m_lastConnectionInfo.m_szConnectionDescription,
-			m_lastConnectionInfo.m_eState == k_ESteamNetworkingConnectionState_ProblemDetectedLocally ? "problem detected locally" : "closed by peer",
+			m_lastConnectionInfo.m_eState == k_EGameNetworkingConnectionState_ProblemDetectedLocally ? "problem detected locally" : "closed by peer",
 			(int)m_lastConnectionInfo.m_eEndReason, m_lastConnectionInfo.m_szEndDebug );
 		if ( bIdle && m_bConnectionWasEverConnected )
 		{
@@ -654,14 +654,14 @@ void SteamNetworkingMessagesSession::CheckConnection( SteamNetworkingMicrosecond
 		else
 		{
 			// Post failure callback.
-			SpewVerbose( "[%s] Posting SteamNetworkingMessagesSessionFailed_t\n", m_lastConnectionInfo.m_szConnectionDescription );
-			SteamNetworkingMessagesSessionFailed_t callback;
+			SpewVerbose( "[%s] Posting GameNetworkingMessagesSessionFailed_t\n", m_lastConnectionInfo.m_szConnectionDescription );
+			GameNetworkingMessagesSessionFailed_t callback;
 			callback.m_info = m_lastConnectionInfo;
 			m_steamNetworkingMessagesOwner.m_steamNetworkingSockets.QueueCallback( callback, g_Config_Callback_MessagesSessionFailed.Get() );
 		}
 
 		// Clean up the connection.
-		CSteamNetworkConnectionBase *pConn = m_pConnection;
+		CGameNetworkConnectionBase *pConn = m_pConnection;
 		UnlinkConnection();
 		pConn->ConnectionState_FinWait();
 	}
@@ -669,7 +669,7 @@ void SteamNetworkingMessagesSession::CheckConnection( SteamNetworkingMicrosecond
 	m_bConnectionStateChanged = false;
 }
 
-void SteamNetworkingMessagesSession::Think( SteamNetworkingMicroseconds usecNow )
+void GameNetworkingMessagesSession::Think( GameNetworkingMicroseconds usecNow )
 {
 
 	// Check on the connection
@@ -681,7 +681,7 @@ void SteamNetworkingMessagesSession::Think( SteamNetworkingMicroseconds usecNow 
 		// If we don't have a connection, then we can just self destruct now
 		if ( !m_pConnection )
 		{
-			SpewMsg( "Messages session %s: idle timed out.  Destroying\n", SteamNetworkingIdentityRender( m_identityRemote ).c_str() );
+			SpewMsg( "Messages session %s: idle timed out.  Destroying\n", GameNetworkingIdentityRender( m_identityRemote ).c_str() );
 			m_steamNetworkingMessagesOwner.DestroySession( m_identityRemote );
 			return;
 		}
@@ -692,7 +692,7 @@ void SteamNetworkingMessagesSession::Think( SteamNetworkingMicroseconds usecNow 
 			// The peer hasn't started sending us data.  (Just not a complete message yet.)
 			// This is a relatively small race condition.  Keep extending the timeout
 			// until either the connection drops, or the full message gets delivered
-			SpewMsg( "Messages session %s: connection [%s] is idle timing out, but we have a partial message from our peer.  Assuming a message was sent just at the timeout deadline.   Extending timeout.\n", SteamNetworkingIdentityRender( m_identityRemote ).c_str(), m_pConnection->GetDescription() );
+			SpewMsg( "Messages session %s: connection [%s] is idle timing out, but we have a partial message from our peer.  Assuming a message was sent just at the timeout deadline.   Extending timeout.\n", GameNetworkingIdentityRender( m_identityRemote ).c_str(), m_pConnection->GetDescription() );
 			m_usecIdleTimeout = usecNow + k_nMillion;
 		}
 		else if ( m_pConnection->SNP_BHasAnyUnackedSentReliableData() )
@@ -700,7 +700,7 @@ void SteamNetworkingMessagesSession::Think( SteamNetworkingMicroseconds usecNow 
 			// We *really* ought to think that the peer has acked all of our data.
 			// Because our timeouts are really generous compared to ping times,
 			// throughput, and max message size
-			AssertMsg2( false, "Messages session %s: connection [%s] is idle timing out.  But we still have unacked sent data?!?  This seems bad\n", SteamNetworkingIdentityRender( m_identityRemote ).c_str(), m_pConnection->GetDescription() );
+			AssertMsg2( false, "Messages session %s: connection [%s] is idle timing out.  But we still have unacked sent data?!?  This seems bad\n", GameNetworkingIdentityRender( m_identityRemote ).c_str(), m_pConnection->GetDescription() );
 			m_usecIdleTimeout = usecNow + k_nMillion;
 		}
 		else
@@ -709,8 +709,8 @@ void SteamNetworkingMessagesSession::Think( SteamNetworkingMicroseconds usecNow 
 			// they'll get the notification that we closed the message, and they can resend.
 			// the thing is that they should know for sure that no partial messages were delivered,
 			// so everything they have queued, they just need to resend.
-			SpewMsg( "Messages session %s: idle timing out.  Closing connection [%s] and destroying session\n", SteamNetworkingIdentityRender( m_identityRemote ).c_str(), m_pConnection->GetDescription() );
-			CloseConnection( k_ESteamNetConnectionEnd_P2P_SessionIdleTimeout, "Session Idle Timeout" );
+			SpewMsg( "Messages session %s: idle timing out.  Closing connection [%s] and destroying session\n", GameNetworkingIdentityRender( m_identityRemote ).c_str(), m_pConnection->GetDescription() );
+			CloseConnection( k_EGameNetConnectionEnd_P2P_SessionIdleTimeout, "Session Idle Timeout" );
 
 			// Self-destruct
 			m_steamNetworkingMessagesOwner.DestroySession( m_identityRemote );
@@ -721,13 +721,13 @@ void SteamNetworkingMessagesSession::Think( SteamNetworkingMicroseconds usecNow 
 	ScheduleThink();
 }
 
-static void FreeMessageDataWithP2PMessageHeader( SteamNetworkingMessage_t *pMsg )
+static void FreeMessageDataWithP2PMessageHeader( GameNetworkingMessage_t *pMsg )
 {
 	void *hdr = static_cast<P2PMessageHeader *>( pMsg->m_pData ) - 1;
 	::free( hdr );
 }
 
-void SteamNetworkingMessagesSession::ReceivedMessage( CSteamNetworkingMessage *pMsg )
+void GameNetworkingMessagesSession::ReceivedMessage( CGameNetworkingMessage *pMsg )
 {
 	// Caller locks this
 	g_lockAllRecvMessageQueues.AssertHeldByCurrentThread();
@@ -735,11 +735,11 @@ void SteamNetworkingMessagesSession::ReceivedMessage( CSteamNetworkingMessage *p
 	// Make sure the message is big enough to contain a header
 	if ( pMsg->m_cbSize < sizeof(P2PMessageHeader) )
 	{
-		AssertMsg2( false, "Internal P2P message from %s is %d bytes; that's not big enough for the header!", SteamNetworkingIdentityRender( m_identityRemote ).c_str(), pMsg->m_cbSize );
+		AssertMsg2( false, "Internal P2P message from %s is %d bytes; that's not big enough for the header!", GameNetworkingIdentityRender( m_identityRemote ).c_str(), pMsg->m_cbSize );
 		pMsg->Release();
 		return;
 	}
-	Assert( pMsg->m_pfnFreeData == CSteamNetworkingMessage::DefaultFreeData );
+	Assert( pMsg->m_pfnFreeData == CGameNetworkingMessage::DefaultFreeData );
 
 	// Process the header
 	P2PMessageHeader *hdr = static_cast<P2PMessageHeader *>( pMsg->m_pData );
@@ -749,24 +749,24 @@ void SteamNetworkingMessagesSession::ReceivedMessage( CSteamNetworkingMessage *p
 	pMsg->m_pfnFreeData = FreeMessageDataWithP2PMessageHeader;
 
 	// Add to the session
-	pMsg->LinkToQueueTail( &CSteamNetworkingMessage::m_links, &m_queueRecvMessages );
+	pMsg->LinkToQueueTail( &CGameNetworkingMessage::m_links, &m_queueRecvMessages );
 
 	// Mark channel as open
 	m_mapOpenChannels.Insert( pMsg->m_nChannel, true );
 
 	// Add to end of channel queue
-	CSteamNetworkingMessages::Channel *pChannel = m_steamNetworkingMessagesOwner.FindOrCreateChannel( pMsg->m_nChannel );
-	pMsg->LinkToQueueTail( &CSteamNetworkingMessage::m_linksSecondaryQueue, &pChannel->m_queueRecvMessages );
+	CGameNetworkingMessages::Channel *pChannel = m_steamNetworkingMessagesOwner.FindOrCreateChannel( pMsg->m_nChannel );
+	pMsg->LinkToQueueTail( &CGameNetworkingMessage::m_linksSecondaryQueue, &pChannel->m_queueRecvMessages );
 }
 
-void SteamNetworkingMessagesSession::ConnectionStateChanged( SteamNetConnectionStatusChangedCallback_t *pInfo )
+void GameNetworkingMessagesSession::ConnectionStateChanged( GameNetConnectionStatusChangedCallback_t *pInfo )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 
 	// If we are already disassociated from our session, then we don't care.
 	if ( !m_pConnection )
 	{
-		AssertMsg( false, "SteamNetworkingMessagesSession::ConnectionStateChanged after detaching from connection?" );
+		AssertMsg( false, "GameNetworkingMessagesSession::ConnectionStateChanged after detaching from connection?" );
 		return;
 	}
 	Assert( m_pConnection->m_hConnectionSelf == pInfo->m_hConn );
@@ -774,18 +774,18 @@ void SteamNetworkingMessagesSession::ConnectionStateChanged( SteamNetConnectionS
 	ConnectionScopeLock connectionLock( *m_pConnection );
 
 	// If we're dead (about to be destroyed, entering finwait, etc, then unlink from session)
-	ESteamNetworkingConnectionState eNewAPIState = pInfo->m_info.m_eState;
-	if ( eNewAPIState == k_ESteamNetworkingConnectionState_None )
+	EGameNetworkingConnectionState eNewAPIState = pInfo->m_info.m_eState;
+	if ( eNewAPIState == k_EGameNetworkingConnectionState_None )
 	{
 		UnlinkConnection();
 		return;
 	}
 
 	// Reset idle timeout if we connect
-	if ( eNewAPIState == k_ESteamNetworkingConnectionState_Connecting || eNewAPIState == k_ESteamNetworkingConnectionState_Connected || eNewAPIState == k_ESteamNetworkingConnectionState_FindingRoute )
+	if ( eNewAPIState == k_EGameNetworkingConnectionState_Connecting || eNewAPIState == k_EGameNetworkingConnectionState_Connected || eNewAPIState == k_EGameNetworkingConnectionState_FindingRoute )
 	{
 		MarkUsed( GameNetworkingSockets_GetLocalTimestamp() );
-		if ( eNewAPIState == k_ESteamNetworkingConnectionState_Connected )
+		if ( eNewAPIState == k_EGameNetworkingConnectionState_Connected )
 			m_bConnectionWasEverConnected = true;
 	}
 
@@ -795,7 +795,7 @@ void SteamNetworkingMessagesSession::ConnectionStateChanged( SteamNetConnectionS
 	SetNextThinkTimeASAP();
 }
 
-void SteamNetworkingMessagesSession::LinkConnection( CSteamNetworkConnectionBase *pConn )
+void GameNetworkingMessagesSession::LinkConnection( CGameNetworkConnectionBase *pConn )
 {
 	UnlinkConnection();
 	if ( !pConn )
@@ -813,7 +813,7 @@ void SteamNetworkingMessagesSession::LinkConnection( CSteamNetworkConnectionBase
 	UpdateConnectionInfo();
 }
 
-void SteamNetworkingMessagesSession::UnlinkConnection()
+void GameNetworkingMessagesSession::UnlinkConnection()
 {
 	if ( !m_pConnection )
 		return;
@@ -836,7 +836,7 @@ void SteamNetworkingMessagesSession::UnlinkConnection()
 
 #ifdef DBGFLAG_VALIDATE
 
-void SteamNetworkingMessagesSession::Validate( CValidator &validator, const char *pchName )
+void GameNetworkingMessagesSession::Validate( CValidator &validator, const char *pchName )
 {
 	ValidateRecursive( m_mapOpenChannels );
 	// FIXME: m_queueRecvMessages

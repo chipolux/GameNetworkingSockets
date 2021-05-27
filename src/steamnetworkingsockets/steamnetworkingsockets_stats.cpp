@@ -79,7 +79,7 @@ void PingTracker::Reset()
 	m_usecTimeLastSentPingRequest = 0;
 }
 
-void PingTracker::ReceivedPing( int nPingMS, SteamNetworkingMicroseconds usecNow )
+void PingTracker::ReceivedPing( int nPingMS, GameNetworkingMicroseconds usecNow )
 {
 	Assert( nPingMS >= 0 );
 	COMPILE_TIME_ASSERT( V_ARRAYSIZE(m_arPing) == 3 );
@@ -138,7 +138,7 @@ int PingTracker::WorstPingInRecentSample() const
 	return nResult;
 }
 
-void LinkStatsTrackerBase::InitInternal( SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerBase::InitInternal( GameNetworkingMicroseconds usecNow )
 {
 	m_nPeerProtocolVersion = 0;
 	m_bPassive = false;
@@ -172,7 +172,7 @@ void LinkStatsTrackerBase::InitInternal( SteamNetworkingMicroseconds usecNow )
 	m_jitterHistogram.Reset();
 }
 
-void LinkStatsTrackerBase::SetPassiveInternal( bool bFlag, SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerBase::SetPassiveInternal( bool bFlag, GameNetworkingMicroseconds usecNow )
 {
 	m_bPassive = bFlag;
 
@@ -194,7 +194,7 @@ void LinkStatsTrackerBase::SetPassiveInternal( bool bFlag, SteamNetworkingMicros
 	}
 }
 
-void LinkStatsTrackerBase::StartNextInterval( SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerBase::StartNextInterval( GameNetworkingMicroseconds usecNow )
 {
 	m_nPktsRecvDroppedAccumulator += m_seqPktCounters.m_nDropped;
 	m_nPktsRecvOutOfOrderAccumulator += m_seqPktCounters.m_nOutOfOrder;
@@ -204,7 +204,7 @@ void LinkStatsTrackerBase::StartNextInterval( SteamNetworkingMicroseconds usecNo
 	m_usecIntervalStart = usecNow;
 }
 
-void LinkStatsTrackerBase::UpdateInterval( SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerBase::UpdateInterval( GameNetworkingMicroseconds usecNow )
 {
 	float flElapsed = int64( usecNow - m_usecIntervalStart ) * 1e-6;
 	flElapsed = Max( flElapsed, .001f ); // make sure math doesn't blow up
@@ -371,7 +371,7 @@ void LinkStatsTrackerBase::InternalProcessSequencedPacket_OutOfOrder( int64 nPkt
 	m_seqPktCounters.OnOutOfOrder();
 }
 
-bool LinkStatsTrackerBase::BCheckHaveDataToSendInstantaneous( SteamNetworkingMicroseconds usecNow )
+bool LinkStatsTrackerBase::BCheckHaveDataToSendInstantaneous( GameNetworkingMicroseconds usecNow )
 {
 	Assert( !m_bPassive );
 
@@ -397,7 +397,7 @@ bool LinkStatsTrackerBase::BCheckHaveDataToSendInstantaneous( SteamNetworkingMic
 	return false;
 }
 
-bool LinkStatsTrackerBase::BCheckHaveDataToSendLifetime( SteamNetworkingMicroseconds usecNow )
+bool LinkStatsTrackerBase::BCheckHaveDataToSendLifetime( GameNetworkingMicroseconds usecNow )
 {
 	Assert( !m_bPassive );
 
@@ -415,7 +415,7 @@ bool LinkStatsTrackerBase::BCheckHaveDataToSendLifetime( SteamNetworkingMicrosec
 	return false;
 }
 
-int LinkStatsTrackerBase::GetStatsSendNeed( SteamNetworkingMicroseconds usecNow )
+int LinkStatsTrackerBase::GetStatsSendNeed( GameNetworkingMicroseconds usecNow )
 {
 	int nResult = 0;
 
@@ -442,7 +442,7 @@ int LinkStatsTrackerBase::GetStatsSendNeed( SteamNetworkingMicroseconds usecNow 
 	return nResult;
 }
 
-const char *LinkStatsTrackerBase::InternalGetSendStatsReasonOrUpdateNextThinkTime( SteamNetworkingMicroseconds usecNow, const char *const arpszReasonStrings[4], SteamNetworkingMicroseconds &inOutNextThinkTime )
+const char *LinkStatsTrackerBase::InternalGetSendStatsReasonOrUpdateNextThinkTime( GameNetworkingMicroseconds usecNow, const char *const arpszReasonStrings[4], GameNetworkingMicroseconds &inOutNextThinkTime )
 {
 	if ( m_bPassive )
 		return nullptr;
@@ -460,7 +460,7 @@ const char *LinkStatsTrackerBase::InternalGetSendStatsReasonOrUpdateNextThinkTim
 	}
 	else
 	{
-		SteamNetworkingMicroseconds usecNextCheck = m_usecPeerAckedInstaneous + k_usecLinkStatsInstantaneousReportMaxInterval;
+		GameNetworkingMicroseconds usecNextCheck = m_usecPeerAckedInstaneous + k_usecLinkStatsInstantaneousReportMaxInterval;
 		if ( usecNextCheck < inOutNextThinkTime )
 			inOutNextThinkTime = usecNextCheck;
 	}
@@ -470,14 +470,14 @@ const char *LinkStatsTrackerBase::InternalGetSendStatsReasonOrUpdateNextThinkTim
 	}
 	else
 	{
-		SteamNetworkingMicroseconds usecNextCheck = m_usecPeerAckedLifetime + k_usecLinkStatsLifetimeReportMaxInterval;
+		GameNetworkingMicroseconds usecNextCheck = m_usecPeerAckedLifetime + k_usecLinkStatsLifetimeReportMaxInterval;
 		if ( usecNextCheck < inOutNextThinkTime )
 			inOutNextThinkTime = usecNextCheck;
 	}
 	return arpszReasonStrings[n];
 }
 
-void LinkStatsTrackerBase::PopulateMessage( int nNeedFlags, CMsgSteamDatagramConnectionQuality &msg, SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerBase::PopulateMessage( int nNeedFlags, CMsgSteamDatagramConnectionQuality &msg, GameNetworkingMicroseconds usecNow )
 {
 	Assert( m_pktNumInFlight == 0 && !m_bPassive );
 
@@ -505,7 +505,7 @@ void LinkStatsTrackerBase::PopulateLifetimeMessage( CMsgSteamDatagramLinkLifetim
 	LinkStatsLifetimeStructToMsg( sLifetime, msg );
 }
 
-void LinkStatsTrackerBase::TrackSentMessageExpectingReply( SteamNetworkingMicroseconds usecNow, bool bAllowDelayedReply )
+void LinkStatsTrackerBase::TrackSentMessageExpectingReply( GameNetworkingMicroseconds usecNow, bool bAllowDelayedReply )
 {
 	if ( m_usecInFlightReplyTimeout == 0 )
 	{
@@ -517,7 +517,7 @@ void LinkStatsTrackerBase::TrackSentMessageExpectingReply( SteamNetworkingMicros
 		m_usecLastSendPacketExpectingImmediateReply = usecNow;
 }
 
-void LinkStatsTrackerBase::ProcessMessage( const CMsgSteamDatagramConnectionQuality &msg, SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerBase::ProcessMessage( const CMsgSteamDatagramConnectionQuality &msg, GameNetworkingMicroseconds usecNow )
 {
 	if ( msg.has_instantaneous() )
 	{
@@ -605,7 +605,7 @@ void LinkStatsTrackerBase::GetLifetimeStats( SteamDatagramLinkLifetimeStats &s )
 	s.m_nRXSpeedNtile98th = -1;
 }
 
-void LinkStatsTrackerBase::GetLinkStats( SteamDatagramLinkStats &s, SteamNetworkingMicroseconds usecNow ) const
+void LinkStatsTrackerBase::GetLinkStats( SteamDatagramLinkStats &s, GameNetworkingMicroseconds usecNow ) const
 {
 	GetInstantaneousStats( s.m_latest );
 	GetLifetimeStats( s.m_lifetime );
@@ -633,7 +633,7 @@ void LinkStatsTrackerBase::GetLinkStats( SteamDatagramLinkStats &s, SteamNetwork
 	}
 }
 
-void LinkStatsTrackerEndToEnd::InitInternal( SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerEndToEnd::InitInternal( GameNetworkingMicroseconds usecNow )
 {
 	LinkStatsTrackerBase::InitInternal( usecNow );
 
@@ -665,12 +665,12 @@ void LinkStatsTrackerEndToEnd::InitInternal( SteamNetworkingMicroseconds usecNow
 	StartNextSpeedInterval( usecNow );
 }
 
-void LinkStatsTrackerEndToEnd::StartNextSpeedInterval( SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerEndToEnd::StartNextSpeedInterval( GameNetworkingMicroseconds usecNow )
 {
 	m_usecSpeedIntervalStart = usecNow;
 }
 
-void LinkStatsTrackerEndToEnd::UpdateSpeedInterval( SteamNetworkingMicroseconds usecNow )
+void LinkStatsTrackerEndToEnd::UpdateSpeedInterval( GameNetworkingMicroseconds usecNow )
 {
 	float flElapsed = int64( usecNow - m_usecIntervalStart ) * 1e-6;
 	flElapsed = Max( flElapsed, .001f ); // make sure math doesn't blow up
@@ -722,7 +722,7 @@ void LinkStatsTrackerEndToEnd::GetLifetimeStats( SteamDatagramLinkLifetimeStats 
 	}
 	else
 	{
-		SteamNetworkingMicroseconds usecWhenEnded = m_usecWhenEndedConnectedState ? m_usecWhenEndedConnectedState : GameNetworkingSockets_GetLocalTimestamp();
+		GameNetworkingMicroseconds usecWhenEnded = m_usecWhenEndedConnectedState ? m_usecWhenEndedConnectedState : GameNetworkingSockets_GetLocalTimestamp();
 		s.m_nConnectedSeconds = std::max( k_nMillion, usecWhenEnded - m_usecWhenStartedConnectedState + 500000 ) / k_nMillion;
 	}
 
@@ -1317,14 +1317,14 @@ void LinkStatsPrintToBuf( const char *pszLeader, const SteamDatagramLinkStats &s
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// SteamNetworkingDetailedConnectionStatus
+// GameNetworkingDetailedConnectionStatus
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-void SteamNetworkingDetailedConnectionStatus::Clear()
+void GameNetworkingDetailedConnectionStatus::Clear()
 {
 	V_memset( this, 0, sizeof(*this) );
-	COMPILE_TIME_ASSERT( k_ESteamNetworkingAvailability_Unknown == 0 );
+	COMPILE_TIME_ASSERT( k_EGameNetworkingAvailability_Unknown == 0 );
 	m_statsEndToEnd.Clear();
 	m_statsPrimaryRouter.Clear();
 	m_nPrimaryRouterBackPing = -1;
@@ -1332,46 +1332,46 @@ void SteamNetworkingDetailedConnectionStatus::Clear()
 	m_nBackupRouterBackPing = -1;
 }
 
-int SteamNetworkingDetailedConnectionStatus::Print( char *pszBuf, int cbBuf )
+int GameNetworkingDetailedConnectionStatus::Print( char *pszBuf, int cbBuf )
 {
 	CUtlBuffer buf( 0, 8*1024, CUtlBuffer::TEXT_BUFFER );
 
 	// If we don't have network, there's nothing else we can really do
-	if ( m_eAvailNetworkConfig != k_ESteamNetworkingAvailability_Current && m_eAvailNetworkConfig != k_ESteamNetworkingAvailability_Unknown )
+	if ( m_eAvailNetworkConfig != k_EGameNetworkingAvailability_Current && m_eAvailNetworkConfig != k_EGameNetworkingAvailability_Unknown )
 	{
 		buf.Printf( "Network configuration: %s\n", GetAvailabilityString( m_eAvailNetworkConfig ) );
 		buf.Printf( "   Cannot communicate with relays without network config." );
 	}
 
 	// Unable to talk to any routers?
-	if ( m_eAvailAnyRouterCommunication != k_ESteamNetworkingAvailability_Current && m_eAvailAnyRouterCommunication != k_ESteamNetworkingAvailability_Unknown )
+	if ( m_eAvailAnyRouterCommunication != k_EGameNetworkingAvailability_Current && m_eAvailAnyRouterCommunication != k_EGameNetworkingAvailability_Unknown )
 	{
 		buf.Printf( "Router network: %s\n", GetAvailabilityString( m_eAvailAnyRouterCommunication ) );
 	}
 
 	switch ( m_info.m_eState )
 	{
-		case k_ESteamNetworkingConnectionState_Connecting:
+		case k_EGameNetworkingConnectionState_Connecting:
 			buf.Printf( "End-to-end connection: connecting\n" );
 			break;
 
-		case k_ESteamNetworkingConnectionState_FindingRoute:
+		case k_EGameNetworkingConnectionState_FindingRoute:
 			buf.Printf( "End-to-end connection: performing rendezvous\n" );
 			break;
 
-		case k_ESteamNetworkingConnectionState_Connected:
+		case k_EGameNetworkingConnectionState_Connected:
 			buf.Printf( "End-to-end connection: connected\n" );
 			break;
 
-		case k_ESteamNetworkingConnectionState_ClosedByPeer:
+		case k_EGameNetworkingConnectionState_ClosedByPeer:
 			buf.Printf( "End-to-end connection: closed by remote host, reason code %d.  (%s)\n", m_info.m_eEndReason, m_info.m_szEndDebug );
 			break;
 
-		case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+		case k_EGameNetworkingConnectionState_ProblemDetectedLocally:
 			buf.Printf( "End-to-end connection: closed due to problem detected locally, reason code %d.  (%s)\n", m_info.m_eEndReason, m_info.m_szEndDebug );
 			break;
 
-		case k_ESteamNetworkingConnectionState_None:
+		case k_EGameNetworkingConnectionState_None:
 			buf.Printf( "End-to-end connection: closed, reason code %d.  (%s)\n", m_info.m_eEndReason, m_info.m_szEndDebug );
 			break;
 
@@ -1382,7 +1382,7 @@ int SteamNetworkingDetailedConnectionStatus::Print( char *pszBuf, int cbBuf )
 
 	if ( m_info.m_idPOPRemote )
 	{
-		buf.Printf( "    Remote host is in data center '%s'\n", SteamNetworkingPOPIDRender( m_info.m_idPOPRemote ).c_str() );
+		buf.Printf( "    Remote host is in data center '%s'\n", GameNetworkingPOPIDRender( m_info.m_idPOPRemote ).c_str() );
 	}
 
 	// If we ever tried to send a packet end-to-end, dump end-to-end stats.
@@ -1412,7 +1412,7 @@ int SteamNetworkingDetailedConnectionStatus::Print( char *pszBuf, int cbBuf )
 	}
 	else if ( m_info.m_idPOPRelay )
 	{
-		buf.Printf( "Communicating via relay in '%s'\n", SteamNetworkingPOPIDRender( m_info.m_idPOPRelay ).c_str() );
+		buf.Printf( "Communicating via relay in '%s'\n", GameNetworkingPOPIDRender( m_info.m_idPOPRelay ).c_str() );
 	}
 
 	int sz = buf.TellPut()+1;

@@ -44,7 +44,7 @@
 	#define STEAMNETWORKINGSOCKETS_ENABLE_SDR
 #endif
 
-// Always enable ISteamNetworkingMessages, unless it is specifically
+// Always enable IGameNetworkingMessages, unless it is specifically
 // disabled
 #ifndef STEAMNETWORKINGSOCKETS_DISABLE_STEAMNETWORKINGMESSAGES
 	#define STEAMNETWORKINGSOCKETS_ENABLE_STEAMNETWORKINGMESSAGES
@@ -142,7 +142,7 @@ inline int ProtoMsgByteSize( const TMsg &msg )
 struct SteamDatagramLinkStats;
 struct SteamDatagramLinkLifetimeStats;
 struct SteamDatagramLinkInstantaneousStats;
-struct SteamNetworkingDetailedConnectionStatus;
+struct GameNetworkingDetailedConnectionStatus;
 
 // An identity operator that always returns its operand.
 // NOTE: std::hash is an identity operator on many compilers
@@ -169,13 +169,13 @@ const int k_cbGameNetworkingSocketsNoFragmentHeaderReserve = 100;
 /// Size of security tag for AES-GCM.
 /// It would be nice to use a smaller tag, but BCrypt requires a 16-byte tag,
 /// which is what OpenSSL uses by default for TLS.
-const int k_cbSteamNetwokingSocketsEncrytionTagSize = 16;
+const int k_cbGameNetwokingSocketsEncrytionTagSize = 16;
 
 /// Max length of plaintext and encrypted payload we will send.  AES-GCM does
 /// not use padding (but it does have the security tag).  So this can be
 /// arbitrary, it does not need to account for the block size.
 const int k_cbGameNetworkingSocketsMaxEncryptedPayloadSend = 1248;
-const int k_cbGameNetworkingSocketsMaxPlaintextPayloadSend = k_cbGameNetworkingSocketsMaxEncryptedPayloadSend-k_cbSteamNetwokingSocketsEncrytionTagSize;
+const int k_cbGameNetworkingSocketsMaxPlaintextPayloadSend = k_cbGameNetworkingSocketsMaxEncryptedPayloadSend-k_cbGameNetwokingSocketsEncrytionTagSize;
 
 /// Use larger limits for what we are willing to receive.
 const int k_cbGameNetworkingSocketsMaxEncryptedPayloadRecv = k_cbGameNetworkingSocketsMaxUDPMsgLen;
@@ -204,12 +204,12 @@ enum EStatsReplyRequest
 
 /// Max time that we we should "Nagle" an ack, hoping to combine them together or
 /// piggy back on another outgoing message, before sending a standalone message.
-const SteamNetworkingMicroseconds k_usecMaxAckStatsDelay = 250*1000;
+const GameNetworkingMicroseconds k_usecMaxAckStatsDelay = 250*1000;
 
 /// Max duration that a receiver could pend a data ack, in the hopes of trying
 /// to piggyback the ack on another outbound packet.
 /// !KLUDGE! This really ought to be application- (or connection-) specific.
-const SteamNetworkingMicroseconds k_usecMaxDataAckDelay = 50*1000;
+const GameNetworkingMicroseconds k_usecMaxDataAckDelay = 50*1000;
 
 /// Precision of the delay ack delay values we send.  A packed value of 1 represents 2^N microseconds
 const unsigned k_usecAckDelayPacketSerializedPrecisionShift = 6;
@@ -218,38 +218,38 @@ COMPILE_TIME_ASSERT( ( (k_usecMaxAckStatsDelay*2) >> k_usecAckDelayPacketSeriali
 /// After a connection is closed, a session will hang out in a CLOSE_WAIT-like
 /// (or perhaps FIN_WAIT?) state to handle last stray packets and help both sides
 /// close cleanly.
-const SteamNetworkingMicroseconds k_usecSteamDatagramRouterCloseWait = k_nMillion*15;
+const GameNetworkingMicroseconds k_usecSteamDatagramRouterCloseWait = k_nMillion*15;
 
 // Internal reason codes
-const int k_ESteamNetConnectionEnd_InternalRelay_SessionIdleTimeout = 9001;
-const int k_ESteamNetConnectionEnd_InternalRelay_ClientChangedTarget = 9002;
+const int k_EGameNetConnectionEnd_InternalRelay_SessionIdleTimeout = 9001;
+const int k_EGameNetConnectionEnd_InternalRelay_ClientChangedTarget = 9002;
 
 /// Timeout value for pings.  This basically determines the retry rate for pings.
 /// If a ping is longer than this, then really, the server should not probably not be
 /// considered available.
-const SteamNetworkingMicroseconds k_usecSteamDatagramClientPingTimeout = 750000;
+const GameNetworkingMicroseconds k_usecSteamDatagramClientPingTimeout = 750000;
 
 /// Keepalive interval for currently selected router.  We send keepalive pings when
 /// we haven't heard anything from the router in a while, to see if we need
 /// to re-route.
-const SteamNetworkingMicroseconds k_usecSteamDatagramClientPrimaryRouterKeepaliveInterval = 1 * k_nMillion;
+const GameNetworkingMicroseconds k_usecSteamDatagramClientPrimaryRouterKeepaliveInterval = 1 * k_nMillion;
 
 /// Keepalive interval for backup routers.  We send keepalive pings to
 /// make sure our backup session still exists and we could switch to it
 /// if it became necessary
-const SteamNetworkingMicroseconds k_usecSteamDatagramClientBackupRouterKeepaliveInterval = 45 * k_nMillion;
+const GameNetworkingMicroseconds k_usecSteamDatagramClientBackupRouterKeepaliveInterval = 45 * k_nMillion;
 
 /// Keepalive interval for gameserver.  We send keepalive pings when we haven't
 /// heard anything from the gameserver in a while, in order to try and deduce
 /// where the router or gameserver are available.
-const SteamNetworkingMicroseconds k_usecSteamDatagramClientServerKeepaliveInterval = 1 * k_nMillion;
+const GameNetworkingMicroseconds k_usecSteamDatagramClientServerKeepaliveInterval = 1 * k_nMillion;
 
 /// Timeout value for session request messages
-const SteamNetworkingMicroseconds k_usecSteamDatagramClientSessionRequestTimeout = 750000;
+const GameNetworkingMicroseconds k_usecSteamDatagramClientSessionRequestTimeout = 750000;
 
 /// Router will continue to pend a client ping request for N microseconds,
 /// hoping for an opportunity to send it inline.
-const SteamNetworkingMicroseconds k_usecSteamDatagramRouterPendClientPing = 200000;
+const GameNetworkingMicroseconds k_usecSteamDatagramRouterPendClientPing = 200000;
 
 /// When serializing a "time since I last sent a packet" value into the packet,
 /// what precision is used?  (A serialized value of 1 = 2^N microseconds.)
@@ -257,12 +257,12 @@ const unsigned k_usecTimeSinceLastPacketSerializedPrecisionShift = 4;
 
 /// "Time since last packet sent" values should be less than this.
 /// Any larger value will be discarded, and should not be sent
-const SteamNetworkingMicroseconds k_usecTimeSinceLastPacketMaxReasonable = k_nMillion/4;
+const GameNetworkingMicroseconds k_usecTimeSinceLastPacketMaxReasonable = k_nMillion/4;
 COMPILE_TIME_ASSERT( ( k_usecTimeSinceLastPacketMaxReasonable >> k_usecTimeSinceLastPacketSerializedPrecisionShift ) < 0x8000 ); // make sure all "reasonable" values can get serialized into 16-bits
 
 ///	Don't send spacing values when packets are sent extremely close together.  The spacing
 /// should be a bit higher that our serialization precision.
-const SteamNetworkingMicroseconds k_usecTimeSinceLastPacketMinReasonable = 2 << k_usecTimeSinceLastPacketSerializedPrecisionShift;
+const GameNetworkingMicroseconds k_usecTimeSinceLastPacketMinReasonable = 2 << k_usecTimeSinceLastPacketSerializedPrecisionShift;
 
 /// A really terrible ping score, but one that we can do some math with without overflowing
 constexpr int k_nRouteScoreHuge = INT_MAX/8;
@@ -279,7 +279,7 @@ const uint32 k_nCurrentProtocolVersion = 10;
 /// do this again, and we'll need to have more sophisticated mechanisms. 
 const uint32 k_nMinRequiredProtocolVersion = 8;
 
-/// SteamNetworkingMessages is built on top of GameNetworkingSockets.  We use a reserved
+/// GameNetworkingMessages is built on top of GameNetworkingSockets.  We use a reserved
 /// virtual port for this interface
 const int k_nVirtualPort_Messages = 0x7fffffff;
 
@@ -441,8 +441,8 @@ extern uint64 CalculatePublicKeyID( const CECSigningPublicKey &pubKey );
 extern bool BCheckSignature( const std::string &signed_data, CMsgSteamDatagramCertificate_EKeyType eKeyType, const std::string &public_key, const std::string &signature, SteamDatagramErrMsg &errMsg );
 
 /// Parse PEM-like blob to a cert
-extern bool ParseCertFromPEM( const void *pCert, size_t cbCert, CMsgSteamDatagramCertificateSigned &outMsgSignedCert, SteamNetworkingErrMsg &errMsg );
-extern bool ParseCertFromBase64( const char *pBase64Data, size_t cbBase64Data, CMsgSteamDatagramCertificateSigned &outMsgSignedCert, SteamNetworkingErrMsg &errMsg );
+extern bool ParseCertFromPEM( const void *pCert, size_t cbCert, CMsgSteamDatagramCertificateSigned &outMsgSignedCert, GameNetworkingErrMsg &errMsg );
+extern bool ParseCertFromBase64( const char *pBase64Data, size_t cbBase64Data, CMsgSteamDatagramCertificateSigned &outMsgSignedCert, GameNetworkingErrMsg &errMsg );
 
 
 inline bool IsPrivateIP( uint32 unIP )
@@ -457,9 +457,9 @@ inline bool IsPrivateIP( uint32 unIP )
 	return false;
 }
 
-extern const char *GetAvailabilityString( ESteamNetworkingAvailability a );
+extern const char *GetAvailabilityString( EGameNetworkingAvailability a );
 
-inline void SteamNetworkingIPAddrToNetAdr( netadr_t &netadr, const SteamNetworkingIPAddr &addr )
+inline void GameNetworkingIPAddrToNetAdr( netadr_t &netadr, const GameNetworkingIPAddr &addr )
 {
 	uint32 ipv4 = addr.GetIPv4();
 	if ( ipv4 )
@@ -469,13 +469,13 @@ inline void SteamNetworkingIPAddrToNetAdr( netadr_t &netadr, const SteamNetworki
 	netadr.SetPort( addr.m_port );
 }
 
-inline void NetAdrToSteamNetworkingIPAddr( SteamNetworkingIPAddr &addr, const netadr_t &netadr )
+inline void NetAdrToGameNetworkingIPAddr( GameNetworkingIPAddr &addr, const netadr_t &netadr )
 {
 	netadr.GetIPV6( addr.m_ipv6 );
 	addr.m_port = netadr.GetPort();
 }
 
-inline bool AddrEqual( const SteamNetworkingIPAddr &s, const netadr_t &n )
+inline bool AddrEqual( const GameNetworkingIPAddr &s, const netadr_t &n )
 {
 	if ( s.m_port != n.GetPort() )
 		return false;
@@ -501,9 +501,9 @@ inline int64 NearestWithSameLowerBits( T nLowerBits, int64 nReference )
 }
 
 /// Calculate hash of identity.
-struct SteamNetworkingIdentityHash
+struct GameNetworkingIdentityHash
 {
-	uint32 operator()( const SteamNetworkingIdentity &x ) const;
+	uint32 operator()( const GameNetworkingIdentity &x ) const;
 };
 
 inline bool IsValidSteamIDForIdentity( CSteamID steamID )
@@ -513,22 +513,22 @@ inline bool IsValidSteamIDForIdentity( CSteamID steamID )
 
 inline bool IsValidSteamIDForIdentity( uint64 steamid64 ) { return IsValidSteamIDForIdentity( CSteamID( steamid64 ) ); }
 
-extern bool BSteamNetworkingIdentityToProtobufInternal( const SteamNetworkingIdentity &identity, std::string *strIdentity, CMsgSteamNetworkingIdentityLegacyBinary *msgIdentityLegacyBinary, SteamDatagramErrMsg &errMsg );
-extern bool BSteamNetworkingIdentityToProtobufInternal( const SteamNetworkingIdentity &identity, std::string *strIdentity, std::string *bytesMsgIdentityLegacyBinary, SteamDatagramErrMsg &errMsg );
-#define BSteamNetworkingIdentityToProtobuf( identity, msg, field_identity_string, field_identity_legacy_binary, field_legacy_steam_id, errMsg ) ( \
+extern bool BGameNetworkingIdentityToProtobufInternal( const GameNetworkingIdentity &identity, std::string *strIdentity, CMsgGameNetworkingIdentityLegacyBinary *msgIdentityLegacyBinary, SteamDatagramErrMsg &errMsg );
+extern bool BGameNetworkingIdentityToProtobufInternal( const GameNetworkingIdentity &identity, std::string *strIdentity, std::string *bytesMsgIdentityLegacyBinary, SteamDatagramErrMsg &errMsg );
+#define BGameNetworkingIdentityToProtobuf( identity, msg, field_identity_string, field_identity_legacy_binary, field_legacy_steam_id, errMsg ) ( \
 		( (identity).GetSteamID64() ? (void)(msg).set_ ## field_legacy_steam_id( (identity).GetSteamID64() ) : (void)0 ), \
-		BSteamNetworkingIdentityToProtobufInternal( identity, (msg).mutable_ ## field_identity_string(), (msg).mutable_ ## field_identity_legacy_binary(), errMsg ) \
+		BGameNetworkingIdentityToProtobufInternal( identity, (msg).mutable_ ## field_identity_string(), (msg).mutable_ ## field_identity_legacy_binary(), errMsg ) \
 	)
-#define SteamNetworkingIdentityToProtobuf( identity, msg, field_identity_string, field_identity_legacy_binary, field_legacy_steam_id ) \
+#define GameNetworkingIdentityToProtobuf( identity, msg, field_identity_string, field_identity_legacy_binary, field_legacy_steam_id ) \
 	{ SteamDatagramErrMsg identityToProtobufErrMsg; \
-		if ( !BSteamNetworkingIdentityToProtobuf( identity, msg, field_identity_string, field_identity_legacy_binary, field_legacy_steam_id, identityToProtobufErrMsg ) ) { \
+		if ( !BGameNetworkingIdentityToProtobuf( identity, msg, field_identity_string, field_identity_legacy_binary, field_legacy_steam_id, identityToProtobufErrMsg ) ) { \
 			AssertMsg2( false, "Failed to serialize identity to %s message.  %s", msg.GetTypeName().c_str(), identityToProtobufErrMsg ); \
 		} \
 	}
 
-extern bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &identity, const std::string &bytesMsgIdentity, SteamDatagramErrMsg &errMsg );
-extern bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &identity, const CMsgSteamNetworkingIdentityLegacyBinary &msgIdentity, SteamDatagramErrMsg &errMsg );
-extern bool BSteamNetworkingIdentityFromLegacySteamID( SteamNetworkingIdentity &identity, uint64 legacy_steam_id, SteamDatagramErrMsg &errMsg );
+extern bool BGameNetworkingIdentityFromLegacyBinaryProtobuf( GameNetworkingIdentity &identity, const std::string &bytesMsgIdentity, SteamDatagramErrMsg &errMsg );
+extern bool BGameNetworkingIdentityFromLegacyBinaryProtobuf( GameNetworkingIdentity &identity, const CMsgGameNetworkingIdentityLegacyBinary &msgIdentity, SteamDatagramErrMsg &errMsg );
+extern bool BGameNetworkingIdentityFromLegacySteamID( GameNetworkingIdentity &identity, uint64 legacy_steam_id, SteamDatagramErrMsg &errMsg );
 
 template <typename TStatsMsg>
 inline uint32 StatsMsgImpliedFlags( const TStatsMsg &msg );
@@ -546,20 +546,20 @@ inline void SetStatsMsgFlagsIfNotImplied( TStatsMsg &msg, uint32 nFlags )
 // <0 Bad data
 // 0  No data
 // >0 OK
-#define SteamNetworkingIdentityFromProtobuf( identity, msg, field_identity_string, field_identity_legacy_binary, field_legacy_steam_id, errMsg ) \
+#define GameNetworkingIdentityFromProtobuf( identity, msg, field_identity_string, field_identity_legacy_binary, field_legacy_steam_id, errMsg ) \
 	( \
-		(msg).has_ ##field_identity_string() ? ( SteamNetworkingIdentity_ParseString( &(identity), sizeof(identity), (msg).field_identity_string().c_str() ) ? +1 : ( V_strcpy_safe( errMsg, "Failed to parse string" ), -1 ) ) \
-		: (msg).has_ ##field_identity_legacy_binary() ? ( BSteamNetworkingIdentityFromLegacyBinaryProtobuf( identity, (msg).field_identity_legacy_binary(), errMsg ) ? +1 : -1 ) \
-		: (msg).has_ ##field_legacy_steam_id() ? ( BSteamNetworkingIdentityFromLegacySteamID( identity, (msg).field_legacy_steam_id(), errMsg ) ? +1 : -1 ) \
+		(msg).has_ ##field_identity_string() ? ( GameNetworkingIdentity_ParseString( &(identity), sizeof(identity), (msg).field_identity_string().c_str() ) ? +1 : ( V_strcpy_safe( errMsg, "Failed to parse string" ), -1 ) ) \
+		: (msg).has_ ##field_identity_legacy_binary() ? ( BGameNetworkingIdentityFromLegacyBinaryProtobuf( identity, (msg).field_identity_legacy_binary(), errMsg ) ? +1 : -1 ) \
+		: (msg).has_ ##field_legacy_steam_id() ? ( BGameNetworkingIdentityFromLegacySteamID( identity, (msg).field_legacy_steam_id(), errMsg ) ? +1 : -1 ) \
 		: ( V_strcpy_safe( errMsg, "No identity data" ), 0 ) \
 	)
-inline int SteamNetworkingIdentityFromCert( SteamNetworkingIdentity &result, const CMsgSteamDatagramCertificate &msgCert, SteamDatagramErrMsg &errMsg )
+inline int GameNetworkingIdentityFromCert( GameNetworkingIdentity &result, const CMsgSteamDatagramCertificate &msgCert, SteamDatagramErrMsg &errMsg )
 {
-	return SteamNetworkingIdentityFromProtobuf( result, msgCert, identity_string, legacy_identity_binary, legacy_steam_id, errMsg );
+	return GameNetworkingIdentityFromProtobuf( result, msgCert, identity_string, legacy_identity_binary, legacy_steam_id, errMsg );
 }
 
 // NOTE: Does NOT check the cert signature!
-extern int SteamNetworkingIdentityFromSignedCert( SteamNetworkingIdentity &result, const CMsgSteamDatagramCertificateSigned &msgCertSigned, SteamDatagramErrMsg &errMsg );
+extern int GameNetworkingIdentityFromSignedCert( GameNetworkingIdentity &result, const CMsgSteamDatagramCertificateSigned &msgCertSigned, SteamDatagramErrMsg &errMsg );
 
 struct ConfigValueBase
 {
@@ -627,20 +627,20 @@ struct ConfigValue : public ConfigValueBase
 };
 
 template <typename T> struct ConfigDataTypeTraits {};
-template <> struct ConfigDataTypeTraits<int32> { const static ESteamNetworkingConfigDataType k_eDataType = k_ESteamNetworkingConfig_Int32; };
-template <> struct ConfigDataTypeTraits<int64> { const static ESteamNetworkingConfigDataType k_eDataType = k_ESteamNetworkingConfig_Int64; };
-template <> struct ConfigDataTypeTraits<float> { const static ESteamNetworkingConfigDataType k_eDataType = k_ESteamNetworkingConfig_Float; };
-template <> struct ConfigDataTypeTraits<std::string> { const static ESteamNetworkingConfigDataType k_eDataType = k_ESteamNetworkingConfig_String; };
-template <> struct ConfigDataTypeTraits<void*> { const static ESteamNetworkingConfigDataType k_eDataType = k_ESteamNetworkingConfig_Ptr; };
+template <> struct ConfigDataTypeTraits<int32> { const static EGameNetworkingConfigDataType k_eDataType = k_EGameNetworkingConfig_Int32; };
+template <> struct ConfigDataTypeTraits<int64> { const static EGameNetworkingConfigDataType k_eDataType = k_EGameNetworkingConfig_Int64; };
+template <> struct ConfigDataTypeTraits<float> { const static EGameNetworkingConfigDataType k_eDataType = k_EGameNetworkingConfig_Float; };
+template <> struct ConfigDataTypeTraits<std::string> { const static EGameNetworkingConfigDataType k_eDataType = k_EGameNetworkingConfig_String; };
+template <> struct ConfigDataTypeTraits<void*> { const static EGameNetworkingConfigDataType k_eDataType = k_EGameNetworkingConfig_Ptr; };
 
 struct GlobalConfigValueEntry
 {
-	GlobalConfigValueEntry( ESteamNetworkingConfigValue eValue, const char *pszName, ESteamNetworkingConfigDataType eDataType, ESteamNetworkingConfigScope eScope, int cbOffsetOf );
+	GlobalConfigValueEntry( EGameNetworkingConfigValue eValue, const char *pszName, EGameNetworkingConfigDataType eDataType, EGameNetworkingConfigScope eScope, int cbOffsetOf );
 
-	ESteamNetworkingConfigValue const m_eValue;
+	EGameNetworkingConfigValue const m_eValue;
 	const char *const m_pszName;
-	ESteamNetworkingConfigDataType const m_eDataType;
-	ESteamNetworkingConfigScope const m_eScope;
+	EGameNetworkingConfigDataType const m_eDataType;
+	EGameNetworkingConfigScope const m_eScope;
 	int const m_cbOffsetOf;
 	GlobalConfigValueEntry *m_pNextEntry;
 
@@ -673,13 +673,13 @@ template<> inline void GlobalConfigValueEntry::Clamp<float>( float &val ) { val 
 template<typename T>
 struct GlobalConfigValueBase : GlobalConfigValueEntry
 {
-	GlobalConfigValueBase( ESteamNetworkingConfigValue eValue, const char *pszName, ESteamNetworkingConfigScope eScope, int cbOffsetOf, const T &defaultValue )
+	GlobalConfigValueBase( EGameNetworkingConfigValue eValue, const char *pszName, EGameNetworkingConfigScope eScope, int cbOffsetOf, const T &defaultValue )
 	: GlobalConfigValueEntry( eValue, pszName, ConfigDataTypeTraits<T>::k_eDataType, eScope, cbOffsetOf )
 	, m_value{defaultValue}
 	{
 		GlobalConfigValueEntry::NoLimits<T>();
 	}
-	GlobalConfigValueBase( ESteamNetworkingConfigValue eValue, const char *pszName, ESteamNetworkingConfigScope eScope, int cbOffsetOf, const T &defaultValue, const T &minVal, const T &maxVal )
+	GlobalConfigValueBase( EGameNetworkingConfigValue eValue, const char *pszName, EGameNetworkingConfigScope eScope, int cbOffsetOf, const T &defaultValue, const T &minVal, const T &maxVal )
 	: GlobalConfigValueEntry( eValue, pszName, ConfigDataTypeTraits<T>::k_eDataType, eScope, cbOffsetOf )
 	, m_value{defaultValue}
 	{
@@ -704,10 +704,10 @@ struct GlobalConfigValueBase : GlobalConfigValueEntry
 template<typename T>
 struct GlobalConfigValue : GlobalConfigValueBase<T>
 {
-	GlobalConfigValue( ESteamNetworkingConfigValue eValue, const char *pszName, const T &defaultValue )
-	: GlobalConfigValueBase<T>( eValue, pszName, k_ESteamNetworkingConfig_Global, 0, defaultValue ) {}
-	GlobalConfigValue( ESteamNetworkingConfigValue eValue, const char *pszName, const T &defaultValue, const T &minVal, const T &maxVal )
-	: GlobalConfigValueBase<T>( eValue, pszName, k_ESteamNetworkingConfig_Global, 0, defaultValue, minVal, maxVal ) {}
+	GlobalConfigValue( EGameNetworkingConfigValue eValue, const char *pszName, const T &defaultValue )
+	: GlobalConfigValueBase<T>( eValue, pszName, k_EGameNetworkingConfig_Global, 0, defaultValue ) {}
+	GlobalConfigValue( EGameNetworkingConfigValue eValue, const char *pszName, const T &defaultValue, const T &minVal, const T &maxVal )
+	: GlobalConfigValueBase<T>( eValue, pszName, k_EGameNetworkingConfig_Global, 0, defaultValue, minVal, maxVal ) {}
 };
 
 struct ConnectionConfig
@@ -750,10 +750,10 @@ struct ConnectionConfig
 template<typename T>
 struct ConnectionConfigDefaultValue : GlobalConfigValueBase<T>
 {
-	ConnectionConfigDefaultValue( ESteamNetworkingConfigValue eValue, const char *pszName, int cbOffsetOf, const T &defaultValue )
-	: GlobalConfigValueBase<T>( eValue, pszName, k_ESteamNetworkingConfig_Connection, cbOffsetOf, defaultValue ) {}
-	ConnectionConfigDefaultValue( ESteamNetworkingConfigValue eValue, const char *pszName, int cbOffsetOf, const T &defaultValue, const T &minVal, const T &maxVal )
-	: GlobalConfigValueBase<T>( eValue, pszName, k_ESteamNetworkingConfig_Connection, cbOffsetOf, defaultValue, minVal, maxVal ) {}
+	ConnectionConfigDefaultValue( EGameNetworkingConfigValue eValue, const char *pszName, int cbOffsetOf, const T &defaultValue )
+	: GlobalConfigValueBase<T>( eValue, pszName, k_EGameNetworkingConfig_Connection, cbOffsetOf, defaultValue ) {}
+	ConnectionConfigDefaultValue( EGameNetworkingConfigValue eValue, const char *pszName, int cbOffsetOf, const T &defaultValue, const T &minVal, const T &maxVal )
+	: GlobalConfigValueBase<T>( eValue, pszName, k_EGameNetworkingConfig_Connection, cbOffsetOf, defaultValue, minVal, maxVal ) {}
 };
 
 extern GlobalConfigValue<float> g_Config_FakePacketLoss_Send;
@@ -802,9 +802,9 @@ extern ConnectionConfigDefaultValue< std::string > g_ConfigDefault_P2P_STUN_Serv
 #define V_offsetof(class, field) (int)((intptr_t)&((class *)(0+sizeof(intptr_t)))->field - sizeof(intptr_t))
 
 #define DEFINE_GLOBAL_CONFIGVAL( type, name, ... ) \
-	GlobalConfigValue<type> g_Config_##name( k_ESteamNetworkingConfig_##name, #name, __VA_ARGS__ )
+	GlobalConfigValue<type> g_Config_##name( k_EGameNetworkingConfig_##name, #name, __VA_ARGS__ )
 #define DEFINE_CONNECTON_DEFAULT_CONFIGVAL( type, name, ... ) \
-	ConnectionConfigDefaultValue<type> g_ConfigDefault_##name( k_ESteamNetworkingConfig_##name, #name, V_offsetof(ConnectionConfig, m_##name), __VA_ARGS__ )
+	ConnectionConfigDefaultValue<type> g_ConfigDefault_##name( k_EGameNetworkingConfig_##name, #name, V_offsetof(ConnectionConfig, m_##name), __VA_ARGS__ )
 
 inline bool RandomBoolWithOdds( float odds )
 {

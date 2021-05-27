@@ -28,7 +28,7 @@ uint64 CalculatePublicKeyID( const CECSigningPublicKey &pubKey )
 // -1  Bogus data
 // 0   Unknown type
 // 1   OK
-static int SteamNetworkingIdentityFromLegacyBinaryProtobufMsg( SteamNetworkingIdentity &identity, const CMsgSteamNetworkingIdentityLegacyBinary &msgIdentity, SteamDatagramErrMsg &errMsg )
+static int GameNetworkingIdentityFromLegacyBinaryProtobufMsg( GameNetworkingIdentity &identity, const CMsgGameNetworkingIdentityLegacyBinary &msgIdentity, SteamDatagramErrMsg &errMsg )
 {
 	if ( msgIdentity.has_steam_id() )
 	{
@@ -68,7 +68,7 @@ static int SteamNetworkingIdentityFromLegacyBinaryProtobufMsg( SteamNetworkingId
 			return -1;
 		}
 		const uint8 *b = (const uint8 *)msgIdentity.ipv6_and_port().c_str();
-		SteamNetworkingIPAddr tmpAddr;
+		GameNetworkingIPAddr tmpAddr;
 		tmpAddr.SetIPv6( b, BigWord( *(uint16*)(b+16) ) );
 		identity.SetIPAddr( tmpAddr );
 		return 1;
@@ -78,10 +78,10 @@ static int SteamNetworkingIdentityFromLegacyBinaryProtobufMsg( SteamNetworkingId
 	return 0;
 }
 
-bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &identity, const CMsgSteamNetworkingIdentityLegacyBinary &msgIdentity, SteamDatagramErrMsg &errMsg )
+bool BGameNetworkingIdentityFromLegacyBinaryProtobuf( GameNetworkingIdentity &identity, const CMsgGameNetworkingIdentityLegacyBinary &msgIdentity, SteamDatagramErrMsg &errMsg )
 {
 	// Parse it
-	int r = SteamNetworkingIdentityFromLegacyBinaryProtobufMsg( identity, msgIdentity, errMsg );
+	int r = GameNetworkingIdentityFromLegacyBinaryProtobufMsg( identity, msgIdentity, errMsg );
 	if ( r > 0 )
 		return true;
 	if ( r < 0 )
@@ -100,7 +100,7 @@ bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &
 	}
 	else
 	{
-		AssertMsg( false, "SteamNetworkingIdentityFromProtobufMsg returned 0, but but we don't have any unknown fields?" );
+		AssertMsg( false, "GameNetworkingIdentityFromProtobufMsg returned 0, but but we don't have any unknown fields?" );
 		V_strcpy_safe( errMsg, "Unrecognized identity format" );
 	}
 
@@ -108,7 +108,7 @@ bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &
 	return false;
 }
 
-bool BSteamNetworkingIdentityFromLegacySteamID( SteamNetworkingIdentity &identity, uint64 legacy_steam_id, SteamDatagramErrMsg &errMsg )
+bool BGameNetworkingIdentityFromLegacySteamID( GameNetworkingIdentity &identity, uint64 legacy_steam_id, SteamDatagramErrMsg &errMsg )
 {
 	if ( !IsValidSteamIDForIdentity( legacy_steam_id ) )
 	{
@@ -120,7 +120,7 @@ bool BSteamNetworkingIdentityFromLegacySteamID( SteamNetworkingIdentity &identit
 }
 
 
-bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &identity, const std::string &bytesMsgIdentity, SteamDatagramErrMsg &errMsg )
+bool BGameNetworkingIdentityFromLegacyBinaryProtobuf( GameNetworkingIdentity &identity, const std::string &bytesMsgIdentity, SteamDatagramErrMsg &errMsg )
 {
 	// Assume failure
 	identity.Clear();
@@ -133,7 +133,7 @@ bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &
 	}
 
 	// Parse it
-	CMsgSteamNetworkingIdentityLegacyBinary msgIdentity;
+	CMsgGameNetworkingIdentityLegacyBinary msgIdentity;
 	if ( !msgIdentity.ParseFromString( bytesMsgIdentity ) )
 	{
 		V_strcpy_safe( errMsg, "Protobuf failed to parse" );
@@ -141,7 +141,7 @@ bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &
 	}
 
 	// Parse it
-	int r = SteamNetworkingIdentityFromLegacyBinaryProtobufMsg( identity, msgIdentity, errMsg );
+	int r = GameNetworkingIdentityFromLegacyBinaryProtobufMsg( identity, msgIdentity, errMsg );
 	if ( r > 0 )
 		return true;
 	if ( r < 0 )
@@ -161,7 +161,7 @@ bool BSteamNetworkingIdentityFromLegacyBinaryProtobuf( SteamNetworkingIdentity &
 	return false;
 }
 
-int SteamNetworkingIdentityFromSignedCert( SteamNetworkingIdentity &result, const CMsgSteamDatagramCertificateSigned &msgCertSigned, SteamDatagramErrMsg &errMsg )
+int GameNetworkingIdentityFromSignedCert( GameNetworkingIdentity &result, const CMsgSteamDatagramCertificateSigned &msgCertSigned, SteamDatagramErrMsg &errMsg )
 {
 	// !SPEED! We could optimize this by hand-parsing the protobuf.
 	// This would avoid some memory allocations and dealing with
@@ -172,18 +172,18 @@ int SteamNetworkingIdentityFromSignedCert( SteamNetworkingIdentity &result, cons
 		V_strcpy_safe( errMsg, "Cert failed protobuf parse" );
 		return -1;
 	}
-	return SteamNetworkingIdentityFromCert( result, cert, errMsg );
+	return GameNetworkingIdentityFromCert( result, cert, errMsg );
 }
 
-bool BSteamNetworkingIdentityToProtobufInternal( const SteamNetworkingIdentity &identity, std::string *strIdentity, CMsgSteamNetworkingIdentityLegacyBinary *msgIdentityLegacyBinary, SteamDatagramErrMsg &errMsg )
+bool BGameNetworkingIdentityToProtobufInternal( const GameNetworkingIdentity &identity, std::string *strIdentity, CMsgGameNetworkingIdentityLegacyBinary *msgIdentityLegacyBinary, SteamDatagramErrMsg &errMsg )
 {
 	switch ( identity.m_eType )
 	{
-		case k_ESteamNetworkingIdentityType_Invalid:
+		case k_EGameNetworkingIdentityType_Invalid:
 			V_strcpy_safe( errMsg, "Identity is blank" );
 			return false;
 
-		case k_ESteamNetworkingIdentityType_SteamID:
+		case k_EGameNetworkingIdentityType_SteamID:
 			Assert( identity.m_cbSize == sizeof(identity.m_steamID64) );
 			if ( !IsValidSteamIDForIdentity( identity.m_steamID64 ) )
 			{
@@ -193,24 +193,24 @@ bool BSteamNetworkingIdentityToProtobufInternal( const SteamNetworkingIdentity &
 			msgIdentityLegacyBinary->set_steam_id( identity.m_steamID64 );
 			break;
 
-		case k_ESteamNetworkingIdentityType_IPAddress:
+		case k_EGameNetworkingIdentityType_IPAddress:
 		{
-			COMPILE_TIME_ASSERT( sizeof( SteamNetworkingIPAddr ) == 18 );
-			Assert( identity.m_cbSize == sizeof( SteamNetworkingIPAddr ) );
-			SteamNetworkingIPAddr tmpAddr( identity.m_ip );
+			COMPILE_TIME_ASSERT( sizeof( GameNetworkingIPAddr ) == 18 );
+			Assert( identity.m_cbSize == sizeof( GameNetworkingIPAddr ) );
+			GameNetworkingIPAddr tmpAddr( identity.m_ip );
 			tmpAddr.m_port = BigWord( tmpAddr.m_port );
 			msgIdentityLegacyBinary->set_ipv6_and_port( &tmpAddr, sizeof(tmpAddr) );
 			break;
 		}
 
-		case k_ESteamNetworkingIdentityType_GenericString:
+		case k_EGameNetworkingIdentityType_GenericString:
 			Assert( identity.m_cbSize == (int)V_strlen( identity.m_szGenericString ) + 1 );
 			Assert( identity.m_cbSize > 1 );
 			Assert( identity.m_cbSize <= sizeof( identity.m_szGenericString ) );
 			msgIdentityLegacyBinary->set_generic_string( identity.m_szGenericString );
 			break;
 
-		case k_ESteamNetworkingIdentityType_GenericBytes:
+		case k_EGameNetworkingIdentityType_GenericBytes:
 			Assert( identity.m_cbSize > 1 );
 			Assert( identity.m_cbSize <= sizeof( identity.m_genericBytes ) );
 			msgIdentityLegacyBinary->set_generic_bytes( identity.m_genericBytes, identity.m_cbSize );
@@ -223,17 +223,17 @@ bool BSteamNetworkingIdentityToProtobufInternal( const SteamNetworkingIdentity &
 	}
 
 	// And return string format
-	char buf[ SteamNetworkingIdentity::k_cchMaxString ];
-	SteamNetworkingIdentity_ToString( &identity, buf, sizeof(buf) );
+	char buf[ GameNetworkingIdentity::k_cchMaxString ];
+	GameNetworkingIdentity_ToString( &identity, buf, sizeof(buf) );
 	*strIdentity = buf;
 
 	return true;
 }
 
-bool BSteamNetworkingIdentityToProtobufInternal( const SteamNetworkingIdentity &identity, std::string *strIdentity, std::string *bytesMsgIdentityLegacyBinary, SteamDatagramErrMsg &errMsg )
+bool BGameNetworkingIdentityToProtobufInternal( const GameNetworkingIdentity &identity, std::string *strIdentity, std::string *bytesMsgIdentityLegacyBinary, SteamDatagramErrMsg &errMsg )
 {
-	CMsgSteamNetworkingIdentityLegacyBinary msgIdentity;
-	if ( !BSteamNetworkingIdentityToProtobufInternal( identity, strIdentity, &msgIdentity, errMsg ) )
+	CMsgGameNetworkingIdentityLegacyBinary msgIdentity;
+	if ( !BGameNetworkingIdentityToProtobufInternal( identity, strIdentity, &msgIdentity, errMsg ) )
 		return false;
 
 	if ( !msgIdentity.SerializeToString( bytesMsgIdentityLegacyBinary ) )
@@ -295,7 +295,7 @@ bool BCheckSignature( const std::string &signed_data, CMsgSteamDatagramCertifica
 	return true;
 }
 
-bool ParseCertFromBase64( const char *pBase64Data, size_t cbBase64Data, CMsgSteamDatagramCertificateSigned &outMsgSignedCert, SteamNetworkingErrMsg &errMsg )
+bool ParseCertFromBase64( const char *pBase64Data, size_t cbBase64Data, CMsgSteamDatagramCertificateSigned &outMsgSignedCert, GameNetworkingErrMsg &errMsg )
 {
 
 	std_vector<uint8> buf;
@@ -321,7 +321,7 @@ bool ParseCertFromBase64( const char *pBase64Data, size_t cbBase64Data, CMsgStea
 	return true;
 }
 
-bool ParseCertFromPEM( const void *pCert, size_t cbCert, CMsgSteamDatagramCertificateSigned &outMsgSignedCert, SteamNetworkingErrMsg &errMsg )
+bool ParseCertFromPEM( const void *pCert, size_t cbCert, CMsgSteamDatagramCertificateSigned &outMsgSignedCert, GameNetworkingErrMsg &errMsg )
 {
 	uint32 cbCertBody = (uint32)cbCert;
 	const char *pszCertBody = CCrypto::LocatePEMBody( (const char *)pCert, &cbCertBody, "STEAMDATAGRAM CERT" );

@@ -20,7 +20,7 @@ namespace GameNetworkingSocketsLib {
 struct SteamDatagramLinkStats;
 struct SteamDatagramLinkLifetimeStats;
 struct SteamDatagramLinkInstantaneousStats;
-struct SteamNetworkingDetailedConnectionStatus;
+struct GameNetworkingDetailedConnectionStatus;
 
 /// Instantaneous statistics for a link between two hosts.
 struct SteamDatagramLinkInstantaneousStats
@@ -143,7 +143,7 @@ struct JitterHistogram
 	int m_n10; // 10--20ms
 	int m_n20; // 20ms or more
 
-	void AddSample( SteamNetworkingMicroseconds usecJitter )
+	void AddSample( GameNetworkingMicroseconds usecJitter )
 	{
 
 		// Add to histogram
@@ -323,13 +323,13 @@ struct SteamDatagramLinkStats
 };
 
 /// Describe detailed state of current connection
-struct SteamNetworkingDetailedConnectionStatus
+struct GameNetworkingDetailedConnectionStatus
 {
 	/// Basic connection info
-	SteamNetConnectionInfo_t m_info;
+	GameNetConnectionInfo_t m_info;
 
 	/// Do we have a valid network configuration?  We cannot do anything without this.
-	ESteamNetworkingAvailability m_eAvailNetworkConfig;
+	EGameNetworkingAvailability m_eAvailNetworkConfig;
 
 //		/// Does it look like we have a connection to the Internet at all?
 //		EAvailability m_eAvailInternet;
@@ -337,18 +337,18 @@ struct SteamNetworkingDetailedConnectionStatus
 	/// Successful communication with a box on the routing network.
 	/// This will be marked as failed if there is a general internet
 	/// connection.
-	ESteamNetworkingAvailability m_eAvailAnyRouterCommunication;
+	EGameNetworkingAvailability m_eAvailAnyRouterCommunication;
 
 	/// End-to-end communication with the remote host.
-	//ESteamNetworkingAvailability m_eAvailEndToEnd;
+	//EGameNetworkingAvailability m_eAvailEndToEnd;
 
 	/// Stats for end-to-end link to the gameserver
 	SteamDatagramLinkStats m_statsEndToEnd;
 
 	/// Currently selected front router, if any.
-	/// Note that PoP ID can be found in the SteamNetConnectionInfo_t
+	/// Note that PoP ID can be found in the GameNetConnectionInfo_t
 	char m_szPrimaryRouterName[64];
-	SteamNetworkingIPAddr m_addrPrimaryRouter;
+	GameNetworkingIPAddr m_addrPrimaryRouter;
 
 	/// Stats for "front" link to current router
 	SteamDatagramLinkStats m_statsPrimaryRouter;
@@ -360,9 +360,9 @@ struct SteamNetworkingDetailedConnectionStatus
 	int m_nPrimaryRouterBackPing;
 
 	/// Currently selected back router, if any
-	SteamNetworkingPOPID m_idBackupRouterCluster;
+	GameNetworkingPOPID m_idBackupRouterCluster;
 	char m_szBackupRouterName[64];
-	SteamNetworkingIPAddr m_addrBackupRouter;
+	GameNetworkingIPAddr m_addrBackupRouter;
 
 	/// Ping times to backup router, if any
 	int m_nBackupRouterFrontPing, m_nBackupRouterBackPing;

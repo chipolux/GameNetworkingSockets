@@ -114,9 +114,9 @@ void CertAuthScope::Print( std::ostream &out, const char *pszIndent ) const
 	{
 		o << x;
 	};
-	auto PrintPOPID = []( std::ostream &o, const SteamNetworkingPOPID &x )
+	auto PrintPOPID = []( std::ostream &o, const GameNetworkingPOPID &x )
 	{
-		o << SteamNetworkingPOPIDRender( x ).c_str();
+		o << GameNetworkingPOPIDRender( x ).c_str();
 	};
 
 	out << pszIndent << "AppIDs . . : "; m_apps.Print( out, PrintAppID ); out << std::endl;
@@ -148,7 +148,7 @@ struct Cert
 	CertAuthScope m_authScope;
 	time_t m_timeCreated;
 
-	bool Setup( const CMsgSteamDatagramCertificateSigned &msgCertSigned, CECSigningPublicKey &outPublicKey, SteamNetworkingErrMsg &errMsg )
+	bool Setup( const CMsgSteamDatagramCertificateSigned &msgCertSigned, CECSigningPublicKey &outPublicKey, GameNetworkingErrMsg &errMsg )
 	{
 		m_signed_data = msgCertSigned.cert();
 		m_signature = msgCertSigned.ca_signature();
@@ -332,7 +332,7 @@ void CertStore_AddKeyRevocation( uint64 key_id )
 	s_bTrustValid = false;
 }
 
-bool CertStore_AddCertFromBase64( const char *pszBase64, SteamNetworkingErrMsg &errMsg )
+bool CertStore_AddCertFromBase64( const char *pszBase64, GameNetworkingErrMsg &errMsg )
 {
 	CertStore_OneTimeInit();
 
@@ -585,7 +585,7 @@ static void CertStore_EnsureTrustValid()
 	s_bTrustValid = true;
 }
 
-const CertAuthScope *CertStore_CheckCASignature( const std::string &signed_data, uint64 nCAKeyID, const std::string &signature, time_t timeNow, SteamNetworkingErrMsg &errMsg )
+const CertAuthScope *CertStore_CheckCASignature( const std::string &signed_data, uint64 nCAKeyID, const std::string &signature, time_t timeNow, GameNetworkingErrMsg &errMsg )
 {
 	CertStore_EnsureTrustValid();
 
@@ -648,7 +648,7 @@ const CertAuthScope *CertStore_CheckCASignature( const std::string &signed_data,
 	return &pKey->m_effectiveAuthScope;
 }
 
-const CertAuthScope *CertStore_CheckCert( const CMsgSteamDatagramCertificateSigned &msgCertSigned, CMsgSteamDatagramCertificate &outMsgCert, time_t timeNow, SteamNetworkingErrMsg &errMsg )
+const CertAuthScope *CertStore_CheckCert( const CMsgSteamDatagramCertificateSigned &msgCertSigned, CMsgSteamDatagramCertificate &outMsgCert, time_t timeNow, GameNetworkingErrMsg &errMsg )
 {
 	const CertAuthScope *pResult = CertStore_CheckCASignature( msgCertSigned.cert(), msgCertSigned.ca_key_id(), msgCertSigned.ca_signature(), timeNow, errMsg );
 	if ( !pResult )
@@ -669,7 +669,7 @@ const CertAuthScope *CertStore_CheckCert( const CMsgSteamDatagramCertificateSign
 	return pResult;
 }
 
-bool CheckCertAppID( const CMsgSteamDatagramCertificate &msgCert, const CertAuthScope *pCACertAuthScope, AppId_t nAppID, SteamNetworkingErrMsg &errMsg )
+bool CheckCertAppID( const CMsgSteamDatagramCertificate &msgCert, const CertAuthScope *pCACertAuthScope, AppId_t nAppID, GameNetworkingErrMsg &errMsg )
 {
 
 	// Not bound to specific AppIDs?
@@ -705,7 +705,7 @@ bool CheckCertAppID( const CMsgSteamDatagramCertificate &msgCert, const CertAuth
 	return false;
 }
 
-bool CheckCertPOPID( const CMsgSteamDatagramCertificate &msgCert, const CertAuthScope *pCACertAuthScope, SteamNetworkingPOPID popID, SteamNetworkingErrMsg &errMsg )
+bool CheckCertPOPID( const CMsgSteamDatagramCertificate &msgCert, const CertAuthScope *pCACertAuthScope, GameNetworkingPOPID popID, GameNetworkingErrMsg &errMsg )
 {
 
 	// Not bound to specific PopIDs?
@@ -713,31 +713,31 @@ bool CheckCertPOPID( const CMsgSteamDatagramCertificate &msgCert, const CertAuth
 	{
 		if ( !pCACertAuthScope || pCACertAuthScope->m_pops.HasItem( popID ) )
 			return true;
-		V_sprintf_safe( errMsg, "Cert is not restricted by POPID, by CA trust chain is, and does not authorize %s", SteamNetworkingPOPIDRender( popID ).c_str() );
+		V_sprintf_safe( errMsg, "Cert is not restricted by POPID, by CA trust chain is, and does not authorize %s", GameNetworkingPOPIDRender( popID ).c_str() );
 		return true;
 	}
 
 	// Search cert for the one they are trying
-	for ( SteamNetworkingPOPID certPOPID: msgCert.gameserver_datacenter_ids() )
+	for ( GameNetworkingPOPID certPOPID: msgCert.gameserver_datacenter_ids() )
 	{
 		if ( certPOPID == popID )
 		{
 			if ( !pCACertAuthScope || pCACertAuthScope->m_pops.HasItem( popID ) )
 				return true;
-			V_sprintf_safe( errMsg, "Cert allows POPID %s, but CA trust chain does not", SteamNetworkingPOPIDRender( popID ).c_str() );
+			V_sprintf_safe( errMsg, "Cert allows POPID %s, but CA trust chain does not", GameNetworkingPOPIDRender( popID ).c_str() );
 			return false;
 		}
 	}
 
 	// No good
-	SteamNetworkingPOPIDRender firstAuthorizedPopID( msgCert.gameserver_datacenter_ids(0) );
+	GameNetworkingPOPIDRender firstAuthorizedPopID( msgCert.gameserver_datacenter_ids(0) );
 	if ( msgCert.app_ids_size() == 1 )
 	{
-		V_sprintf_safe( errMsg, "Cert is not authorized for POPID %s, only %s", SteamNetworkingPOPIDRender( popID ).c_str(), firstAuthorizedPopID.c_str() );
+		V_sprintf_safe( errMsg, "Cert is not authorized for POPID %s, only %s", GameNetworkingPOPIDRender( popID ).c_str(), firstAuthorizedPopID.c_str() );
 	}
 	else
 	{
-		V_sprintf_safe( errMsg, "Cert is not authorized for POPID %s, only %s (and %d more)", SteamNetworkingPOPIDRender( popID ).c_str(), firstAuthorizedPopID.c_str(), msgCert.gameserver_datacenter_ids_size()-1 );
+		V_sprintf_safe( errMsg, "Cert is not authorized for POPID %s, only %s (and %d more)", GameNetworkingPOPIDRender( popID ).c_str(), firstAuthorizedPopID.c_str(), msgCert.gameserver_datacenter_ids_size()-1 );
 	}
 	return false;
 }

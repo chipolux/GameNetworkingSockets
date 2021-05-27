@@ -89,13 +89,13 @@ DEFINE_CONNECTON_DEFAULT_CONFIGVAL( void *, Callback_ConnectionStatusChanged, nu
 #ifdef STEAMNETWORKINGSOCKETS_ENABLE_ICE
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( std::string, P2P_STUN_ServerList, "" );
 
-COMPILE_TIME_ASSERT( k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Default == -1 );
-COMPILE_TIME_ASSERT( k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Disable == 0 );
+COMPILE_TIME_ASSERT( k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Default == -1 );
+COMPILE_TIME_ASSERT( k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Disable == 0 );
 #ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
 	// There is no such thing as "default" if we don't have some sort of platform
-	DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, P2P_Transport_ICE_Enable, k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_All, k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Disable, k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_All );
+	DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, P2P_Transport_ICE_Enable, k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_All, k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Disable, k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_All );
 #else
-	DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, P2P_Transport_ICE_Enable, k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Default, k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Default, k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_All );
+	DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, P2P_Transport_ICE_Enable, k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Default, k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Default, k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_All );
 #endif
 
 DEFINE_CONNECTON_DEFAULT_CONFIGVAL( int32, P2P_Transport_ICE_Penalty, 0, 0, INT_MAX );
@@ -112,10 +112,10 @@ static std::vector<GlobalConfigValueEntry *> s_vecConfigValueTable; // Sorted by
 static std::vector<GlobalConfigValueEntry *> s_vecConnectionConfigValueTable; // Sorted by offset
 
 GlobalConfigValueEntry::GlobalConfigValueEntry(
-	ESteamNetworkingConfigValue eValue,
+	EGameNetworkingConfigValue eValue,
 	const char *pszName,
-	ESteamNetworkingConfigDataType eDataType,
-	ESteamNetworkingConfigScope eScope,
+	EGameNetworkingConfigDataType eDataType,
+	EGameNetworkingConfigScope eScope,
 	int cbOffsetOf
 ) : m_eValue{ eValue }
 , m_pszName{ pszName }
@@ -133,14 +133,14 @@ static void EnsureConfigValueTableInitted()
 {
 	if ( s_bConfigValueTableInitted )
 		return;
-	SteamNetworkingGlobalLock scopeLock;
+	GameNetworkingGlobalLock scopeLock;
 	if ( s_bConfigValueTableInitted )
 		return;
 
 	for ( GlobalConfigValueEntry *p = s_pFirstGlobalConfigEntry ; p ; p = p->m_pNextEntry )
 	{
 		s_vecConfigValueTable.push_back( p );
-		if ( p->m_eScope == k_ESteamNetworkingConfig_Connection )
+		if ( p->m_eScope == k_EGameNetworkingConfig_Connection )
 			s_vecConnectionConfigValueTable.push_back( p );
 	}
 
@@ -166,7 +166,7 @@ static void EnsureConfigValueTableInitted()
 	s_bConfigValueTableInitted = true;
 }
 
-static GlobalConfigValueEntry *FindConfigValueEntry( ESteamNetworkingConfigValue eSearchVal )
+static GlobalConfigValueEntry *FindConfigValueEntry( EGameNetworkingConfigValue eSearchVal )
 {
 	EnsureConfigValueTableInitted();
 
@@ -215,38 +215,38 @@ void ConnectionConfig::Init( ConnectionConfig *pInherit )
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CUtlHashMap<uint16, CSteamNetworkConnectionBase *, std::equal_to<uint16>, Identity<uint16> > g_mapConnections;
-CUtlHashMap<int, CSteamNetworkPollGroup *, std::equal_to<int>, Identity<int> > g_mapPollGroups;
+CUtlHashMap<uint16, CGameNetworkConnectionBase *, std::equal_to<uint16>, Identity<uint16> > g_mapConnections;
+CUtlHashMap<int, CGameNetworkPollGroup *, std::equal_to<int>, Identity<int> > g_mapPollGroups;
 TableLock g_tables_lock;
 
 // Table of active listen sockets.  Listen sockets and this table are protected
 // by the global lock.
-CUtlHashMap<int, CSteamNetworkListenSocketBase *, std::equal_to<int>, Identity<int> > g_mapListenSockets; 
+CUtlHashMap<int, CGameNetworkListenSocketBase *, std::equal_to<int>, Identity<int> > g_mapListenSockets; 
 
-static bool BConnectionStateExistsToAPI( ESteamNetworkingConnectionState eState )
+static bool BConnectionStateExistsToAPI( EGameNetworkingConnectionState eState )
 {
 	switch ( eState )
 	{
 		default:
 			Assert( false );
 			return false;
-		case k_ESteamNetworkingConnectionState_None:
-		case k_ESteamNetworkingConnectionState_Dead:
-		case k_ESteamNetworkingConnectionState_FinWait:
-		case k_ESteamNetworkingConnectionState_Linger:
+		case k_EGameNetworkingConnectionState_None:
+		case k_EGameNetworkingConnectionState_Dead:
+		case k_EGameNetworkingConnectionState_FinWait:
+		case k_EGameNetworkingConnectionState_Linger:
 			return false;
 
-		case k_ESteamNetworkingConnectionState_Connecting:
-		case k_ESteamNetworkingConnectionState_FindingRoute:
-		case k_ESteamNetworkingConnectionState_Connected:
-		case k_ESteamNetworkingConnectionState_ClosedByPeer:
-		case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+		case k_EGameNetworkingConnectionState_Connecting:
+		case k_EGameNetworkingConnectionState_FindingRoute:
+		case k_EGameNetworkingConnectionState_Connected:
+		case k_EGameNetworkingConnectionState_ClosedByPeer:
+		case k_EGameNetworkingConnectionState_ProblemDetectedLocally:
 			return true;
 	}
 
 }
 
-static CSteamNetworkConnectionBase *InternalGetConnectionByHandle( HSteamNetConnection sock, ConnectionScopeLock &scopeLock, const char *pszLockTag, bool bForAPI )
+static CGameNetworkConnectionBase *InternalGetConnectionByHandle( HGameNetConnection sock, ConnectionScopeLock &scopeLock, const char *pszLockTag, bool bForAPI )
 {
 	if ( sock == 0 )
 		return nullptr;
@@ -254,7 +254,7 @@ static CSteamNetworkConnectionBase *InternalGetConnectionByHandle( HSteamNetConn
 	int idx = g_mapConnections.Find( uint16( sock ) );
 	if ( idx == g_mapConnections.InvalidIndex() )
 		return nullptr;
-	CSteamNetworkConnectionBase *pResult = g_mapConnections[ idx ];
+	CGameNetworkConnectionBase *pResult = g_mapConnections[ idx ];
 	if ( !pResult )
 	{
 		AssertMsg( false, "g_mapConnections corruption!" );
@@ -273,8 +273,8 @@ static CSteamNetworkConnectionBase *InternalGetConnectionByHandle( HSteamNetConn
 
 		// Fetch the state of the connection.  This is OK to do
 		// even if we don't have the lock.
-		ESteamNetworkingConnectionState s = pResult->GetState();
-		if ( s == k_ESteamNetworkingConnectionState_Dead )
+		EGameNetworkingConnectionState s = pResult->GetState();
+		if ( s == k_EGameNetworkingConnectionState_Dead )
 			break;
 		if ( bForAPI )
 		{
@@ -305,27 +305,27 @@ static CSteamNetworkConnectionBase *InternalGetConnectionByHandle( HSteamNetConn
 	return nullptr;
 }
 
-CSteamNetworkConnectionBase *GetConnectionByHandle( HSteamNetConnection sock, ConnectionScopeLock &scopeLock )
+CGameNetworkConnectionBase *GetConnectionByHandle( HGameNetConnection sock, ConnectionScopeLock &scopeLock )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 	return InternalGetConnectionByHandle( sock, scopeLock, nullptr, false );
 }
 
-inline CSteamNetworkConnectionBase *GetConnectionByHandleForAPI( HSteamNetConnection sock, ConnectionScopeLock &scopeLock, const char *pszLockTag )
+inline CGameNetworkConnectionBase *GetConnectionByHandleForAPI( HGameNetConnection sock, ConnectionScopeLock &scopeLock, const char *pszLockTag )
 {
 	return InternalGetConnectionByHandle( sock, scopeLock, pszLockTag, true );
 }
 
-static CSteamNetworkListenSocketBase *GetListenSocketByHandle( HSteamListenSocket sock )
+static CGameNetworkListenSocketBase *GetListenSocketByHandle( HSteamListenSocket sock )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread(); // listen sockets are protected by the global lock!
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread(); // listen sockets are protected by the global lock!
 	if ( sock == k_HSteamListenSocket_Invalid )
 		return nullptr;
 	AssertMsg( !(sock & 0x80000000), "A poll group handle was used where a listen socket handle was expected" );
 	int idx = sock & 0xffff;
 	if ( !g_mapListenSockets.IsValidIndex( idx ) )
 		return nullptr;
-	CSteamNetworkListenSocketBase *pResult = g_mapListenSockets[ idx ];
+	CGameNetworkListenSocketBase *pResult = g_mapListenSockets[ idx ];
 	if ( pResult->m_hListenSocketSelf != sock )
 	{
 		// Slot was reused, but this handle is now invalid
@@ -334,16 +334,16 @@ static CSteamNetworkListenSocketBase *GetListenSocketByHandle( HSteamListenSocke
 	return pResult;
 }
 
-CSteamNetworkPollGroup *GetPollGroupByHandle( HSteamNetPollGroup hPollGroup, PollGroupScopeLock &scopeLock, const char *pszLockTag )
+CGameNetworkPollGroup *GetPollGroupByHandle( HGameNetPollGroup hPollGroup, PollGroupScopeLock &scopeLock, const char *pszLockTag )
 {
-	if ( hPollGroup == k_HSteamNetPollGroup_Invalid )
+	if ( hPollGroup == k_HGameNetPollGroup_Invalid )
 		return nullptr;
 	AssertMsg( (hPollGroup & 0x80000000), "A listen socket handle was used where a poll group handle was expected" );
 	int idx = hPollGroup & 0xffff;
 	TableScopeLock tableScopeLock( g_tables_lock );
 	if ( !g_mapPollGroups.IsValidIndex( idx ) )
 		return nullptr;
-	CSteamNetworkPollGroup *pResult = g_mapPollGroups[ idx ];
+	CGameNetworkPollGroup *pResult = g_mapPollGroups[ idx ];
 
 	// Make sure poll group is the one they really asked for, and also
 	// handle deletion race condition
@@ -369,7 +369,7 @@ std::vector<CGameNetworkingSockets *> CGameNetworkingSockets::s_vecGameNetworkin
 CGameNetworkingSockets::CGameNetworkingSockets( CGameNetworkingUtils *pGameNetworkingUtils )
 : m_bHaveLowLevelRef( false )
 , m_pGameNetworkingUtils( pGameNetworkingUtils )
-, m_pSteamNetworkingMessages( nullptr )
+, m_pGameNetworkingMessages( nullptr )
 , m_bEverTriedToGetCert( false )
 , m_bEverGotCert( false )
 #ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
@@ -389,10 +389,10 @@ void CGameNetworkingSockets::InternalInitIdentity()
 	m_keyPrivateKey.Wipe();
 
 	#ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
-		m_CertStatus.m_eAvail = k_ESteamNetworkingAvailability_NeverTried;
+		m_CertStatus.m_eAvail = k_EGameNetworkingAvailability_NeverTried;
 		m_CertStatus.m_debugMsg[0] = '\0';
 	#else
-		m_CertStatus.m_eAvail = k_ESteamNetworkingAvailability_CannotTry;
+		m_CertStatus.m_eAvail = k_EGameNetworkingAvailability_CannotTry;
 		V_strcpy_safe( m_CertStatus.m_debugMsg, "No certificate authority" );
 	#endif
 	m_AuthenticationStatus = m_CertStatus;
@@ -402,12 +402,12 @@ void CGameNetworkingSockets::InternalInitIdentity()
 
 CGameNetworkingSockets::~CGameNetworkingSockets()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 	Assert( !m_bHaveLowLevelRef ); // Called destructor directly?  Use Destroy()!
 }
 
 #ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
-bool CGameNetworkingSockets::BInitGameNetworkingSockets( const SteamNetworkingIdentity *pIdentity, SteamDatagramErrMsg &errMsg )
+bool CGameNetworkingSockets::BInitGameNetworkingSockets( const GameNetworkingIdentity *pIdentity, SteamDatagramErrMsg &errMsg )
 {
 	AssertMsg( !m_bHaveLowLevelRef, "Initted interface twice?" );
 
@@ -424,7 +424,7 @@ bool CGameNetworkingSockets::BInitGameNetworkingSockets( const SteamNetworkingId
 }
 #endif
 
-bool CGameNetworkingSockets::BInitLowLevel( SteamNetworkingErrMsg &errMsg )
+bool CGameNetworkingSockets::BInitLowLevel( GameNetworkingErrMsg &errMsg )
 {
 	if ( m_bHaveLowLevelRef )
 		return true;
@@ -441,33 +441,33 @@ bool CGameNetworkingSockets::BInitLowLevel( SteamNetworkingErrMsg &errMsg )
 
 void CGameNetworkingSockets::KillConnections()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingSockets::KillConnections" );
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingSockets::KillConnections" );
 	TableScopeLock tableScopeLock( g_tables_lock );
 
 	// Warn messages interface that it needs to clean up.  We need to do this
 	// because that class has pointers to objects that we are about to destroy.
 	#ifdef STEAMNETWORKINGSOCKETS_ENABLE_STEAMNETWORKINGMESSAGES
-		if ( m_pSteamNetworkingMessages )
-			m_pSteamNetworkingMessages->FreeResources();
+		if ( m_pGameNetworkingMessages )
+			m_pGameNetworkingMessages->FreeResources();
 	#endif
 
 	// Destroy all of my connections
-	CSteamNetworkConnectionBase::ProcessDeletionList();
+	CGameNetworkConnectionBase::ProcessDeletionList();
 	FOR_EACH_HASHMAP( g_mapConnections, idx )
 	{
-		CSteamNetworkConnectionBase *pConn = g_mapConnections[idx];
+		CGameNetworkConnectionBase *pConn = g_mapConnections[idx];
 		if ( pConn->m_pGameNetworkingSocketsInterface == this )
 		{
 			ConnectionScopeLock connectionLock( *pConn );
 			pConn->ConnectionQueueDestroy();
 		}
 	}
-	CSteamNetworkConnectionBase::ProcessDeletionList();
+	CGameNetworkConnectionBase::ProcessDeletionList();
 
 	// Destroy all of my listen sockets
 	FOR_EACH_HASHMAP( g_mapListenSockets, idx )
 	{
-		CSteamNetworkListenSocketBase *pSock = g_mapListenSockets[idx];
+		CGameNetworkListenSocketBase *pSock = g_mapListenSockets[idx];
 		if ( pSock->m_pGameNetworkingSocketsInterface == this )
 		{
 			DbgVerify( CloseListenSocket( pSock->m_hListenSocketSelf ) );
@@ -478,7 +478,7 @@ void CGameNetworkingSockets::KillConnections()
 	// Destroy all of my poll groups
 	FOR_EACH_HASHMAP( g_mapPollGroups, idx )
 	{
-		CSteamNetworkPollGroup *pPollGroup = g_mapPollGroups[idx];
+		CGameNetworkPollGroup *pPollGroup = g_mapPollGroups[idx];
 		if ( pPollGroup->m_pGameNetworkingSocketsInterface == this )
 		{
 			DbgVerify( DestroyPollGroup( pPollGroup->m_hPollGroupSelf ) );
@@ -489,17 +489,17 @@ void CGameNetworkingSockets::KillConnections()
 
 void CGameNetworkingSockets::Destroy()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingSockets::Destroy" );
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread( "CGameNetworkingSockets::Destroy" );
 
 	FreeResources();
 
 	// Nuke messages interface, if we had one.
 	#ifdef STEAMNETWORKINGSOCKETS_ENABLE_STEAMNETWORKINGMESSAGES
-		if ( m_pSteamNetworkingMessages )
+		if ( m_pGameNetworkingMessages )
 		{
-			delete m_pSteamNetworkingMessages;
-			Assert( m_pSteamNetworkingMessages == nullptr ); // Destructor should sever this link
-			m_pSteamNetworkingMessages = nullptr; // Buuuuut we'll slam it, too, in case there's a bug
+			delete m_pGameNetworkingMessages;
+			Assert( m_pGameNetworkingMessages == nullptr ); // Destructor should sever this link
+			m_pGameNetworkingMessages = nullptr; // Buuuuut we'll slam it, too, in case there's a bug
 		}
 	#endif
 
@@ -529,7 +529,7 @@ void CGameNetworkingSockets::FreeResources()
 bool CGameNetworkingSockets::BHasAnyConnections() const
 {
 	TableScopeLock tableScopeLock( g_tables_lock );
-	for ( CSteamNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
+	for ( CGameNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
 	{
 		if ( pConn->m_pGameNetworkingSocketsInterface == this )
 			return true;
@@ -540,7 +540,7 @@ bool CGameNetworkingSockets::BHasAnyConnections() const
 bool CGameNetworkingSockets::BHasAnyListenSockets() const
 {
 	TableScopeLock tableScopeLock( g_tables_lock );
-	for ( CSteamNetworkListenSocketBase *pSock: g_mapListenSockets.IterValues() )
+	for ( CGameNetworkListenSocketBase *pSock: g_mapListenSockets.IterValues() )
 	{
 		if ( pSock->m_pGameNetworkingSocketsInterface == this )
 			return true;
@@ -548,9 +548,9 @@ bool CGameNetworkingSockets::BHasAnyListenSockets() const
 	return false;
 }
 
-bool CGameNetworkingSockets::GetIdentity( SteamNetworkingIdentity *pIdentity )
+bool CGameNetworkingSockets::GetIdentity( GameNetworkingIdentity *pIdentity )
 {
-	SteamNetworkingGlobalLock scopeLock( "GetIdentity" );
+	GameNetworkingGlobalLock scopeLock( "GetIdentity" );
 	InternalGetIdentity();
 	if ( pIdentity )
 		*pIdentity = m_identity;
@@ -570,9 +570,9 @@ int CGameNetworkingSockets::GetSecondsUntilCertExpiry() const
 	return nSeconduntilExpiry;
 }
 
-bool CGameNetworkingSockets::GetCertificateRequest( int *pcbBlob, void *pBlob, SteamNetworkingErrMsg &errMsg )
+bool CGameNetworkingSockets::GetCertificateRequest( int *pcbBlob, void *pBlob, GameNetworkingErrMsg &errMsg )
 {
-	SteamNetworkingGlobalLock scopeLock( "GetCertificateRequest" );
+	GameNetworkingGlobalLock scopeLock( "GetCertificateRequest" );
 
 	// If we don't have a private key, generate one now.
 	CECSigningPublicKey pubKey;
@@ -597,7 +597,7 @@ bool CGameNetworkingSockets::GetCertificateRequest( int *pcbBlob, void *pBlob, S
 	InternalGetIdentity();
 	if ( !m_identity.IsInvalid() && !m_identity.IsLocalHost() )
 	{
-		SteamNetworkingIdentityToProtobuf( m_identity, msgCert, identity_string, legacy_identity_binary, legacy_steam_id );
+		GameNetworkingIdentityToProtobuf( m_identity, msgCert, identity_string, legacy_identity_binary, legacy_steam_id );
 	}
 
 	// Check size
@@ -620,7 +620,7 @@ bool CGameNetworkingSockets::GetCertificateRequest( int *pcbBlob, void *pBlob, S
 	return true;
 }
 
-bool CGameNetworkingSockets::SetCertificate( const void *pCertificate, int cbCertificate, SteamNetworkingErrMsg &errMsg )
+bool CGameNetworkingSockets::SetCertificate( const void *pCertificate, int cbCertificate, GameNetworkingErrMsg &errMsg )
 {
 	// Crack the blob
 	CMsgSteamDatagramCertificateSigned msgCertSigned;
@@ -630,7 +630,7 @@ bool CGameNetworkingSockets::SetCertificate( const void *pCertificate, int cbCer
 		return false;
 	}
 
-	SteamNetworkingGlobalLock scopeLock( "SetCertificate" );
+	GameNetworkingGlobalLock scopeLock( "SetCertificate" );
 
 	// Crack the cert, and check the signature.  If *we* aren't even willing
 	// to trust it, assume that our peers won't either
@@ -643,9 +643,9 @@ bool CGameNetworkingSockets::SetCertificate( const void *pCertificate, int cbCer
 	}
 
 	// Extract the identity from the cert
-	SteamNetworkingErrMsg tempErrMsg;
-	SteamNetworkingIdentity certIdentity;
-	int r = SteamNetworkingIdentityFromCert( certIdentity, msgCert, tempErrMsg );
+	GameNetworkingErrMsg tempErrMsg;
+	GameNetworkingIdentity certIdentity;
+	int r = GameNetworkingIdentityFromCert( certIdentity, msgCert, tempErrMsg );
 	if ( r < 0 )
 	{
 		V_sprintf_safe( errMsg, "Cert has invalid identity.  %s", tempErrMsg );
@@ -716,11 +716,11 @@ bool CGameNetworkingSockets::SetCertificate( const void *pCertificate, int cbCer
 	if ( m_identity.IsInvalid() || m_identity.IsLocalHost() )
 	{
 		m_identity = certIdentity;
-		SpewMsg( "Local identity established from certificate.  We are '%s'\n", SteamNetworkingIdentityRender( m_identity ).c_str() );
+		SpewMsg( "Local identity established from certificate.  We are '%s'\n", GameNetworkingIdentityRender( m_identity ).c_str() );
 	}
 	else if ( !( m_identity == certIdentity ) )
 	{
-		V_sprintf_safe( errMsg, "Cert is for identity '%s'.  We are '%s'", SteamNetworkingIdentityRender( certIdentity ).c_str(), SteamNetworkingIdentityRender( m_identity ).c_str() );
+		V_sprintf_safe( errMsg, "Cert is for identity '%s'.  We are '%s'", GameNetworkingIdentityRender( certIdentity ).c_str(), GameNetworkingIdentityRender( m_identity ).c_str() );
 		return false;
 	}
 
@@ -731,7 +731,7 @@ bool CGameNetworkingSockets::SetCertificate( const void *pCertificate, int cbCer
 	AssertMsg( GetSecondsUntilCertExpiry() > 0, "Cert already invalid / expired?" );
 
 	// We've got a valid cert
-	SetCertStatus( k_ESteamNetworkingAvailability_Current, "OK" );
+	SetCertStatus( k_EGameNetworkingAvailability_Current, "OK" );
 
 	// Make sure we have everything else we need to do authentication.
 	// This will also make sure we have renewal scheduled
@@ -741,7 +741,7 @@ bool CGameNetworkingSockets::SetCertificate( const void *pCertificate, int cbCer
 	return true;
 }
 
-void CGameNetworkingSockets::ResetIdentity( const SteamNetworkingIdentity *pIdentity )
+void CGameNetworkingSockets::ResetIdentity( const GameNetworkingIdentity *pIdentity )
 {
 #ifdef STEAMNETWORKINGSOCKETS_STEAM
 	Assert( !"Not supported on steam" );
@@ -753,9 +753,9 @@ void CGameNetworkingSockets::ResetIdentity( const SteamNetworkingIdentity *pIden
 #endif
 }
 
-ESteamNetworkingAvailability CGameNetworkingSockets::InitAuthentication()
+EGameNetworkingAvailability CGameNetworkingSockets::InitAuthentication()
 {
-	SteamNetworkingGlobalLock scopeLock( "InitAuthentication" );
+	GameNetworkingGlobalLock scopeLock( "InitAuthentication" );
 
 	// Check/fetch prerequisites
 	AuthenticationNeeded();
@@ -764,10 +764,10 @@ ESteamNetworkingAvailability CGameNetworkingSockets::InitAuthentication()
 	return m_AuthenticationStatus.m_eAvail;
 }
 
-void CGameNetworkingSockets::CheckAuthenticationPrerequisites( SteamNetworkingMicroseconds usecNow )
+void CGameNetworkingSockets::CheckAuthenticationPrerequisites( GameNetworkingMicroseconds usecNow )
 {
 #ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 
 	// Check if we're in flight already.
 	bool bInFlight = BCertRequestInFlight();
@@ -775,7 +775,7 @@ void CGameNetworkingSockets::CheckAuthenticationPrerequisites( SteamNetworkingMi
 	// Do we already have a cert?
 	if ( m_msgSignedCert.has_cert() )
 	{
-		//Assert( m_CertStatus.m_eAvail == k_ESteamNetworkingAvailability_Current );
+		//Assert( m_CertStatus.m_eAvail == k_EGameNetworkingAvailability_Current );
 
 		// How much more life does it have in it?
 		int nSeconduntilExpiry = GetSecondsUntilCertExpiry();
@@ -789,7 +789,7 @@ void CGameNetworkingSockets::CheckAuthenticationPrerequisites( SteamNetworkingMi
 			m_keyPrivateKey.Wipe();
 
 			// Update cert status
-			SetCertStatus( k_ESteamNetworkingAvailability_Previously, "Expired" );
+			SetCertStatus( k_EGameNetworkingAvailability_Previously, "Expired" );
 		}
 		else
 		{
@@ -799,11 +799,11 @@ void CGameNetworkingSockets::CheckAuthenticationPrerequisites( SteamNetworkingMi
 				return;
 
 			// Check if it's time to renew
-			SteamNetworkingMicroseconds usecTargetRenew = usecNow + ( nSeconduntilExpiry - k_nSecCertExpirySeekRenew ) * k_nMillion;
+			GameNetworkingMicroseconds usecTargetRenew = usecNow + ( nSeconduntilExpiry - k_nSecCertExpirySeekRenew ) * k_nMillion;
 			if ( usecTargetRenew > usecNow )
 			{
-				SteamNetworkingMicroseconds usecScheduledRenew = m_scheduleCheckRenewCert.GetScheduleTime();
-				SteamNetworkingMicroseconds usecLatestRenew = usecTargetRenew + 4*k_nMillion;
+				GameNetworkingMicroseconds usecScheduledRenew = m_scheduleCheckRenewCert.GetScheduleTime();
+				GameNetworkingMicroseconds usecLatestRenew = usecTargetRenew + 4*k_nMillion;
 				if ( usecScheduledRenew <= usecLatestRenew )
 				{
 					// Currently scheduled time is good enough.  Don't constantly update the schedule time,
@@ -831,7 +831,7 @@ void CGameNetworkingSockets::CheckAuthenticationPrerequisites( SteamNetworkingMi
 #endif
 }
 
-void CGameNetworkingSockets::SetCertStatus( ESteamNetworkingAvailability eAvail, const char *pszFmt, ... )
+void CGameNetworkingSockets::SetCertStatus( EGameNetworkingAvailability eAvail, const char *pszFmt, ... )
 {
 	char msg[ sizeof(m_CertStatus.m_debugMsg) ];
 	va_list ap;
@@ -840,14 +840,14 @@ void CGameNetworkingSockets::SetCertStatus( ESteamNetworkingAvailability eAvail,
 	va_end( ap );
 
 	// Mark success or an attempt
-	if ( eAvail == k_ESteamNetworkingAvailability_Current )
+	if ( eAvail == k_EGameNetworkingAvailability_Current )
 		m_bEverGotCert = true;
-	if ( eAvail == k_ESteamNetworkingAvailability_Attempting || eAvail == k_ESteamNetworkingAvailability_Retrying )
+	if ( eAvail == k_EGameNetworkingAvailability_Attempting || eAvail == k_EGameNetworkingAvailability_Retrying )
 		m_bEverTriedToGetCert = true;
 
 	// If we failed, but we previously succeeded, convert to "previously"
-	if ( eAvail == k_ESteamNetworkingAvailability_Failed && m_bEverGotCert )
-		eAvail = k_ESteamNetworkingAvailability_Previously;
+	if ( eAvail == k_EGameNetworkingAvailability_Failed && m_bEverGotCert )
+		eAvail = k_EGameNetworkingAvailability_Previously;
 
 	// No change?
 	if ( m_CertStatus.m_eAvail == eAvail && V_stricmp( m_CertStatus.m_debugMsg, msg ) == 0 )
@@ -868,9 +868,9 @@ void CGameNetworkingSockets::DeduceAuthenticationStatus()
 	SetAuthenticationStatus( m_CertStatus );
 }
 
-void CGameNetworkingSockets::SetAuthenticationStatus( const SteamNetAuthenticationStatus_t &newStatus )
+void CGameNetworkingSockets::SetAuthenticationStatus( const GameNetAuthenticationStatus_t &newStatus )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 
 	// No change?
 	bool bStatusChanged = newStatus.m_eAvail != m_AuthenticationStatus.m_eAvail;
@@ -889,7 +889,7 @@ void CGameNetworkingSockets::SetAuthenticationStatus( const SteamNetAuthenticati
 	{
 		// Spew
 		SpewMsg( "AuthStatus (%s):  %s  (%s)",
-			SteamNetworkingIdentityRender( m_identity ).c_str(),
+			GameNetworkingIdentityRender( m_identity ).c_str(),
 			GetAvailabilityString( m_AuthenticationStatus.m_eAvail ), m_AuthenticationStatus.m_debugMsg );
 
 		QueueCallback( m_AuthenticationStatus, g_Config_Callback_AuthStatusChanged.Get() );
@@ -899,25 +899,25 @@ void CGameNetworkingSockets::SetAuthenticationStatus( const SteamNetAuthenticati
 #ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
 void CGameNetworkingSockets::AsyncCertRequestFinished()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "AsyncCertRequestFinished" );
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread( "AsyncCertRequestFinished" );
 
 	Assert( m_msgSignedCert.has_cert() );
-	SetCertStatus( k_ESteamNetworkingAvailability_Current, "OK" );
+	SetCertStatus( k_EGameNetworkingAvailability_Current, "OK" );
 
 	// Check for any connections that we own that are waiting on a cert
 	TableScopeLock tableScopeLock( g_tables_lock );
-	for ( CSteamNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
+	for ( CGameNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
 	{
 		if ( pConn->m_pGameNetworkingSocketsInterface == this )
 			pConn->InterfaceGotCert();
 	}
 }
 
-void CGameNetworkingSockets::CertRequestFailed( ESteamNetworkingAvailability eCertAvail, ESteamNetConnectionEnd nConnectionEndReason, const char *pszMsg )
+void CGameNetworkingSockets::CertRequestFailed( EGameNetworkingAvailability eCertAvail, EGameNetConnectionEnd nConnectionEndReason, const char *pszMsg )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "CertRequestFailed" );
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread( "CertRequestFailed" );
 
-	SpewWarning( "Cert request for %s failed with reason code %d.  %s\n", SteamNetworkingIdentityRender( InternalGetIdentity() ).c_str(), nConnectionEndReason, pszMsg );
+	SpewWarning( "Cert request for %s failed with reason code %d.  %s\n", GameNetworkingIdentityRender( InternalGetIdentity() ).c_str(), nConnectionEndReason, pszMsg );
 
 	// Schedule a retry.  Note that if we have active connections that need for a cert,
 	// we may end up retrying sooner.  If we don't have any active connections, spamming
@@ -936,7 +936,7 @@ void CGameNetworkingSockets::CertRequestFailed( ESteamNetworkingAvailability eCe
 	SetCertStatus( eCertAvail, "%s", pszMsg );
 
 	TableScopeLock tableScopeLock( g_tables_lock );
-	for ( CSteamNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
+	for ( CGameNetworkConnectionBase *pConn: g_mapConnections.IterValues() )
 	{
 		if ( pConn->m_pGameNetworkingSocketsInterface == this )
 			pConn->CertRequestFailed( nConnectionEndReason, pszMsg );
@@ -946,9 +946,9 @@ void CGameNetworkingSockets::CertRequestFailed( ESteamNetworkingAvailability eCe
 }
 #endif
 
-ESteamNetworkingAvailability CGameNetworkingSockets::GetAuthenticationStatus( SteamNetAuthenticationStatus_t *pDetails )
+EGameNetworkingAvailability CGameNetworkingSockets::GetAuthenticationStatus( GameNetAuthenticationStatus_t *pDetails )
 {
-	SteamNetworkingGlobalLock scopeLock; // !SPEED! We could protect this with a more tightly scoped lock, if we think this is eomthing people might be polling
+	GameNetworkingGlobalLock scopeLock; // !SPEED! We could protect this with a more tightly scoped lock, if we think this is eomthing people might be polling
 
 	// Return details, if requested
 	if ( pDetails )
@@ -958,12 +958,12 @@ ESteamNetworkingAvailability CGameNetworkingSockets::GetAuthenticationStatus( St
 	return m_AuthenticationStatus.m_eAvail;
 }
 
-HSteamListenSocket CGameNetworkingSockets::CreateListenSocketIP( const SteamNetworkingIPAddr &localAddr, int nOptions, const SteamNetworkingConfigValue_t *pOptions )
+HSteamListenSocket CGameNetworkingSockets::CreateListenSocketIP( const GameNetworkingIPAddr &localAddr, int nOptions, const GameNetworkingConfigValue_t *pOptions )
 {
-	SteamNetworkingGlobalLock scopeLock( "CreateListenSocketIP" );
+	GameNetworkingGlobalLock scopeLock( "CreateListenSocketIP" );
 	SteamDatagramErrMsg errMsg;
 
-	CSteamNetworkListenSocketDirectUDP *pSock = new CSteamNetworkListenSocketDirectUDP( this );
+	CGameNetworkListenSocketDirectUDP *pSock = new CGameNetworkListenSocketDirectUDP( this );
 	if ( !pSock )
 		return k_HSteamListenSocket_Invalid;
 	if ( !pSock->BInit( localAddr, nOptions, pOptions, errMsg ) )
@@ -976,30 +976,30 @@ HSteamListenSocket CGameNetworkingSockets::CreateListenSocketIP( const SteamNetw
 	return pSock->m_hListenSocketSelf;
 }
 
-HSteamNetConnection CGameNetworkingSockets::ConnectByIPAddress( const SteamNetworkingIPAddr &address, int nOptions, const SteamNetworkingConfigValue_t *pOptions )
+HGameNetConnection CGameNetworkingSockets::ConnectByIPAddress( const GameNetworkingIPAddr &address, int nOptions, const GameNetworkingConfigValue_t *pOptions )
 {
-	SteamNetworkingGlobalLock scopeLock( "ConnectByIPAddress" );
+	GameNetworkingGlobalLock scopeLock( "ConnectByIPAddress" );
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionUDP *pConn = new CSteamNetworkConnectionUDP( this, connectionLock );
+	CGameNetworkConnectionUDP *pConn = new CGameNetworkConnectionUDP( this, connectionLock );
 	if ( !pConn )
-		return k_HSteamNetConnection_Invalid;
+		return k_HGameNetConnection_Invalid;
 	SteamDatagramErrMsg errMsg;
 	if ( !pConn->BInitConnect( address, nOptions, pOptions, errMsg ) )
 	{
 		SpewError( "Cannot create IPv4 connection.  %s", errMsg );
 		pConn->ConnectionQueueDestroy();
-		return k_HSteamNetConnection_Invalid;
+		return k_HGameNetConnection_Invalid;
 	}
 
 	return pConn->m_hConnectionSelf;
 }
 
 
-EResult CGameNetworkingSockets::AcceptConnection( HSteamNetConnection hConn )
+EResult CGameNetworkingSockets::AcceptConnection( HGameNetConnection hConn )
 {
-	SteamNetworkingGlobalLock scopeLock( "AcceptConnection" ); // Take global lock, since this will lead to connection state transition
+	GameNetworkingGlobalLock scopeLock( "AcceptConnection" ); // Take global lock, since this will lead to connection state transition
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, nullptr );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, nullptr );
 	if ( !pConn )
 	{
 		SpewError( "Cannot accept connection #%u; invalid connection handle", hConn );
@@ -1010,11 +1010,11 @@ EResult CGameNetworkingSockets::AcceptConnection( HSteamNetConnection hConn )
 	return pConn->APIAcceptConnection();
 }
 
-bool CGameNetworkingSockets::CloseConnection( HSteamNetConnection hConn, int nReason, const char *pszDebug, bool bEnableLinger )
+bool CGameNetworkingSockets::CloseConnection( HGameNetConnection hConn, int nReason, const char *pszDebug, bool bEnableLinger )
 {
-	SteamNetworkingGlobalLock scopeLock( "CloseConnection" ); // Take global lock, we are going to change connection state and/or destroy objects
+	GameNetworkingGlobalLock scopeLock( "CloseConnection" ); // Take global lock, we are going to change connection state and/or destroy objects
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, nullptr );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, nullptr );
 	if ( !pConn )
 		return false;
 
@@ -1025,8 +1025,8 @@ bool CGameNetworkingSockets::CloseConnection( HSteamNetConnection hConn, int nRe
 
 bool CGameNetworkingSockets::CloseListenSocket( HSteamListenSocket hSocket )
 {
-	SteamNetworkingGlobalLock scopeLock( "CloseListenSocket" ); // Take global lock, we are going to destroy objects
-	CSteamNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
+	GameNetworkingGlobalLock scopeLock( "CloseListenSocket" ); // Take global lock, we are going to destroy objects
+	CGameNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
 	if ( !pSock )
 		return false;
 
@@ -1036,59 +1036,59 @@ bool CGameNetworkingSockets::CloseListenSocket( HSteamListenSocket hSocket )
 	return true;
 }
 
-bool CGameNetworkingSockets::SetConnectionUserData( HSteamNetConnection hPeer, int64 nUserData )
+bool CGameNetworkingSockets::SetConnectionUserData( HGameNetConnection hPeer, int64 nUserData )
 {
-	//SteamNetworkingGlobalLock scopeLock( "SetConnectionUserData" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "SetConnectionUserData" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hPeer, connectionLock, "SetConnectionUserData" );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hPeer, connectionLock, "SetConnectionUserData" );
 	if ( !pConn )
 		return false;
 	pConn->SetUserData( nUserData );
 	return true;
 }
 
-int64 CGameNetworkingSockets::GetConnectionUserData( HSteamNetConnection hPeer )
+int64 CGameNetworkingSockets::GetConnectionUserData( HGameNetConnection hPeer )
 {
-	//SteamNetworkingGlobalLock scopeLock( "GetConnectionUserData" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "GetConnectionUserData" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hPeer, connectionLock, "GetConnectionUserData" );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hPeer, connectionLock, "GetConnectionUserData" );
 	if ( !pConn )
 		return -1;
 	return pConn->GetUserData();
 }
 
-void CGameNetworkingSockets::SetConnectionName( HSteamNetConnection hPeer, const char *pszName )
+void CGameNetworkingSockets::SetConnectionName( HGameNetConnection hPeer, const char *pszName )
 {
-	SteamNetworkingGlobalLock scopeLock( "SetConnectionName" ); // NOTE: Yes, we must take global lock for this.  See CSteamNetworkConnectionBase::SetDescription
+	GameNetworkingGlobalLock scopeLock( "SetConnectionName" ); // NOTE: Yes, we must take global lock for this.  See CGameNetworkConnectionBase::SetDescription
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hPeer, connectionLock, nullptr );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hPeer, connectionLock, nullptr );
 	if ( !pConn )
 		return;
 	pConn->SetAppName( pszName );
 }
 
-bool CGameNetworkingSockets::GetConnectionName( HSteamNetConnection hPeer, char *pszName, int nMaxLen )
+bool CGameNetworkingSockets::GetConnectionName( HGameNetConnection hPeer, char *pszName, int nMaxLen )
 {
-	//SteamNetworkingGlobalLock scopeLock( "GetConnectionName" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "GetConnectionName" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hPeer, connectionLock, "GetConnectionName" );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hPeer, connectionLock, "GetConnectionName" );
 	if ( !pConn )
 		return false;
 	V_strncpy( pszName, pConn->GetAppName(), nMaxLen );
 	return true;
 }
 
-EResult CGameNetworkingSockets::SendMessageToConnection( HSteamNetConnection hConn, const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber )
+EResult CGameNetworkingSockets::SendMessageToConnection( HGameNetConnection hConn, const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber )
 {
-	//SteamNetworkingGlobalLock scopeLock( "SendMessageToConnection" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "SendMessageToConnection" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "SendMessageToConnection" );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "SendMessageToConnection" );
 	if ( !pConn )
 		return k_EResultInvalidParam;
 	return pConn->APISendMessageToConnection( pData, cbData, nSendFlags, pOutMessageNumber );
 }
 
-void CGameNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult )
+void CGameNetworkingSockets::SendMessages( int nMessages, GameNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult )
 {
 
 	// Get list of messages, grouped by connection.
@@ -1096,7 +1096,7 @@ void CGameNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage
 	// keep them in the same order!
 	struct SortMsg_t
 	{
-		HSteamNetConnection m_hConn;
+		HGameNetConnection m_hConn;
 		int m_idx;
 		inline bool operator<(const SortMsg_t &x ) const
 		{
@@ -1112,7 +1112,7 @@ void CGameNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage
 	{
 
 		// Sanity check that message is valid
-		CSteamNetworkingMessage *pMsg = static_cast<CSteamNetworkingMessage*>( pMessages[i] );
+		CGameNetworkingMessage *pMsg = static_cast<CGameNetworkingMessage*>( pMessages[i] );
 		if ( !pMsg )
 		{
 			if ( pOutMessageNumberOrResult )
@@ -1120,7 +1120,7 @@ void CGameNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage
 			continue;
 		}
 
-		if ( pMsg->m_conn == k_HSteamNetConnection_Invalid )
+		if ( pMsg->m_conn == k_HGameNetConnection_Invalid )
 		{
 			if ( pOutMessageNumberOrResult )
 				pOutMessageNumberOrResult[i] = -k_EResultInvalidParam;
@@ -1141,11 +1141,11 @@ void CGameNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage
 
 	// OK, we are ready to begin
 
-	// SteamNetworkingGlobalLock scopeLock( "SendMessages" ); // NO, not necessary!
-	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
+	// GameNetworkingGlobalLock scopeLock( "SendMessages" ); // NO, not necessary!
+	GameNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
-	CSteamNetworkConnectionBase *pConn = nullptr;
-	HSteamNetConnection hConn = k_HSteamNetConnection_Invalid;
+	CGameNetworkConnectionBase *pConn = nullptr;
+	HGameNetConnection hConn = k_HGameNetConnection_Invalid;
 	ConnectionScopeLock connectionLock;
 	bool bConnectionThinkImmediately = false;
 	for ( SortMsg_t *pSort = pSortMessages ; pSort < pSortEnd ; ++pSort )
@@ -1169,7 +1169,7 @@ void CGameNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage
 			pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "SendMessages" );
 		}
 
-		CSteamNetworkingMessage *pMsg = static_cast<CSteamNetworkingMessage*>( pMessages[pSort->m_idx] );
+		CGameNetworkingMessage *pMsg = static_cast<CGameNetworkingMessage*>( pMessages[pSort->m_idx] );
 
 		// Current connection is valid?
 		int64 result;
@@ -1198,50 +1198,50 @@ void CGameNetworkingSockets::SendMessages( int nMessages, SteamNetworkingMessage
 		pConn->CheckConnectionStateOrScheduleWakeUp( usecNow );
 }
 
-EResult CGameNetworkingSockets::FlushMessagesOnConnection( HSteamNetConnection hConn )
+EResult CGameNetworkingSockets::FlushMessagesOnConnection( HGameNetConnection hConn )
 {
-	//SteamNetworkingGlobalLock scopeLock( "FlushMessagesOnConnection" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "FlushMessagesOnConnection" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "FlushMessagesOnConnection" );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "FlushMessagesOnConnection" );
 	if ( !pConn )
 		return k_EResultInvalidParam;
 	return pConn->APIFlushMessageOnConnection();
 }
 
-int CGameNetworkingSockets::ReceiveMessagesOnConnection( HSteamNetConnection hConn, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
+int CGameNetworkingSockets::ReceiveMessagesOnConnection( HGameNetConnection hConn, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages )
 {
-	//SteamNetworkingGlobalLock scopeLock( "ReceiveMessagesOnConnection" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "ReceiveMessagesOnConnection" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "ReceiveMessagesOnConnection" );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "ReceiveMessagesOnConnection" );
 	if ( !pConn )
 		return -1;
 	return pConn->APIReceiveMessages( ppOutMessages, nMaxMessages );
 }
 
-HSteamNetPollGroup CGameNetworkingSockets::CreatePollGroup()
+HGameNetPollGroup CGameNetworkingSockets::CreatePollGroup()
 {
-	SteamNetworkingGlobalLock scopeLock( "CreatePollGroup" ); // Take global lock, because we will be creating objects
+	GameNetworkingGlobalLock scopeLock( "CreatePollGroup" ); // Take global lock, because we will be creating objects
 	PollGroupScopeLock pollGroupScopeLock;
-	CSteamNetworkPollGroup *pPollGroup = InternalCreatePollGroup( pollGroupScopeLock );
+	CGameNetworkPollGroup *pPollGroup = InternalCreatePollGroup( pollGroupScopeLock );
 	return pPollGroup->m_hPollGroupSelf;
 }
 
-CSteamNetworkPollGroup *CGameNetworkingSockets::InternalCreatePollGroup( PollGroupScopeLock &scopeLock )
+CGameNetworkPollGroup *CGameNetworkingSockets::InternalCreatePollGroup( PollGroupScopeLock &scopeLock )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 	TableScopeLock tableScopeLock( g_tables_lock );
-	CSteamNetworkPollGroup *pPollGroup = new CSteamNetworkPollGroup( this );
+	CGameNetworkPollGroup *pPollGroup = new CGameNetworkPollGroup( this );
 	scopeLock.Lock( pPollGroup->m_lock );
 	pPollGroup->AssignHandleAndAddToGlobalTable();
 	return pPollGroup;
 }
 
-bool CGameNetworkingSockets::DestroyPollGroup( HSteamNetPollGroup hPollGroup )
+bool CGameNetworkingSockets::DestroyPollGroup( HGameNetPollGroup hPollGroup )
 {
-	SteamNetworkingGlobalLock scopeLock( "DestroyPollGroup" ); // Take global lock, since we'll be destroying objects
+	GameNetworkingGlobalLock scopeLock( "DestroyPollGroup" ); // Take global lock, since we'll be destroying objects
 	TableScopeLock tableScopeLock( g_tables_lock ); // We'll need to be able to remove the poll group from the tables list
 	PollGroupScopeLock pollGroupLock;
-	CSteamNetworkPollGroup *pPollGroup = GetPollGroupByHandle( hPollGroup, pollGroupLock, nullptr );
+	CGameNetworkPollGroup *pPollGroup = GetPollGroupByHandle( hPollGroup, pollGroupLock, nullptr );
 	if ( !pPollGroup )
 		return false;
 	pollGroupLock.Abandon(); // We're about to destroy the lock itself.  The Destructor will unlock -- we don't want to do it again.
@@ -1249,11 +1249,11 @@ bool CGameNetworkingSockets::DestroyPollGroup( HSteamNetPollGroup hPollGroup )
 	return true;
 }
 
-bool CGameNetworkingSockets::SetConnectionPollGroup( HSteamNetConnection hConn, HSteamNetPollGroup hPollGroup )
+bool CGameNetworkingSockets::SetConnectionPollGroup( HGameNetConnection hConn, HGameNetPollGroup hPollGroup )
 {
-	SteamNetworkingGlobalLock scopeLock( "SetConnectionPollGroup" ); // Take global lock, since we'll need to take multiple object locks
+	GameNetworkingGlobalLock scopeLock( "SetConnectionPollGroup" ); // Take global lock, since we'll need to take multiple object locks
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, nullptr );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, nullptr );
 	if ( !pConn )
 		return false;
 
@@ -1261,7 +1261,7 @@ bool CGameNetworkingSockets::SetConnectionPollGroup( HSteamNetConnection hConn, 
 	// lock.  Code that does not hold the global lock may only lock one object at a time
 
 	// Special case for removing the poll group
-	if ( hPollGroup == k_HSteamNetPollGroup_Invalid )
+	if ( hPollGroup == k_HGameNetPollGroup_Invalid )
 	{
 		pConn->RemoveFromPollGroup();
 		return true;
@@ -1269,7 +1269,7 @@ bool CGameNetworkingSockets::SetConnectionPollGroup( HSteamNetConnection hConn, 
 
 
 	PollGroupScopeLock pollGroupLock;
-	CSteamNetworkPollGroup *pPollGroup = GetPollGroupByHandle( hPollGroup, pollGroupLock, nullptr );
+	CGameNetworkPollGroup *pPollGroup = GetPollGroupByHandle( hPollGroup, pollGroupLock, nullptr );
 	if ( !pPollGroup )
 		return false;
 
@@ -1278,11 +1278,11 @@ bool CGameNetworkingSockets::SetConnectionPollGroup( HSteamNetConnection hConn, 
 	return true;
 }
 
-int CGameNetworkingSockets::ReceiveMessagesOnPollGroup( HSteamNetPollGroup hPollGroup, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
+int CGameNetworkingSockets::ReceiveMessagesOnPollGroup( HGameNetPollGroup hPollGroup, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages )
 {
-	//SteamNetworkingGlobalLock scopeLock( "ReceiveMessagesOnPollGroup" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "ReceiveMessagesOnPollGroup" ); // NO, not necessary!
 	PollGroupScopeLock pollGroupLock;
-	CSteamNetworkPollGroup *pPollGroup = GetPollGroupByHandle( hPollGroup, pollGroupLock, "ReceiveMessagesOnPollGroup" );
+	CGameNetworkPollGroup *pPollGroup = GetPollGroupByHandle( hPollGroup, pollGroupLock, "ReceiveMessagesOnPollGroup" );
 	if ( !pPollGroup )
 		return -1;
 	g_lockAllRecvMessageQueues.lock();
@@ -1292,10 +1292,10 @@ int CGameNetworkingSockets::ReceiveMessagesOnPollGroup( HSteamNetPollGroup hPoll
 }
 
 #ifdef STEAMNETWORKINGSOCKETS_STEAMCLIENT
-int CGameNetworkingSockets::ReceiveMessagesOnListenSocketLegacyPollGroup( HSteamListenSocket hSocket, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages )
+int CGameNetworkingSockets::ReceiveMessagesOnListenSocketLegacyPollGroup( HSteamListenSocket hSocket, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages )
 {
-	SteamNetworkingGlobalLock scopeLock( "ReceiveMessagesOnListenSocket" );
-	CSteamNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
+	GameNetworkingGlobalLock scopeLock( "ReceiveMessagesOnListenSocket" );
+	CGameNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
 	if ( !pSock )
 		return -1;
 	g_lockAllRecvMessageQueues.lock();
@@ -1305,11 +1305,11 @@ int CGameNetworkingSockets::ReceiveMessagesOnListenSocketLegacyPollGroup( HSteam
 }
 #endif
 
-bool CGameNetworkingSockets::GetConnectionInfo( HSteamNetConnection hConn, SteamNetConnectionInfo_t *pInfo )
+bool CGameNetworkingSockets::GetConnectionInfo( HGameNetConnection hConn, GameNetConnectionInfo_t *pInfo )
 {
-	//SteamNetworkingGlobalLock scopeLock( "GetConnectionInfo" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "GetConnectionInfo" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "GetConnectionInfo" );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "GetConnectionInfo" );
 	if ( !pConn )
 		return false;
 	if ( pInfo )
@@ -1317,11 +1317,11 @@ bool CGameNetworkingSockets::GetConnectionInfo( HSteamNetConnection hConn, Steam
 	return true;
 }
 
-bool CGameNetworkingSockets::GetQuickConnectionStatus( HSteamNetConnection hConn, SteamNetworkingQuickConnectionStatus *pStats )
+bool CGameNetworkingSockets::GetQuickConnectionStatus( HGameNetConnection hConn, GameNetworkingQuickConnectionStatus *pStats )
 {
-	//SteamNetworkingGlobalLock scopeLock( "GetQuickConnectionStatus" ); // NO, not necessary!
+	//GameNetworkingGlobalLock scopeLock( "GetQuickConnectionStatus" ); // NO, not necessary!
 	ConnectionScopeLock connectionLock;
-	CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "GetQuickConnectionStatus" );
+	CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, "GetQuickConnectionStatus" );
 	if ( !pConn )
 		return false;
 	if ( pStats )
@@ -1329,15 +1329,15 @@ bool CGameNetworkingSockets::GetQuickConnectionStatus( HSteamNetConnection hConn
 	return true;
 }
 
-int CGameNetworkingSockets::GetDetailedConnectionStatus( HSteamNetConnection hConn, char *pszBuf, int cbBuf )
+int CGameNetworkingSockets::GetDetailedConnectionStatus( HGameNetConnection hConn, char *pszBuf, int cbBuf )
 {
-	SteamNetworkingDetailedConnectionStatus stats;
+	GameNetworkingDetailedConnectionStatus stats;
 
 	// Only hold the lock for as long as we need.
 	{
-		SteamNetworkingGlobalLock scopeLock( "GetDetailedConnectionStatus" ); // In some use cases (SDR), we need to touch some shared data structures.  It's easier to just protect this with the global lock than to try to sort that out
+		GameNetworkingGlobalLock scopeLock( "GetDetailedConnectionStatus" ); // In some use cases (SDR), we need to touch some shared data structures.  It's easier to just protect this with the global lock than to try to sort that out
 		ConnectionScopeLock connectionLock;
-		CSteamNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, nullptr );
+		CGameNetworkConnectionBase *pConn = GetConnectionByHandleForAPI( hConn, connectionLock, nullptr );
 		if ( !pConn )
 			return -1;
 
@@ -1353,23 +1353,23 @@ int CGameNetworkingSockets::GetDetailedConnectionStatus( HSteamNetConnection hCo
 	return r;
 }
 
-bool CGameNetworkingSockets::GetListenSocketAddress( HSteamListenSocket hSocket, SteamNetworkingIPAddr *pAddress )
+bool CGameNetworkingSockets::GetListenSocketAddress( HSteamListenSocket hSocket, GameNetworkingIPAddr *pAddress )
 {
-	SteamNetworkingGlobalLock scopeLock( "GetListenSocketAddress" );
-	CSteamNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
+	GameNetworkingGlobalLock scopeLock( "GetListenSocketAddress" );
+	CGameNetworkListenSocketBase *pSock = GetListenSocketByHandle( hSocket );
 	if ( !pSock )
 		return false;
 	return pSock->APIGetAddress( pAddress );
 }
 
-bool CGameNetworkingSockets::CreateSocketPair( HSteamNetConnection *pOutConnection1, HSteamNetConnection *pOutConnection2, bool bUseNetworkLoopback, const SteamNetworkingIdentity *pIdentity1, const SteamNetworkingIdentity *pIdentity2 )
+bool CGameNetworkingSockets::CreateSocketPair( HGameNetConnection *pOutConnection1, HGameNetConnection *pOutConnection2, bool bUseNetworkLoopback, const GameNetworkingIdentity *pIdentity1, const GameNetworkingIdentity *pIdentity2 )
 {
-	SteamNetworkingGlobalLock scopeLock( "CreateSocketPair" );
+	GameNetworkingGlobalLock scopeLock( "CreateSocketPair" );
 
 	// Assume failure
-	*pOutConnection1 = k_HSteamNetConnection_Invalid;
-	*pOutConnection2 = k_HSteamNetConnection_Invalid;
-	SteamNetworkingIdentity identity[2];
+	*pOutConnection1 = k_HGameNetConnection_Invalid;
+	*pOutConnection2 = k_HGameNetConnection_Invalid;
+	GameNetworkingIdentity identity[2];
 	if ( pIdentity1 )
 		identity[0] = *pIdentity1;
 	else
@@ -1383,8 +1383,8 @@ bool CGameNetworkingSockets::CreateSocketPair( HSteamNetConnection *pOutConnecti
 	if ( bUseNetworkLoopback )
 	{
 		// Create two connection objects
-		CSteamNetworkConnectionlocalhostLoopback *pConn[2];
-		if ( !CSteamNetworkConnectionlocalhostLoopback::APICreateSocketPair( this, pConn, identity ) )
+		CGameNetworkConnectionlocalhostLoopback *pConn[2];
+		if ( !CGameNetworkConnectionlocalhostLoopback::APICreateSocketPair( this, pConn, identity ) )
 			return false;
 
 		// Return their handles
@@ -1394,8 +1394,8 @@ bool CGameNetworkingSockets::CreateSocketPair( HSteamNetConnection *pOutConnecti
 	else
 	{
 		// Create two connection objects
-		CSteamNetworkConnectionPipe *pConn[2];
-		if ( !CSteamNetworkConnectionPipe::APICreateSocketPair( this, pConn, identity ) )
+		CGameNetworkConnectionPipe *pConn[2];
+		if ( !CGameNetworkConnectionPipe::APICreateSocketPair( this, pConn, identity ) )
 			return false;
 
 		// Return their handles
@@ -1416,7 +1416,7 @@ bool CGameNetworkingSockets::BCertHasIdentity() const
 
 bool CGameNetworkingSockets::SetCertificateAndPrivateKey( const void *pCert, int cbCert, void *pPrivateKey, int cbPrivateKey )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "SetCertificateAndPrivateKey" );
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread( "SetCertificateAndPrivateKey" );
 
 	m_msgCert.Clear();
 	m_msgSignedCert.Clear();
@@ -1427,17 +1427,17 @@ bool CGameNetworkingSockets::SetCertificateAndPrivateKey( const void *pCert, int
 	//
 	if ( !m_keyPrivateKey.LoadFromAndWipeBuffer( pPrivateKey, cbPrivateKey ) )
 	{
-		SetCertStatus( k_ESteamNetworkingAvailability_Failed, "Invalid private key" );
+		SetCertStatus( k_EGameNetworkingAvailability_Failed, "Invalid private key" );
 		return false;
 	}
 
 	//
 	// Decode the cert
 	//
-	SteamNetworkingErrMsg parseErrMsg;
+	GameNetworkingErrMsg parseErrMsg;
 	if ( !ParseCertFromPEM( pCert, cbCert, m_msgSignedCert, parseErrMsg ) )
 	{
-		SetCertStatus( k_ESteamNetworkingAvailability_Failed, parseErrMsg );
+		SetCertStatus( k_EGameNetworkingAvailability_Failed, parseErrMsg );
 		return false;
 	}
 
@@ -1447,12 +1447,12 @@ bool CGameNetworkingSockets::SetCertificateAndPrivateKey( const void *pCert, int
 		|| !m_msgCert.has_time_expiry()
 		|| !m_msgCert.has_key_data()
 	) {
-		SetCertStatus( k_ESteamNetworkingAvailability_Failed, "Invalid cert" );
+		SetCertStatus( k_EGameNetworkingAvailability_Failed, "Invalid cert" );
 		return false;
 	}
 	if ( m_msgCert.key_type() != CMsgSteamDatagramCertificate_EKeyType_ED25519 )
 	{
-		SetCertStatus( k_ESteamNetworkingAvailability_Failed, "Invalid cert or unsupported public key type" );
+		SetCertStatus( k_EGameNetworkingAvailability_Failed, "Invalid cert or unsupported public key type" );
 		return false;
 	}
 
@@ -1463,21 +1463,21 @@ bool CGameNetworkingSockets::SetCertificateAndPrivateKey( const void *pCert, int
 	CECSigningPublicKey pubKey;
 	if ( !pubKey.SetRawDataWithoutWipingInput( m_msgCert.key_data().c_str(), m_msgCert.key_data().length() ) )
 	{
-		SetCertStatus( k_ESteamNetworkingAvailability_Failed, "Invalid public key" );
+		SetCertStatus( k_EGameNetworkingAvailability_Failed, "Invalid public key" );
 		return false;
 	}
 	if ( !m_keyPrivateKey.MatchesPublicKey( pubKey ) )
 	{
-		SetCertStatus( k_ESteamNetworkingAvailability_Failed, "Private key doesn't match public key from cert" );
+		SetCertStatus( k_EGameNetworkingAvailability_Failed, "Private key doesn't match public key from cert" );
 		return false;
 	}
 
-	SetCertStatus( k_ESteamNetworkingAvailability_Current, "OK" );
+	SetCertStatus( k_EGameNetworkingAvailability_Current, "OK" );
 
 	return true;
 }
 
-int CGameNetworkingSockets::GetP2P_Transport_ICE_Enable( const SteamNetworkingIdentity &identityRemote, int *pOutUserFlags )
+int CGameNetworkingSockets::GetP2P_Transport_ICE_Enable( const GameNetworkingIdentity &identityRemote, int *pOutUserFlags )
 {
 	// We really shouldn't get here, because this is only a question that makes sense
 	// to ask if we have also overridden this function in a derived class, or slammed
@@ -1485,7 +1485,7 @@ int CGameNetworkingSockets::GetP2P_Transport_ICE_Enable( const SteamNetworkingId
 	Assert( false );
 	if ( pOutUserFlags )
 		*pOutUserFlags = 0;
-	return k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Disable;
+	return k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Disable;
 }
 
 void CGameNetworkingSockets::RunCallbacks()
@@ -1514,14 +1514,14 @@ void CGameNetworkingSockets::RunCallbacks()
 
 		switch ( x.nCallback )
 		{
-			DISPATCH_CALLBACK( SteamNetConnectionStatusChangedCallback_t, FnSteamNetConnectionStatusChanged )
+			DISPATCH_CALLBACK( GameNetConnectionStatusChangedCallback_t, FnGameNetConnectionStatusChanged )
 		#ifdef STEAMNETWORKINGSOCKETS_ENABLE_SDR
-			DISPATCH_CALLBACK( SteamNetAuthenticationStatus_t, FnSteamNetAuthenticationStatusChanged )
+			DISPATCH_CALLBACK( GameNetAuthenticationStatus_t, FnGameNetAuthenticationStatusChanged )
 			DISPATCH_CALLBACK( SteamRelayNetworkStatus_t, FnSteamRelayNetworkStatusChanged )
 		#endif
 		#ifdef STEAMNETWORKINGSOCKETS_ENABLE_STEAMNETWORKINGMESSAGES
-			DISPATCH_CALLBACK( SteamNetworkingMessagesSessionRequest_t, FnSteamNetworkingMessagesSessionRequest )
-			DISPATCH_CALLBACK( SteamNetworkingMessagesSessionFailed_t, FnSteamNetworkingMessagesSessionFailed )
+			DISPATCH_CALLBACK( GameNetworkingMessagesSessionRequest_t, FnGameNetworkingMessagesSessionRequest )
+			DISPATCH_CALLBACK( GameNetworkingMessagesSessionFailed_t, FnGameNetworkingMessagesSessionFailed )
 		#endif
 			default:
 				AssertMsg1( false, "Unknown callback type %d!", x.nCallback );
@@ -1533,7 +1533,7 @@ void CGameNetworkingSockets::RunCallbacks()
 
 void CGameNetworkingSockets::InternalQueueCallback( int nCallback, int cbCallback, const void *pvCallback, void *fnRegisteredFunctionPtr )
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
+	GameNetworkingGlobalLock::AssertHeldByCurrentThread();
 
 	if ( !fnRegisteredFunctionPtr )
 		return;
@@ -1560,12 +1560,12 @@ void CGameNetworkingSockets::InternalQueueCallback( int nCallback, int cbCallbac
 
 CGameNetworkingUtils::~CGameNetworkingUtils() {}
 
-SteamNetworkingMessage_t *CGameNetworkingUtils::AllocateMessage( int cbAllocateBuffer )
+GameNetworkingMessage_t *CGameNetworkingUtils::AllocateMessage( int cbAllocateBuffer )
 {
-	return CSteamNetworkingMessage::New( cbAllocateBuffer );
+	return CGameNetworkingMessage::New( cbAllocateBuffer );
 }
 
-SteamNetworkingMicroseconds CGameNetworkingUtils::GetLocalTimestamp()
+GameNetworkingMicroseconds CGameNetworkingUtils::GetLocalTimestamp()
 {
 	return GameNetworkingSockets_GetLocalTimestamp();
 }
@@ -1579,42 +1579,42 @@ void CGameNetworkingUtils::SetDebugOutputFunction( EGameNetworkingSocketsDebugOu
 template<typename T>
 static ConfigValue<T> *GetConnectionVar( const GlobalConfigValueEntry *pEntry, ConnectionConfig *pConnectionConfig )
 {
-	Assert( pEntry->m_eScope == k_ESteamNetworkingConfig_Connection );
+	Assert( pEntry->m_eScope == k_EGameNetworkingConfig_Connection );
 	intptr_t ptr = intptr_t( pConnectionConfig );
 	return (ConfigValue<T> *)( ptr + pEntry->m_cbOffsetOf );
 }
 
 template<typename T>
 static ConfigValue<T> *EvaluateScopeConfigValue( GlobalConfigValueEntry *pEntry,
-	ESteamNetworkingConfigScope eScopeType,
+	EGameNetworkingConfigScope eScopeType,
 	intptr_t scopeObj,
 	ConnectionScopeLock &connectionLock // Lock this, if it's a connection
 )
 {
 	switch ( eScopeType )
 	{
-		case k_ESteamNetworkingConfig_Global:
+		case k_EGameNetworkingConfig_Global:
 		{
 			auto *pGlobalVal = static_cast< GlobalConfigValueBase<T> * >( pEntry );
 			return &pGlobalVal->m_value;
 		}
 
-		case k_ESteamNetworkingConfig_SocketsInterface:
+		case k_EGameNetworkingConfig_SocketsInterface:
 		{
 			CGameNetworkingSockets *pInterface = (CGameNetworkingSockets *)scopeObj;
-			if ( pEntry->m_eScope == k_ESteamNetworkingConfig_Connection )
+			if ( pEntry->m_eScope == k_EGameNetworkingConfig_Connection )
 			{
 				return GetConnectionVar<T>( pEntry, &pInterface->m_connectionConfig );
 			}
 			break;
 		}
 
-		case k_ESteamNetworkingConfig_ListenSocket:
+		case k_EGameNetworkingConfig_ListenSocket:
 		{
-			CSteamNetworkListenSocketBase *pSock = GetListenSocketByHandle( HSteamListenSocket( scopeObj ) );
+			CGameNetworkListenSocketBase *pSock = GetListenSocketByHandle( HSteamListenSocket( scopeObj ) );
 			if ( pSock )
 			{
-				if ( pEntry->m_eScope == k_ESteamNetworkingConfig_Connection )
+				if ( pEntry->m_eScope == k_EGameNetworkingConfig_Connection )
 				{
 					return GetConnectionVar<T>( pEntry, &pSock->m_connectionConfig );
 				}
@@ -1622,7 +1622,7 @@ static ConfigValue<T> *EvaluateScopeConfigValue( GlobalConfigValueEntry *pEntry,
 			break;
 		}
 
-		case k_ESteamNetworkingConfig_Connection:
+		case k_EGameNetworkingConfig_Connection:
 		{
 			// NOTE: Not using GetConnectionByHandleForAPI here.  In a few places in the code,
 			// we need to be able to set config options for connections that are being created.
@@ -1631,10 +1631,10 @@ static ConfigValue<T> *EvaluateScopeConfigValue( GlobalConfigValueEntry *pEntry,
 			// the "front door".  So this means if the app tries to set a config option on a
 			// connection that technically no longer exists, we will actually allow that, when
 			// we probably should fail the call.
-			CSteamNetworkConnectionBase *pConn = GetConnectionByHandle( HSteamNetConnection( scopeObj ), connectionLock );
+			CGameNetworkConnectionBase *pConn = GetConnectionByHandle( HGameNetConnection( scopeObj ), connectionLock );
 			if ( pConn )
 			{
-				if ( pEntry->m_eScope == k_ESteamNetworkingConfig_Connection )
+				if ( pEntry->m_eScope == k_EGameNetworkingConfig_Connection )
 				{
 					return GetConnectionVar<T>( pEntry, &pConn->m_connectionConfig );
 				}
@@ -1648,15 +1648,15 @@ static ConfigValue<T> *EvaluateScopeConfigValue( GlobalConfigValueEntry *pEntry,
 	return nullptr;
 }
 
-static bool AssignConfigValueTyped( int32 *pVal, ESteamNetworkingConfigDataType eDataType, const void *pArg )
+static bool AssignConfigValueTyped( int32 *pVal, EGameNetworkingConfigDataType eDataType, const void *pArg )
 {
 	switch ( eDataType )
 	{
-		case k_ESteamNetworkingConfig_Int32:
+		case k_EGameNetworkingConfig_Int32:
 			*pVal = *(int32*)pArg;
 			break;
 
-		case k_ESteamNetworkingConfig_Int64:
+		case k_EGameNetworkingConfig_Int64:
 		{
 			int64 arg = *(int64*)pArg;
 			if ( (int32)arg != arg )
@@ -1665,11 +1665,11 @@ static bool AssignConfigValueTyped( int32 *pVal, ESteamNetworkingConfigDataType 
 			break;
 		}
 
-		case k_ESteamNetworkingConfig_Float:
+		case k_EGameNetworkingConfig_Float:
 			*pVal = (int32)floor( *(float*)pArg + .5f );
 			break;
 
-		case k_ESteamNetworkingConfig_String:
+		case k_EGameNetworkingConfig_String:
 		{
 			int x;
 			if ( sscanf( (const char *)pArg, "%d", &x ) != 1 )
@@ -1685,25 +1685,25 @@ static bool AssignConfigValueTyped( int32 *pVal, ESteamNetworkingConfigDataType 
 	return true;
 }
 
-static bool AssignConfigValueTyped( int64 *pVal, ESteamNetworkingConfigDataType eDataType, const void *pArg )
+static bool AssignConfigValueTyped( int64 *pVal, EGameNetworkingConfigDataType eDataType, const void *pArg )
 {
 	switch ( eDataType )
 	{
-		case k_ESteamNetworkingConfig_Int32:
+		case k_EGameNetworkingConfig_Int32:
 			*pVal = *(int32*)pArg;
 			break;
 
-		case k_ESteamNetworkingConfig_Int64:
+		case k_EGameNetworkingConfig_Int64:
 		{
 			*pVal = *(int64*)pArg;
 			break;
 		}
 
-		case k_ESteamNetworkingConfig_Float:
+		case k_EGameNetworkingConfig_Float:
 			*pVal = (int64)floor( *(float*)pArg + .5f );
 			break;
 
-		case k_ESteamNetworkingConfig_String:
+		case k_EGameNetworkingConfig_String:
 		{
 			long long x;
 			if ( sscanf( (const char *)pArg, "%lld", &x ) != 1 )
@@ -1719,25 +1719,25 @@ static bool AssignConfigValueTyped( int64 *pVal, ESteamNetworkingConfigDataType 
 	return true;
 }
 
-static bool AssignConfigValueTyped( float *pVal, ESteamNetworkingConfigDataType eDataType, const void *pArg )
+static bool AssignConfigValueTyped( float *pVal, EGameNetworkingConfigDataType eDataType, const void *pArg )
 {
 	switch ( eDataType )
 	{
-		case k_ESteamNetworkingConfig_Int32:
+		case k_EGameNetworkingConfig_Int32:
 			*pVal = (float)( *(int32*)pArg );
 			break;
 
-		case k_ESteamNetworkingConfig_Int64:
+		case k_EGameNetworkingConfig_Int64:
 		{
 			*pVal = (float)( *(int64*)pArg );
 			break;
 		}
 
-		case k_ESteamNetworkingConfig_Float:
+		case k_EGameNetworkingConfig_Float:
 			*pVal = *(float*)pArg;
 			break;
 
-		case k_ESteamNetworkingConfig_String:
+		case k_EGameNetworkingConfig_String:
 		{
 			float x;
 			if ( sscanf( (const char *)pArg, "%f", &x ) != 1 )
@@ -1753,28 +1753,28 @@ static bool AssignConfigValueTyped( float *pVal, ESteamNetworkingConfigDataType 
 	return true;
 }
 
-static bool AssignConfigValueTyped( std::string *pVal, ESteamNetworkingConfigDataType eDataType, const void *pArg )
+static bool AssignConfigValueTyped( std::string *pVal, EGameNetworkingConfigDataType eDataType, const void *pArg )
 {
 	char temp[64];
 
 	switch ( eDataType )
 	{
-		case k_ESteamNetworkingConfig_Int32:
+		case k_EGameNetworkingConfig_Int32:
 			V_sprintf_safe( temp, "%d", *(int32*)pArg );
 			*pVal = temp;
 			break;
 
-		case k_ESteamNetworkingConfig_Int64:
+		case k_EGameNetworkingConfig_Int64:
 			V_sprintf_safe( temp, "%lld", (long long)*(int64*)pArg );
 			*pVal = temp;
 			break;
 
-		case k_ESteamNetworkingConfig_Float:
+		case k_EGameNetworkingConfig_Float:
 			V_sprintf_safe( temp, "%g", *(float*)pArg );
 			*pVal = temp;
 			break;
 
-		case k_ESteamNetworkingConfig_String:
+		case k_EGameNetworkingConfig_String:
 			*pVal = (const char *)pArg;
 			break;
 
@@ -1785,11 +1785,11 @@ static bool AssignConfigValueTyped( std::string *pVal, ESteamNetworkingConfigDat
 	return true;
 }
 
-static bool AssignConfigValueTyped( void **pVal, ESteamNetworkingConfigDataType eDataType, const void *pArg )
+static bool AssignConfigValueTyped( void **pVal, EGameNetworkingConfigDataType eDataType, const void *pArg )
 {
 	switch ( eDataType )
 	{
-		case k_ESteamNetworkingConfig_Ptr:
+		case k_EGameNetworkingConfig_Ptr:
 			*pVal = *(void **)pArg;
 			break;
 
@@ -1803,9 +1803,9 @@ static bool AssignConfigValueTyped( void **pVal, ESteamNetworkingConfigDataType 
 template<typename T>
 bool SetConfigValueTyped(
 	GlobalConfigValueEntry *pEntry,
-	ESteamNetworkingConfigScope eScopeType,
+	EGameNetworkingConfigScope eScopeType,
 	intptr_t scopeObj,
-	ESteamNetworkingConfigDataType eDataType,
+	EGameNetworkingConfigDataType eDataType,
 	const void *pArg
 ) {
 	ConnectionScopeLock connectionLock;
@@ -1820,14 +1820,14 @@ bool SetConfigValueTyped(
 	// Clearing the value?
 	if ( pArg == nullptr )
 	{
-		if ( eScopeType == k_ESteamNetworkingConfig_Global )
+		if ( eScopeType == k_EGameNetworkingConfig_Global )
 		{
 			auto *pGlobal = (typename GlobalConfigValueBase<T>::Value *)( pVal );
 			Assert( pGlobal->m_pInherit == nullptr );
 			Assert( pGlobal->IsSet() );
 			pGlobal->m_data = pGlobal->m_defaultValue;
 		}
-		else if ( eScopeType == k_ESteamNetworkingConfig_Connection && pEntry->m_eValue == k_ESteamNetworkingConfig_ConnectionUserData )
+		else if ( eScopeType == k_EGameNetworkingConfig_Connection && pEntry->m_eValue == k_EGameNetworkingConfig_ConnectionUserData )
 		{
 			// Once this is set, we cannot clear it or inherit it.
 			SpewError( "Cannot clear connection user data\n" );
@@ -1856,44 +1856,44 @@ bool SetConfigValueTyped(
 }
 
 template<typename T>
-ESteamNetworkingGetConfigValueResult ReturnConfigValueTyped( const T &data, void *pData, size_t *cbData )
+EGameNetworkingGetConfigValueResult ReturnConfigValueTyped( const T &data, void *pData, size_t *cbData )
 {
-	ESteamNetworkingGetConfigValueResult eResult;
+	EGameNetworkingGetConfigValueResult eResult;
 	if ( !pData || *cbData < sizeof(T) )
 	{
-		eResult = k_ESteamNetworkingGetConfigValue_BufferTooSmall;
+		eResult = k_EGameNetworkingGetConfigValue_BufferTooSmall;
 	}
 	else
 	{
 		*(T*)pData = data;
-		eResult = k_ESteamNetworkingGetConfigValue_OK;
+		eResult = k_EGameNetworkingGetConfigValue_OK;
 	}
 	*cbData = sizeof(T);
 	return eResult;
 }
 
 template<>
-ESteamNetworkingGetConfigValueResult ReturnConfigValueTyped<std::string>( const std::string &data, void *pData, size_t *cbData )
+EGameNetworkingGetConfigValueResult ReturnConfigValueTyped<std::string>( const std::string &data, void *pData, size_t *cbData )
 {
 	size_t l = data.length() + 1;
-	ESteamNetworkingGetConfigValueResult eResult;
+	EGameNetworkingGetConfigValueResult eResult;
 	if ( !pData || *cbData < l )
 	{
-		eResult = k_ESteamNetworkingGetConfigValue_BufferTooSmall;
+		eResult = k_EGameNetworkingGetConfigValue_BufferTooSmall;
 	}
 	else
 	{
 		memcpy( pData, data.c_str(), l );
-		eResult = k_ESteamNetworkingGetConfigValue_OK;
+		eResult = k_EGameNetworkingGetConfigValue_OK;
 	}
 	*cbData = l;
 	return eResult;
 }
 
 template<typename T>
-ESteamNetworkingGetConfigValueResult GetConfigValueTyped(
+EGameNetworkingGetConfigValueResult GetConfigValueTyped(
 	GlobalConfigValueEntry *pEntry,
-	ESteamNetworkingConfigScope eScopeType,
+	EGameNetworkingConfigScope eScopeType,
 	intptr_t scopeObj,
 	void *pResult, size_t *cbResult
 ) {
@@ -1902,7 +1902,7 @@ ESteamNetworkingGetConfigValueResult GetConfigValueTyped(
 	if ( !pVal )
 	{
 		*cbResult = 0;
-		return k_ESteamNetworkingGetConfigValue_BadScopeObj;
+		return k_EGameNetworkingGetConfigValue_BadScopeObj;
 	}
 
 	// Remember if it was set at this level
@@ -1916,29 +1916,29 @@ ESteamNetworkingGetConfigValueResult GetConfigValueTyped(
 	}
 
 	// Call type-specific method to return it
-	ESteamNetworkingGetConfigValueResult eResult = ReturnConfigValueTyped( pVal->m_data, pResult, cbResult );
-	if ( eResult == k_ESteamNetworkingGetConfigValue_OK && !bValWasSet )
-		eResult = k_ESteamNetworkingGetConfigValue_OKInherited;
+	EGameNetworkingGetConfigValueResult eResult = ReturnConfigValueTyped( pVal->m_data, pResult, cbResult );
+	if ( eResult == k_EGameNetworkingGetConfigValue_OK && !bValWasSet )
+		eResult = k_EGameNetworkingGetConfigValue_OKInherited;
 	return eResult;
 }
 
-bool CGameNetworkingUtils::SetConfigValue( ESteamNetworkingConfigValue eValue,
-	ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj,
-	ESteamNetworkingConfigDataType eDataType, const void *pValue )
+bool CGameNetworkingUtils::SetConfigValue( EGameNetworkingConfigValue eValue,
+	EGameNetworkingConfigScope eScopeType, intptr_t scopeObj,
+	EGameNetworkingConfigDataType eDataType, const void *pValue )
 {
 
 	// Check for special values
 	switch ( eValue )
 	{
-		case k_ESteamNetworkingConfig_MTU_DataSize:
+		case k_EGameNetworkingConfig_MTU_DataSize:
 			SpewWarning( "MTU_DataSize is readonly" );
 			return false;
 
-		case k_ESteamNetworkingConfig_ConnectionUserData:
+		case k_EGameNetworkingConfig_ConnectionUserData:
 		{
 
 			// We only need special handling when modifying a connection
-			if ( eScopeType != k_ESteamNetworkingConfig_Connection )
+			if ( eScopeType != k_EGameNetworkingConfig_Connection )
 				break;
 
 			// Process the user argument, maybe performing type conversion
@@ -1948,7 +1948,7 @@ bool CGameNetworkingUtils::SetConfigValue( ESteamNetworkingConfigValue eValue,
 
 			// Lookup the connection
 			ConnectionScopeLock connectionLock;
-			CSteamNetworkConnectionBase *pConn = GetConnectionByHandle( HSteamNetConnection( scopeObj ), connectionLock );
+			CGameNetworkConnectionBase *pConn = GetConnectionByHandle( HGameNetConnection( scopeObj ), connectionLock );
 			if ( !pConn )
 				return false;
 
@@ -1963,91 +1963,91 @@ bool CGameNetworkingUtils::SetConfigValue( ESteamNetworkingConfigValue eValue,
 	if ( pEntry == nullptr )
 		return false;
 
-	SteamNetworkingGlobalLock scopeLock( "SetConfigValue" );
+	GameNetworkingGlobalLock scopeLock( "SetConfigValue" );
 
 	switch ( pEntry->m_eDataType )
 	{
-		case k_ESteamNetworkingConfig_Int32: return SetConfigValueTyped<int32>( pEntry, eScopeType, scopeObj, eDataType, pValue );
-		case k_ESteamNetworkingConfig_Int64: return SetConfigValueTyped<int64>( pEntry, eScopeType, scopeObj, eDataType, pValue );
-		case k_ESteamNetworkingConfig_Float: return SetConfigValueTyped<float>( pEntry, eScopeType, scopeObj, eDataType, pValue );
-		case k_ESteamNetworkingConfig_String: return SetConfigValueTyped<std::string>( pEntry, eScopeType, scopeObj, eDataType, pValue );
-		case k_ESteamNetworkingConfig_Ptr: return SetConfigValueTyped<void *>( pEntry, eScopeType, scopeObj, eDataType, pValue );
+		case k_EGameNetworkingConfig_Int32: return SetConfigValueTyped<int32>( pEntry, eScopeType, scopeObj, eDataType, pValue );
+		case k_EGameNetworkingConfig_Int64: return SetConfigValueTyped<int64>( pEntry, eScopeType, scopeObj, eDataType, pValue );
+		case k_EGameNetworkingConfig_Float: return SetConfigValueTyped<float>( pEntry, eScopeType, scopeObj, eDataType, pValue );
+		case k_EGameNetworkingConfig_String: return SetConfigValueTyped<std::string>( pEntry, eScopeType, scopeObj, eDataType, pValue );
+		case k_EGameNetworkingConfig_Ptr: return SetConfigValueTyped<void *>( pEntry, eScopeType, scopeObj, eDataType, pValue );
 	}
 
 	Assert( false );
 	return false;
 }
 
-ESteamNetworkingGetConfigValueResult CGameNetworkingUtils::GetConfigValue(
-	ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType,
-	intptr_t scopeObj, ESteamNetworkingConfigDataType *pOutDataType,
+EGameNetworkingGetConfigValueResult CGameNetworkingUtils::GetConfigValue(
+	EGameNetworkingConfigValue eValue, EGameNetworkingConfigScope eScopeType,
+	intptr_t scopeObj, EGameNetworkingConfigDataType *pOutDataType,
 	void *pResult, size_t *cbResult )
 {
 	// Take the global lock.
-	SteamNetworkingGlobalLock scopeLock( "GetConfigValue" );
+	GameNetworkingGlobalLock scopeLock( "GetConfigValue" );
 
-	if ( eValue == k_ESteamNetworkingConfig_MTU_DataSize )
+	if ( eValue == k_EGameNetworkingConfig_MTU_DataSize )
 	{
 		int32 MTU_packetsize;
 		size_t cbMTU_packetsize = sizeof(MTU_packetsize);
-		ESteamNetworkingGetConfigValueResult rFetch = GetConfigValueTyped<int32>( &g_ConfigDefault_MTU_PacketSize, eScopeType, scopeObj, &MTU_packetsize, &cbMTU_packetsize );
+		EGameNetworkingGetConfigValueResult rFetch = GetConfigValueTyped<int32>( &g_ConfigDefault_MTU_PacketSize, eScopeType, scopeObj, &MTU_packetsize, &cbMTU_packetsize );
 		if ( rFetch < 0 )
 			return rFetch;
 
 		int32 MTU_DataSize = std::max( 0, MTU_packetsize - k_cbGameNetworkingSocketsNoFragmentHeaderReserve );
-		ESteamNetworkingGetConfigValueResult rStore = ReturnConfigValueTyped<int32>( MTU_DataSize, pResult, cbResult );
-		if ( rStore != k_ESteamNetworkingGetConfigValue_OK )
+		EGameNetworkingGetConfigValueResult rStore = ReturnConfigValueTyped<int32>( MTU_DataSize, pResult, cbResult );
+		if ( rStore != k_EGameNetworkingGetConfigValue_OK )
 			return rStore;
 		return rFetch;
 	}
 
 	GlobalConfigValueEntry *pEntry = FindConfigValueEntry( eValue );
 	if ( pEntry == nullptr )
-		return k_ESteamNetworkingGetConfigValue_BadValue;
+		return k_EGameNetworkingGetConfigValue_BadValue;
 
 	if ( pOutDataType )
 		*pOutDataType = pEntry->m_eDataType;
 
 	switch ( pEntry->m_eDataType )
 	{
-		case k_ESteamNetworkingConfig_Int32: return GetConfigValueTyped<int32>( pEntry, eScopeType, scopeObj, pResult, cbResult );
-		case k_ESteamNetworkingConfig_Int64: return GetConfigValueTyped<int64>( pEntry, eScopeType, scopeObj, pResult, cbResult );
-		case k_ESteamNetworkingConfig_Float: return GetConfigValueTyped<float>( pEntry, eScopeType, scopeObj, pResult, cbResult );
-		case k_ESteamNetworkingConfig_String: return GetConfigValueTyped<std::string>( pEntry, eScopeType, scopeObj, pResult, cbResult );
-		case k_ESteamNetworkingConfig_Ptr: return GetConfigValueTyped<void *>( pEntry, eScopeType, scopeObj, pResult, cbResult );
+		case k_EGameNetworkingConfig_Int32: return GetConfigValueTyped<int32>( pEntry, eScopeType, scopeObj, pResult, cbResult );
+		case k_EGameNetworkingConfig_Int64: return GetConfigValueTyped<int64>( pEntry, eScopeType, scopeObj, pResult, cbResult );
+		case k_EGameNetworkingConfig_Float: return GetConfigValueTyped<float>( pEntry, eScopeType, scopeObj, pResult, cbResult );
+		case k_EGameNetworkingConfig_String: return GetConfigValueTyped<std::string>( pEntry, eScopeType, scopeObj, pResult, cbResult );
+		case k_EGameNetworkingConfig_Ptr: return GetConfigValueTyped<void *>( pEntry, eScopeType, scopeObj, pResult, cbResult );
 	}
 
 	Assert( false ); // FIXME
-	return k_ESteamNetworkingGetConfigValue_BadValue;
+	return k_EGameNetworkingGetConfigValue_BadValue;
 }
 
 static bool BEnumerateConfigValue( const GlobalConfigValueEntry *pVal )
 {
-	if ( pVal->m_eDataType == k_ESteamNetworkingConfig_Ptr )
+	if ( pVal->m_eDataType == k_EGameNetworkingConfig_Ptr )
 		return false;
 
 	switch  ( pVal->m_eValue )
 	{
 		// Never enumerate these
-		case k_ESteamNetworkingConfig_SymmetricConnect:
-		case k_ESteamNetworkingConfig_LocalVirtualPort:
-		case k_ESteamNetworkingConfig_ConnectionUserData:
+		case k_EGameNetworkingConfig_SymmetricConnect:
+		case k_EGameNetworkingConfig_LocalVirtualPort:
+		case k_EGameNetworkingConfig_ConnectionUserData:
 			return false;
 
 		// Dev var?
-		case k_ESteamNetworkingConfig_IP_AllowWithoutAuth:
-		case k_ESteamNetworkingConfig_Unencrypted:
-		case k_ESteamNetworkingConfig_EnumerateDevVars:
-		case k_ESteamNetworkingConfig_SDRClient_FakeClusterPing:
+		case k_EGameNetworkingConfig_IP_AllowWithoutAuth:
+		case k_EGameNetworkingConfig_Unencrypted:
+		case k_EGameNetworkingConfig_EnumerateDevVars:
+		case k_EGameNetworkingConfig_SDRClient_FakeClusterPing:
 			return g_Config_EnumerateDevVars.Get();
 	}
 
 	return true;
 }
 
-bool CGameNetworkingUtils::GetConfigValueInfo( ESteamNetworkingConfigValue eValue,
-	const char **pOutName, ESteamNetworkingConfigDataType *pOutDataType,
-	ESteamNetworkingConfigScope *pOutScope, ESteamNetworkingConfigValue *pOutNextValue )
+bool CGameNetworkingUtils::GetConfigValueInfo( EGameNetworkingConfigValue eValue,
+	const char **pOutName, EGameNetworkingConfigDataType *pOutDataType,
+	EGameNetworkingConfigScope *pOutScope, EGameNetworkingConfigValue *pOutNextValue )
 {
 	const GlobalConfigValueEntry *pVal = FindConfigValueEntry( eValue );
 	if ( pVal == nullptr )
@@ -2068,7 +2068,7 @@ bool CGameNetworkingUtils::GetConfigValueInfo( ESteamNetworkingConfigValue eValu
 			pNext = pNext->m_pNextEntry;
 			if ( !pNext )
 			{
-				*pOutNextValue = k_ESteamNetworkingConfig_Invalid;
+				*pOutNextValue = k_EGameNetworkingConfig_Invalid;
 				break;
 			}
 			if ( BEnumerateConfigValue( pNext ) )
@@ -2082,7 +2082,7 @@ bool CGameNetworkingUtils::GetConfigValueInfo( ESteamNetworkingConfigValue eValu
 	return true;
 }
 
-ESteamNetworkingConfigValue CGameNetworkingUtils::GetFirstConfigValue()
+EGameNetworkingConfigValue CGameNetworkingUtils::GetFirstConfigValue()
 {
 	EnsureConfigValueTableInitted();
 	Assert( BEnumerateConfigValue( s_vecConfigValueTable[0] ) );
@@ -2090,24 +2090,24 @@ ESteamNetworkingConfigValue CGameNetworkingUtils::GetFirstConfigValue()
 }
 
 
-void CGameNetworkingUtils::SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort )
+void CGameNetworkingUtils::GameNetworkingIPAddr_ToString( const GameNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort )
 {
-	::SteamNetworkingIPAddr_ToString( &addr, buf, cbBuf, bWithPort );
+	::GameNetworkingIPAddr_ToString( &addr, buf, cbBuf, bWithPort );
 }
 
-bool CGameNetworkingUtils::SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr )
+bool CGameNetworkingUtils::GameNetworkingIPAddr_ParseString( GameNetworkingIPAddr *pAddr, const char *pszStr )
 {
-	return ::SteamNetworkingIPAddr_ParseString( pAddr, pszStr );
+	return ::GameNetworkingIPAddr_ParseString( pAddr, pszStr );
 }
 
-void CGameNetworkingUtils::SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity &identity, char *buf, size_t cbBuf )
+void CGameNetworkingUtils::GameNetworkingIdentity_ToString( const GameNetworkingIdentity &identity, char *buf, size_t cbBuf )
 {
-	return ::SteamNetworkingIdentity_ToString( &identity, buf, cbBuf );
+	return ::GameNetworkingIdentity_ToString( &identity, buf, cbBuf );
 }
 
-bool CGameNetworkingUtils::SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, const char *pszStr )
+bool CGameNetworkingUtils::GameNetworkingIdentity_ParseString( GameNetworkingIdentity *pIdentity, const char *pszStr )
 {
-	return ::SteamNetworkingIdentity_ParseString( pIdentity, sizeof(SteamNetworkingIdentity), pszStr );
+	return ::GameNetworkingIdentity_ParseString( pIdentity, sizeof(GameNetworkingIdentity), pszStr );
 }
 
 AppId_t CGameNetworkingUtils::GetAppID()
@@ -2209,9 +2209,9 @@ using namespace GameNetworkingSocketsLib;
 
 static CGameNetworkingSockets *s_pGameNetworkingSockets = nullptr;
 
-STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingSockets_Init( const SteamNetworkingIdentity *pIdentity, SteamNetworkingErrMsg &errMsg )
+STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingSockets_Init( const GameNetworkingIdentity *pIdentity, GameNetworkingErrMsg &errMsg )
 {
-	SteamNetworkingGlobalLock lock( "GameNetworkingSockets_Init" );
+	GameNetworkingGlobalLock lock( "GameNetworkingSockets_Init" );
 
 	// Already initted?
 	if ( s_pGameNetworkingSockets )
@@ -2234,7 +2234,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingSockets_Init( const SteamNet
 
 STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_Kill()
 {
-	SteamNetworkingGlobalLock lock( "GameNetworkingSockets_Kill" );
+	GameNetworkingGlobalLock lock( "GameNetworkingSockets_Kill" );
 	if ( s_pGameNetworkingSockets )
 	{
 		s_pGameNetworkingSockets->Destroy();

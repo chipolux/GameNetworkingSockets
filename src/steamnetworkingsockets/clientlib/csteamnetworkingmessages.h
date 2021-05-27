@@ -14,7 +14,7 @@
 #if defined( STEAMNETWORKINGSOCKETS_STEAMCLIENT ) || defined( STEAMNETWORKINGSOCKETS_STREAMINGCLIENT )
 	#include <steam/iclientnetworkingmessages.h>
 #else
-	typedef ISteamNetworkingMessages IClientNetworkingMessages;
+	typedef IGameNetworkingMessages IClientNetworkingMessages;
 #endif
 
 class CMsgSteamDatagramConnectRequest;
@@ -22,8 +22,8 @@ class CMsgSteamDatagramConnectRequest;
 namespace GameNetworkingSocketsLib {
 
 class CGameNetworkingSockets;
-class CSteamNetworkingMessage;
-class CSteamNetworkingMessages;
+class CGameNetworkingMessage;
+class CGameNetworkingMessages;
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -31,23 +31,23 @@ class CSteamNetworkingMessages;
 //
 /////////////////////////////////////////////////////////////////////////////
 
-struct SteamNetworkingMessagesSession : public IThinker
+struct GameNetworkingMessagesSession : public IThinker
 {
-	SteamNetworkingMessagesSession( const SteamNetworkingIdentity &identityRemote, CSteamNetworkingMessages &steamNetworkingP2P );
-	virtual ~SteamNetworkingMessagesSession();
+	GameNetworkingMessagesSession( const GameNetworkingIdentity &identityRemote, CGameNetworkingMessages &steamNetworkingP2P );
+	virtual ~GameNetworkingMessagesSession();
 
-	SteamNetworkingIdentity m_identityRemote;
-	CSteamNetworkingMessages &m_steamNetworkingMessagesOwner;
-	CSteamNetworkConnectionBase *m_pConnection; // active connection, if any.  Might be NULL!
+	GameNetworkingIdentity m_identityRemote;
+	CGameNetworkingMessages &m_steamNetworkingMessagesOwner;
+	CGameNetworkConnectionBase *m_pConnection; // active connection, if any.  Might be NULL!
 
 	/// Queue of inbound messages
-	SteamNetworkingMessageQueue m_queueRecvMessages;
+	GameNetworkingMessageQueue m_queueRecvMessages;
 
 	CUtlHashMap<int,bool,std::equal_to<int>,std::hash<int>> m_mapOpenChannels;
 
 	/// If we get tot his time, the session has been idle
 	/// and we should clean it up.
-	SteamNetworkingMicroseconds m_usecIdleTimeout;
+	GameNetworkingMicroseconds m_usecIdleTimeout;
 
 	/// True if the connection has changed state and we need to check on it
 	bool m_bConnectionStateChanged;
@@ -56,61 +56,61 @@ struct SteamNetworkingMessagesSession : public IThinker
 	bool m_bConnectionWasEverConnected;
 
 	/// Most recent info about the connection.
-	SteamNetConnectionInfo_t m_lastConnectionInfo;
-	SteamNetworkingQuickConnectionStatus m_lastQuickStatus;
+	GameNetConnectionInfo_t m_lastConnectionInfo;
+	GameNetworkingQuickConnectionStatus m_lastQuickStatus;
 
 	/// Close the connection with the specified reason info
 	void CloseConnection( int nReason, const char *pszDebug );
 
 	/// Record that we have been used
-	void MarkUsed( SteamNetworkingMicroseconds usecNow );
+	void MarkUsed( GameNetworkingMicroseconds usecNow );
 
 	/// Ensure that we are scheduled to wake up and get service
 	/// at the next time it looks like we might need to do something
 	void ScheduleThink();
 
 	// Implements IThinker
-	virtual void Think( SteamNetworkingMicroseconds usecNow ) override;
+	virtual void Think( GameNetworkingMicroseconds usecNow ) override;
 
 	/// Check on the connection state
-	void CheckConnection( SteamNetworkingMicroseconds usecNow );
+	void CheckConnection( GameNetworkingMicroseconds usecNow );
 
 	void UpdateConnectionInfo();
 
-	void LinkConnection( CSteamNetworkConnectionBase *pConn );
+	void LinkConnection( CGameNetworkConnectionBase *pConn );
 	void UnlinkConnection();
 
-	void ReceivedMessage( CSteamNetworkingMessage *pMsg );
-	void ConnectionStateChanged( SteamNetConnectionStatusChangedCallback_t *pInfo );
+	void ReceivedMessage( CGameNetworkingMessage *pMsg );
+	void ConnectionStateChanged( GameNetConnectionStatusChangedCallback_t *pInfo );
 
 	#ifdef DBGFLAG_VALIDATE
 	void Validate( CValidator &validator, const char *pchName );
 	#endif
 };
 
-class CSteamNetworkingMessages : public IClientNetworkingMessages
+class CGameNetworkingMessages : public IClientNetworkingMessages
 {
 public:
 	STEAMNETWORKINGSOCKETS_DECLARE_CLASS_OPERATOR_NEW
-	CSteamNetworkingMessages( CGameNetworkingSockets &steamNetworkingSockets );
-	virtual ~CSteamNetworkingMessages();
+	CGameNetworkingMessages( CGameNetworkingSockets &steamNetworkingSockets );
+	virtual ~CGameNetworkingMessages();
 
 	bool BInit();
 	void FreeResources();
 
-	// Implements ISteamNetworkingMessages
-	virtual EResult SendMessageToUser( const SteamNetworkingIdentity &identityRemote, const void *pubData, uint32 cubData, int nSendFlags, int nChannel ) override;
-	virtual int ReceiveMessagesOnChannel( int nChannel, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages ) override;
-	virtual bool AcceptSessionWithUser( const SteamNetworkingIdentity &identityRemote ) override;
-	virtual bool CloseSessionWithUser( const SteamNetworkingIdentity &identityRemote ) override;
-	virtual bool CloseChannelWithUser( const SteamNetworkingIdentity &identityRemote, int nChannel ) override;
-	virtual ESteamNetworkingConnectionState GetSessionConnectionInfo( const SteamNetworkingIdentity &identityRemote, SteamNetConnectionInfo_t *pConnectionInfo, SteamNetworkingQuickConnectionStatus *pQuickStatus ) override;
+	// Implements IGameNetworkingMessages
+	virtual EResult SendMessageToUser( const GameNetworkingIdentity &identityRemote, const void *pubData, uint32 cubData, int nSendFlags, int nChannel ) override;
+	virtual int ReceiveMessagesOnChannel( int nChannel, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages ) override;
+	virtual bool AcceptSessionWithUser( const GameNetworkingIdentity &identityRemote ) override;
+	virtual bool CloseSessionWithUser( const GameNetworkingIdentity &identityRemote ) override;
+	virtual bool CloseChannelWithUser( const GameNetworkingIdentity &identityRemote, int nChannel ) override;
+	virtual EGameNetworkingConnectionState GetSessionConnectionInfo( const GameNetworkingIdentity &identityRemote, GameNetConnectionInfo_t *pConnectionInfo, GameNetworkingQuickConnectionStatus *pQuickStatus ) override;
 
 	#ifdef DBGFLAG_VALIDATE
 	virtual void Validate( CValidator &validator, const char *pchName ) override;
 	#endif
 
-	void NewConnection( CSteamNetworkConnectionBase *pConn );
+	void NewConnection( CGameNetworkConnectionBase *pConn );
 
 	CGameNetworkingSockets &m_steamNetworkingSockets;
 
@@ -119,26 +119,26 @@ public:
 		Channel();
 		~Channel();
 
-		SteamNetworkingMessageQueue m_queueRecvMessages;
+		GameNetworkingMessageQueue m_queueRecvMessages;
 	};
 
-	CSteamNetworkListenSocketBase *m_pListenSocket = nullptr;
-	CSteamNetworkPollGroup *m_pPollGroup = nullptr;
+	CGameNetworkListenSocketBase *m_pListenSocket = nullptr;
+	CGameNetworkPollGroup *m_pPollGroup = nullptr;
 
 	Channel *FindOrCreateChannel( int nChannel );
-	void DestroySession( const SteamNetworkingIdentity &identityRemote );
+	void DestroySession( const GameNetworkingIdentity &identityRemote );
 
-	void PollMessages( SteamNetworkingMicroseconds usecNow );
+	void PollMessages( GameNetworkingMicroseconds usecNow );
 
 private:
 
-	SteamNetworkingMessagesSession *FindSession( const SteamNetworkingIdentity &identityRemote, ConnectionScopeLock &scopeLock );
-	SteamNetworkingMessagesSession *FindOrCreateSession( const SteamNetworkingIdentity &identityRemote, ConnectionScopeLock &scopeLock );
+	GameNetworkingMessagesSession *FindSession( const GameNetworkingIdentity &identityRemote, ConnectionScopeLock &scopeLock );
+	GameNetworkingMessagesSession *FindOrCreateSession( const GameNetworkingIdentity &identityRemote, ConnectionScopeLock &scopeLock );
 
-	CUtlHashMap< SteamNetworkingIdentity, SteamNetworkingMessagesSession *, std::equal_to<SteamNetworkingIdentity>, SteamNetworkingIdentityHash > m_mapSessions;
+	CUtlHashMap< GameNetworkingIdentity, GameNetworkingMessagesSession *, std::equal_to<GameNetworkingIdentity>, GameNetworkingIdentityHash > m_mapSessions;
 	CUtlHashMap<int,Channel*,std::equal_to<int>,std::hash<int>> m_mapChannels;
 
-	static void ConnectionStatusChangedCallback( SteamNetConnectionStatusChangedCallback_t *pInfo );
+	static void ConnectionStatusChangedCallback( GameNetConnectionStatusChangedCallback_t *pInfo );
 };
 
 } // namespace GameNetworkingSocketsLib

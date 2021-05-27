@@ -18,7 +18,7 @@ extern "C" {
 // interface that is returned by GameNetworkingSockets().
 //
 // On failure, false is returned, and a non-localized diagnostic message is returned.
-STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingSockets_Init( const SteamNetworkingIdentity *pIdentity, SteamNetworkingErrMsg &errMsg );
+STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingSockets_Init( const GameNetworkingIdentity *pIdentity, GameNetworkingErrMsg &errMsg );
 
 // Close all connections and listen sockets and free all resources
 STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_Kill();
@@ -38,9 +38,9 @@ STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetCustomMemoryAlloc
 //
 // Statistics about the global lock.
 //
-STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockWaitWarningThreshold( SteamNetworkingMicroseconds usecThreshold );
-STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockAcquiredCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) );
-STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockHeldCallback( void (*callback)( const char *tags, SteamNetworkingMicroseconds usecWaited ) );
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockWaitWarningThreshold( GameNetworkingMicroseconds usecThreshold );
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockAcquiredCallback( void (*callback)( const char *tags, GameNetworkingMicroseconds usecWaited ) );
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingSockets_SetLockHeldCallback( void (*callback)( const char *tags, GameNetworkingMicroseconds usecWaited ) );
 
 }
 

@@ -21,14 +21,14 @@ namespace GameNetworkingSocketsLib {
 //
 /////////////////////////////////////////////////////////////////////////////
 
-CConnectionTransportP2PICE::CConnectionTransportP2PICE( CSteamNetworkConnectionP2P &connection )
+CConnectionTransportP2PICE::CConnectionTransportP2PICE( CGameNetworkConnectionP2P &connection )
 : CConnectionTransportUDPBase( connection )
 , CConnectionTransportP2PBase( "ICE", this )
 , m_pICESession( nullptr )
 , m_mutexPacketQueue( "ice_packet_queue" )
 {
 	m_nAllowedCandidateTypes = 0;
-	m_eCurrentRouteKind = k_ESteamNetTransport_Unknown;
+	m_eCurrentRouteKind = k_EGameNetTransport_Unknown;
 	m_currentRouteRemoteAddress.Clear();
 }
 
@@ -37,7 +37,7 @@ CConnectionTransportP2PICE::~CConnectionTransportP2PICE()
 	Assert( !m_pICESession );
 }
 
-void CConnectionTransportP2PICE::TransportPopulateConnectionInfo( SteamNetConnectionInfo_t &info ) const
+void CConnectionTransportP2PICE::TransportPopulateConnectionInfo( GameNetConnectionInfo_t &info ) const
 {
 	CConnectionTransport::TransportPopulateConnectionInfo( info );
 
@@ -46,16 +46,16 @@ void CConnectionTransportP2PICE::TransportPopulateConnectionInfo( SteamNetConnec
 
 	// If we thought the route was local, but ping time is too high, then clear local flag.
 	// (E.g. VPN)
-	if ( info.m_eTransportKind == k_ESteamNetTransport_UDPProbablyLocal )
+	if ( info.m_eTransportKind == k_EGameNetTransport_UDPProbablyLocal )
 	{
 		int nPingMin, nPingMax;
 		m_pingEndToEnd.GetPingRangeFromRecentBuckets( nPingMin, nPingMax, GameNetworkingSockets_GetLocalTimestamp() );
 		if ( nPingMin >= k_nMinPingTimeLocalTolerance )
-			info.m_eTransportKind = k_ESteamNetTransport_UDP;
+			info.m_eTransportKind = k_EGameNetTransport_UDP;
 	}
 }
 
-void CConnectionTransportP2PICE::GetDetailedConnectionStatus( SteamNetworkingDetailedConnectionStatus &stats, SteamNetworkingMicroseconds usecNow )
+void CConnectionTransportP2PICE::GetDetailedConnectionStatus( GameNetworkingDetailedConnectionStatus &stats, GameNetworkingMicroseconds usecNow )
 {
 	// FIXME Need to indicate whether we are relayed or were able to pierce NAT
 	CConnectionTransport::GetDetailedConnectionStatus( stats, usecNow );
@@ -95,11 +95,11 @@ void CConnectionTransportP2PICE::Init()
 
 	if ( !g_GameNetworkingSockets_CreateICESessionFunc )
 	{
-		Connection().ICEFailed( k_ESteamNetConnectionEnd_Misc_InternalError, "CreateICESession factory not set" );
+		Connection().ICEFailed( k_EGameNetConnectionEnd_Misc_InternalError, "CreateICESession factory not set" );
 		return;
 	}
 
-	SteamNetworkingGlobalLock::SetLongLockWarningThresholdMS( "CConnectionTransportP2PICE::Init", 50 );
+	GameNetworkingGlobalLock::SetLongLockWarningThresholdMS( "CConnectionTransportP2PICE::Init", 50 );
 
 	ICESessionConfig cfg;
 
@@ -117,13 +117,13 @@ void CConnectionTransportP2PICE::Init()
 	const int P2P_Transport_ICE_Enable = m_connection.m_connectionConfig.m_P2P_Transport_ICE_Enable.Get();
 
 	m_nAllowedCandidateTypes = 0;
-	if ( P2P_Transport_ICE_Enable & k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Private )
+	if ( P2P_Transport_ICE_Enable & k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Private )
 		m_nAllowedCandidateTypes |= k_EICECandidate_Any_HostPrivate;
 
 	// Get the STUN server list
 	std_vector<std::string> vecStunServers;
 	std_vector<const char *> vecStunServersPsz;
-	if ( P2P_Transport_ICE_Enable & k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Public )
+	if ( P2P_Transport_ICE_Enable & k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Public )
 	{
 		m_nAllowedCandidateTypes |= k_EICECandidate_Any_HostPublic|k_EICECandidate_Any_Reflexive;
 
@@ -156,7 +156,7 @@ void CConnectionTransportP2PICE::Init()
 	cfg.m_pStunServers = vecStunServersPsz.data();
 
 	// Get the TURN server list
-	if ( P2P_Transport_ICE_Enable & k_nSteamNetworkingConfig_P2P_Transport_ICE_Enable_Relay )
+	if ( P2P_Transport_ICE_Enable & k_nGameNetworkingConfig_P2P_Transport_ICE_Enable_Relay )
 	{
 		// FIXME
 		//cfg.m_nCandidateTypes = m_nAllowedCandidateTypes;
@@ -181,7 +181,7 @@ void CConnectionTransportP2PICE::Init()
 	m_pICESession = (*g_GameNetworkingSockets_CreateICESessionFunc)( cfg, this, ICESESSION_INTERFACE_VERSION );
 	if ( !m_pICESession )
 	{
-		Connection().ICEFailed( k_ESteamNetConnectionEnd_Misc_InternalError, "CreateICESession failed" );
+		Connection().ICEFailed( k_EGameNetConnectionEnd_Misc_InternalError, "CreateICESession failed" );
 		return;
 	}
 
@@ -194,25 +194,25 @@ void CConnectionTransportP2PICE::Init()
 	// Queue a message to inform peer about our auth credentials.  It should
 	// go out in the first signal.
 	{
-		CMsgSteamNetworkingP2PRendezvous_ReliableMessage msg;
+		CMsgGameNetworkingP2PRendezvous_ReliableMessage msg;
 		*msg.mutable_ice()->mutable_auth()->mutable_pwd_frag() = std::move( sPwdFragLocal );
 		Connection().QueueSignalReliableMessage( std::move( msg ), "Initial ICE auth" );
 	}
 }
 
-void CConnectionTransportP2PICE::PopulateRendezvousMsg( CMsgSteamNetworkingP2PRendezvous &msg, SteamNetworkingMicroseconds usecNow )
+void CConnectionTransportP2PICE::PopulateRendezvousMsg( CMsgGameNetworkingP2PRendezvous &msg, GameNetworkingMicroseconds usecNow )
 {
 	msg.set_ice_enabled( true );
 }
 
-void CConnectionTransportP2PICE::RecvRendezvous( const CMsgICERendezvous &msg, SteamNetworkingMicroseconds usecNow )
+void CConnectionTransportP2PICE::RecvRendezvous( const CMsgICERendezvous &msg, GameNetworkingMicroseconds usecNow )
 {
 	AssertLocksHeldByCurrentThread( "P2PICE::RecvRendezvous" );
 
 	// Safety
 	if ( !m_pICESession )
 	{
-		Connection().ICEFailed( k_ESteamNetConnectionEnd_Misc_InternalError, "No IICESession?" );
+		Connection().ICEFailed( k_EGameNetConnectionEnd_Misc_InternalError, "No IICESession?" );
 		return;
 	}
 
@@ -240,7 +240,7 @@ void CConnectionTransportP2PICE::RecvRendezvous( const CMsgICERendezvous &msg, S
 	}
 }
 
-void CConnectionTransportP2PICE::P2PTransportThink( SteamNetworkingMicroseconds usecNow )
+void CConnectionTransportP2PICE::P2PTransportThink( GameNetworkingMicroseconds usecNow )
 {
 	// Are we dead?
 	if ( !m_pICESession || Connection().m_pTransportICEPendingDelete )
@@ -253,7 +253,7 @@ void CConnectionTransportP2PICE::P2PTransportThink( SteamNetworkingMicroseconds 
 	CConnectionTransportP2PBase::P2PTransportThink( usecNow );
 }
 
-void CConnectionTransportP2PICE::P2PTransportUpdateRouteMetrics( SteamNetworkingMicroseconds usecNow )
+void CConnectionTransportP2PICE::P2PTransportUpdateRouteMetrics( GameNetworkingMicroseconds usecNow )
 {
 	if ( !BCanSendEndToEndData() || m_pingEndToEnd.m_nSmoothedPing < 0 )
 	{
@@ -271,7 +271,7 @@ void CConnectionTransportP2PICE::P2PTransportUpdateRouteMetrics( SteamNetworking
 	m_routeMetrics.m_nScoreMax = nPingMax;
 
 	// Local route?
-	if ( nPingMin < k_nMinPingTimeLocalTolerance && m_eCurrentRouteKind == k_ESteamNetTransport_UDPProbablyLocal )
+	if ( nPingMin < k_nMinPingTimeLocalTolerance && m_eCurrentRouteKind == k_EGameNetTransport_UDPProbablyLocal )
 	{
 
 		// Whoo whoo!  Probably NAT punched LAN
@@ -294,9 +294,9 @@ void CConnectionTransportP2PICE::P2PTransportUpdateRouteMetrics( SteamNetworking
 	m_routeMetrics.m_nTotalPenalty += m_connection.m_connectionConfig.m_P2P_Transport_ICE_Penalty.Get();
 
 	// Check for recording the initial scoring data used to make the initial decision
-	CMsgSteamNetworkingICESessionSummary &ice_summary = Connection().m_msgICESessionSummary;
+	CMsgGameNetworkingICESessionSummary &ice_summary = Connection().m_msgICESessionSummary;
 	if (
-		ConnectionState() == k_ESteamNetworkingConnectionState_FindingRoute
+		ConnectionState() == k_EGameNetworkingConnectionState_FindingRoute
 		|| !ice_summary.has_initial_ping()
 	) {
 		ice_summary.set_initial_score( m_routeMetrics.m_nScoreCurrent + m_routeMetrics.m_nTotalPenalty );
@@ -316,9 +316,9 @@ void CConnectionTransportP2PICE::P2PTransportUpdateRouteMetrics( SteamNetworking
 #define ParsePaddedPacket( pvPkt, cbPkt, CMsgCls, msgVar ) \
 	CMsgCls msgVar; \
 	{ \
-		if ( cbPkt < k_cbSteamNetworkingMinPaddedPacketSize ) \
+		if ( cbPkt < k_cbGameNetworkingMinPaddedPacketSize ) \
 		{ \
-			ReportBadUDPPacketFromConnectionPeer( # CMsgCls, "Packet is %d bytes, must be padded to at least %d bytes.", cbPkt, k_cbSteamNetworkingMinPaddedPacketSize ); \
+			ReportBadUDPPacketFromConnectionPeer( # CMsgCls, "Packet is %d bytes, must be padded to at least %d bytes.", cbPkt, k_cbGameNetworkingMinPaddedPacketSize ); \
 			return; \
 		} \
 		const UDPPaddedMessageHdr *hdr =  (const UDPPaddedMessageHdr *)( pvPkt ); \
@@ -335,7 +335,7 @@ void CConnectionTransportP2PICE::P2PTransportUpdateRouteMetrics( SteamNetworking
 		} \
 	}
 
-void CConnectionTransportP2PICE::ProcessPacket( const uint8_t *pPkt, int cbPkt, SteamNetworkingMicroseconds usecNow )
+void CConnectionTransportP2PICE::ProcessPacket( const uint8_t *pPkt, int cbPkt, GameNetworkingMicroseconds usecNow )
 {
 	Assert( cbPkt >= 1 ); // Caller should have checked this
 	ETW_ICEProcessPacket( m_connection.m_hConnectionSelf, cbPkt );
@@ -350,12 +350,12 @@ void CConnectionTransportP2PICE::ProcessPacket( const uint8_t *pPkt, int cbPkt, 
 	// Track stats for other packet types.
 	m_connection.m_statsEndToEnd.TrackRecvPacket( cbPkt, usecNow );
 
-	if ( *pPkt == k_ESteamNetworkingUDPMsg_ConnectionClosed )
+	if ( *pPkt == k_EGameNetworkingUDPMsg_ConnectionClosed )
 	{
 		ParsePaddedPacket( pPkt, cbPkt, CMsgSteamSockets_UDP_ConnectionClosed, msg )
 		Received_ConnectionClosed( msg, usecNow );
 	}
-	else if ( *pPkt == k_ESteamNetworkingUDPMsg_NoConnection )
+	else if ( *pPkt == k_EGameNetworkingUDPMsg_NoConnection )
 	{
 		ParseProtobufBody( pPkt+1, cbPkt-1, CMsgSteamSockets_UDP_NoConnection, msg )
 		Received_NoConnection( msg, usecNow );
@@ -455,7 +455,7 @@ void CConnectionTransportP2PICE::UpdateRoute()
 	if ( !m_pICESession->GetRoute( eLocalCandidate, eRemoteCandidate, szRemoteAddress ) )
 	{
 		SpewMsgGroup( LogLevel_P2PRendezvous(), "[%s] ICE route is unkown\n", ConnectionDescription() );
-		m_eCurrentRouteKind = k_ESteamNetTransport_Unknown;
+		m_eCurrentRouteKind = k_EGameNetTransport_Unknown;
 		m_currentRouteRemoteAddress.Clear();
 	}
 	else
@@ -467,26 +467,26 @@ void CConnectionTransportP2PICE::UpdateRoute()
 		}
 
 		netadr_t netadrRemote;
-		SteamNetworkingIPAddrToNetAdr( netadrRemote, m_currentRouteRemoteAddress );
+		GameNetworkingIPAddrToNetAdr( netadrRemote, m_currentRouteRemoteAddress );
 
 		if ( ( eLocalCandidate | eRemoteCandidate ) & k_EICECandidate_Any_Relay )
 		{
-			m_eCurrentRouteKind = k_ESteamNetTransport_TURN;
+			m_eCurrentRouteKind = k_EGameNetTransport_TURN;
 			SpewMsgGroup( LogLevel_P2PRendezvous(), "[%s] ICE route is via TURN to %s\n", ConnectionDescription(), szRemoteAddress );
 		}
 		else if ( netadrRemote.IsValid() && IsRouteToAddressProbablyLocal( netadrRemote ) )
 		{
-			m_eCurrentRouteKind = k_ESteamNetTransport_UDPProbablyLocal;
+			m_eCurrentRouteKind = k_EGameNetTransport_UDPProbablyLocal;
 			SpewMsgGroup( LogLevel_P2PRendezvous(), "[%s] ICE route proably local to %s (based on remote address)\n", ConnectionDescription(), szRemoteAddress );
 		}
 		else if ( ( eLocalCandidate & k_EICECandidate_Any_HostPrivate ) && ( eRemoteCandidate & k_EICECandidate_Any_HostPrivate ) )
 		{
-			m_eCurrentRouteKind = k_ESteamNetTransport_UDPProbablyLocal;
+			m_eCurrentRouteKind = k_EGameNetTransport_UDPProbablyLocal;
 			SpewMsgGroup( LogLevel_P2PRendezvous(), "[%s] ICE route is probably local to %s (based on candidate types both being private addresses)\n", ConnectionDescription(), szRemoteAddress );
 		}
 		else
 		{
-			m_eCurrentRouteKind = k_ESteamNetTransport_UDP;
+			m_eCurrentRouteKind = k_EGameNetTransport_UDP;
 			SpewMsgGroup( LogLevel_P2PRendezvous(), "[%s] ICE route is public UDP to %s\n", ConnectionDescription(), szRemoteAddress );
 		}
 	}
@@ -497,7 +497,7 @@ void CConnectionTransportP2PICE::UpdateRoute()
 void CConnectionTransportP2PICE::RouteOrWritableStateChanged()
 {
 
-	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
+	GameNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 	// Go ahead and add a ping sample from our RTT estimate if we don't have any other data
 	if ( m_pingEndToEnd.m_nSmoothedPing < 0 )
@@ -547,7 +547,7 @@ private:
 
 	inline bool Setup( CConnectionTransportP2PICE *pTransport )
 	{
-		CSteamNetworkConnectionP2P &conn = pTransport->Connection();
+		CGameNetworkConnectionP2P &conn = pTransport->Connection();
 		if ( conn.m_pTransportICE != pTransport )
 		{
 			delete this;
@@ -561,11 +561,11 @@ private:
 	virtual void Run()
 	{
 		ConnectionScopeLock connectionLock;
-		CSteamNetworkConnectionBase *pConnBase = FindConnectionByLocalID( m_nConnectionIDLocal, connectionLock );
+		CGameNetworkConnectionBase *pConnBase = FindConnectionByLocalID( m_nConnectionIDLocal, connectionLock );
 		if ( !pConnBase )
 			return;
 
-		CSteamNetworkConnectionP2P *pConn = pConnBase->AsSteamNetworkConnectionP2P();
+		CGameNetworkConnectionP2P *pConn = pConnBase->AsGameNetworkConnectionP2P();
 		if ( !pConn )
 			return;
 
@@ -612,11 +612,11 @@ void CConnectionTransportP2PICE::OnLocalCandidateGathered( EICECandidateType eTy
 	struct RunIceCandidateAdded : IConnectionTransportP2PICERunWithLock
 	{
 		EICECandidateType eType;
-		CMsgSteamNetworkingP2PRendezvous_ReliableMessage msg;
+		CMsgGameNetworkingP2PRendezvous_ReliableMessage msg;
 		virtual void RunTransportP2PICE( CConnectionTransportP2PICE *pTransport )
 		{
-			CSteamNetworkConnectionP2P &conn = pTransport->Connection();
-			CMsgSteamNetworkingICESessionSummary &sum = conn.m_msgICESessionSummary;
+			CGameNetworkConnectionP2P &conn = pTransport->Connection();
+			CMsgGameNetworkingICESessionSummary &sum = conn.m_msgICESessionSummary;
 			sum.set_local_candidate_types( sum.local_candidate_types() | eType );
 			pTransport->Connection().QueueSignalReliableMessage( std::move(msg), "LocalCandidateAdded" );
 		}
@@ -629,7 +629,7 @@ void CConnectionTransportP2PICE::OnLocalCandidateGathered( EICECandidateType eTy
 	pRun->RunOrQueue( this, "ICE OnIceCandidateAdded" );
 }
 
-void CConnectionTransportP2PICE::DrainPacketQueue( SteamNetworkingMicroseconds usecNow )
+void CConnectionTransportP2PICE::DrainPacketQueue( GameNetworkingMicroseconds usecNow )
 {
 	// Quickly swap into temp
 	CUtlBuffer buf;
@@ -717,7 +717,7 @@ void CConnectionTransportP2PICE::OnData( const void *pPkt, size_t nSize )
 	if ( Connection().m_pTransportICE != this )
 		return;
 
-	SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
+	GameNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 	const int cbPkt = int(nSize);
 
 	if ( nSize < 1 )
@@ -728,7 +728,7 @@ void CConnectionTransportP2PICE::OnData( const void *pPkt, size_t nSize )
 
 	// See if we can process this packet (and anything queued before us)
 	// immediately
-	if ( SteamNetworkingGlobalLock::TryLock( "ICE Data", 0 ) )
+	if ( GameNetworkingGlobalLock::TryLock( "ICE Data", 0 ) )
 	{
 
 		// We can process the data now!  Grab the connection lock.
@@ -747,7 +747,7 @@ void CConnectionTransportP2PICE::OnData( const void *pPkt, size_t nSize )
 
 		// And now process this packet
 		ProcessPacket( (const uint8_t*)pPkt, cbPkt, usecNow );
-		SteamNetworkingGlobalLock::Unlock();
+		GameNetworkingGlobalLock::Unlock();
 		return;
 	}
 

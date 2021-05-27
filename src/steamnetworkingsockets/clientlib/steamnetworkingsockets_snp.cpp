@@ -33,11 +33,11 @@ struct SNPAckSerializerHelper
 	int m_nBlocksNeedToAck; // Number of blocks we really need to send now.
 	Block m_arBlocks[ k_nMaxBlocks ];
 
-	static uint16 EncodeTimeSince( SteamNetworkingMicroseconds usecNow, SteamNetworkingMicroseconds usecWhenSentLast )
+	static uint16 EncodeTimeSince( GameNetworkingMicroseconds usecNow, GameNetworkingMicroseconds usecWhenSentLast )
 	{
 
 		// Encode time since last
-		SteamNetworkingMicroseconds usecElapsedSinceLast = usecNow - usecWhenSentLast;
+		GameNetworkingMicroseconds usecElapsedSinceLast = usecNow - usecWhenSentLast;
 		Assert( usecElapsedSinceLast >= 0 );
 		Assert( usecNow > 0x20000*k_usecAckDelayPrecision ); // We should never have small timestamp values.  A timestamp of zero should always be "a long time ago"
 		if ( usecElapsedSinceLast > 0xfffell<<k_nAckDelayPrecisionShift )
@@ -50,7 +50,7 @@ struct SNPAckSerializerHelper
 // Fetch ping, and handle two edge cases:
 // - if we don't have an estimate, just be relatively conservative
 // - clamp to minimum
-inline SteamNetworkingMicroseconds GetUsecPingWithFallback( CSteamNetworkConnectionBase *pConnection )
+inline GameNetworkingMicroseconds GetUsecPingWithFallback( CGameNetworkConnectionBase *pConnection )
 {
 	int nPingMS = pConnection->m_statsEndToEnd.m_ping.m_nSmoothedPing;
 	if ( nPingMS < 0 )
@@ -83,7 +83,7 @@ void SSNPSenderState::RemoveAckedReliableMessageFromUnackedList()
 	// messages have been acked.
 	while ( !m_unackedReliableMessages.empty() )
 	{
-		CSteamNetworkingMessage *pMsg = m_unackedReliableMessages.m_pFirst;
+		CGameNetworkingMessage *pMsg = m_unackedReliableMessages.m_pFirst;
 		Assert( pMsg->SNPSend_ReliableStreamPos() > 0 );
 		int64 nReliableEnd = pMsg->SNPSend_ReliableStreamPos() + pMsg->m_cbSize;
 
@@ -142,7 +142,7 @@ void SSNPSenderState::DebugCheckInFlightPacketMap() const
 	Assert( it->first == INT64_MIN );
 	Assert( m_itNextInFlightPacketToTimeout != it );
 	int64 prevPktNum = it->first;
-	SteamNetworkingMicroseconds prevWhenSent = it->second.m_usecWhenSent;
+	GameNetworkingMicroseconds prevWhenSent = it->second.m_usecWhenSent;
 	while ( ++it != m_mapInFlightPacketsByPktNum.end() )
 	{
 		Assert( prevPktNum < it->first );
@@ -187,12 +187,12 @@ void SSNPReceiverState::Shutdown()
 }
 
 //-----------------------------------------------------------------------------
-void CSteamNetworkConnectionBase::SNP_InitializeConnection( SteamNetworkingMicroseconds usecNow )
+void CGameNetworkConnectionBase::SNP_InitializeConnection( GameNetworkingMicroseconds usecNow )
 {
 	m_sendRateData.m_usecTokenBucketTime = usecNow;
 	m_sendRateData.m_flTokenBucket = k_flSendRateBurstOverageAllowance;
 
-	SteamNetworkingMicroseconds usecPing = GetUsecPingWithFallback( this );
+	GameNetworkingMicroseconds usecPing = GetUsecPingWithFallback( this );
 
 	/*
 	* Compute the initial sending rate X_init in the manner of RFC 3390:
@@ -211,14 +211,14 @@ void CSteamNetworkConnectionBase::SNP_InitializeConnection( SteamNetworkingMicro
 }
 
 //-----------------------------------------------------------------------------
-void CSteamNetworkConnectionBase::SNP_ShutdownConnection()
+void CGameNetworkConnectionBase::SNP_ShutdownConnection()
 {
 	m_senderState.Shutdown();
 	m_receiverState.Shutdown();
 }
 
 //-----------------------------------------------------------------------------
-int64 CSteamNetworkConnectionBase::SNP_SendMessage( CSteamNetworkingMessage *pSendMessage, SteamNetworkingMicroseconds usecNow, bool *pbThinkImmediately )
+int64 CGameNetworkConnectionBase::SNP_SendMessage( CGameNetworkingMessage *pSendMessage, GameNetworkingMicroseconds usecNow, bool *pbThinkImmediately )
 {
 	// Connection must be locked, but we don't require the global lock here!
 	m_pLock->AssertHeldByCurrentThread();
@@ -238,13 +238,13 @@ int64 CSteamNetworkConnectionBase::SNP_SendMessage( CSteamNetworkingMessage *pSe
 	}
 
 	// Check if they try to send a really large message
-	if ( cbData > k_cbMaxUnreliableMsgSizeSend && !( pSendMessage->m_nFlags & k_nSteamNetworkingSend_Reliable )  )
+	if ( cbData > k_cbMaxUnreliableMsgSizeSend && !( pSendMessage->m_nFlags & k_nGameNetworkingSend_Reliable )  )
 	{
 		SpewWarningRateLimited( usecNow, "Trying to send a very large (%d bytes) unreliable message.  Sending as reliable instead.\n", cbData );
-		pSendMessage->m_nFlags |= k_nSteamNetworkingSend_Reliable;
+		pSendMessage->m_nFlags |= k_nGameNetworkingSend_Reliable;
 	}
 
-	if ( pSendMessage->m_nFlags & k_nSteamNetworkingSend_NoDelay )
+	if ( pSendMessage->m_nFlags & k_nGameNetworkingSend_NoDelay )
 	{
 		// FIXME - need to check how much data is currently pending, and return
 		// k_EResultIgnored if we think it's going to be a while before this
@@ -260,7 +260,7 @@ int64 CSteamNetworkConnectionBase::SNP_SendMessage( CSteamNetworkingMessage *pSe
 	pSendMessage->m_nMessageNumber = ++m_senderState.m_nLastSentMsgNum;
 
 	// Reliable, or unreliable?
-	if ( pSendMessage->m_nFlags & k_nSteamNetworkingSend_Reliable )
+	if ( pSendMessage->m_nFlags & k_nGameNetworkingSend_Reliable )
 	{
 		pSendMessage->SNPSend_SetReliableStreamPos( m_senderState.m_nReliableStreamPos );
 
@@ -329,7 +329,7 @@ int64 CSteamNetworkConnectionBase::SNP_SendMessage( CSteamNetworkingMessage *pSe
 	// config value could violate the assumption that nagle times are increasing.  Probably not worth
 	// fixing.
 	pSendMessage->SNPSend_SetUsecNagle( usecNow + m_connectionConfig.m_NagleTime.Get() );
-	if ( pSendMessage->m_nFlags & k_nSteamNetworkingSend_NoNagle )
+	if ( pSendMessage->m_nFlags & k_nGameNetworkingSend_NoNagle )
 		m_senderState.ClearNagleTimers();
 
 	// Save the message number.  The code below might end up deleting the message we just queued
@@ -342,9 +342,9 @@ int64 CSteamNetworkConnectionBase::SNP_SendMessage( CSteamNetworkingMessage *pSe
 	// But that case is relatively rare, and nothing will break if we try to right now.
 	// On the other hand, just asking the question involved a virtual function call,
 	// and it will return success most of the time, so let's not make the check here.
-	if ( GetState() == k_ESteamNetworkingConnectionState_Connected )
+	if ( GetState() == k_EGameNetworkingConnectionState_Connected )
 	{
-		SteamNetworkingMicroseconds usecNextThink = SNP_GetNextThinkTime( usecNow );
+		GameNetworkingMicroseconds usecNextThink = SNP_GetNextThinkTime( usecNow );
 
 		// Ready to send now?
 		if ( usecNextThink > usecNow )
@@ -383,7 +383,7 @@ int64 CSteamNetworkConnectionBase::SNP_SendMessage( CSteamNetworkingMessage *pSe
 		{
 
 			// We're ready to send right now.  Check if we should!
-			if ( pSendMessage->m_nFlags & k_nSteamNetworkingSend_UseCurrentThread )
+			if ( pSendMessage->m_nFlags & k_nGameNetworkingSend_UseCurrentThread )
 			{
 
 				// We should send in this thread, before the API entry point
@@ -410,14 +410,14 @@ int64 CSteamNetworkConnectionBase::SNP_SendMessage( CSteamNetworkingMessage *pSe
 	return result;
 }
 
-EResult CSteamNetworkConnectionBase::SNP_FlushMessage( SteamNetworkingMicroseconds usecNow )
+EResult CGameNetworkConnectionBase::SNP_FlushMessage( GameNetworkingMicroseconds usecNow )
 {
 	// Connection must be locked, but we don't require the global lock here!
 	m_pLock->AssertHeldByCurrentThread();
 
 	// If we're not connected, then go ahead and mark the messages ready to send
 	// once we connect, but otherwise don't take any action
-	if ( GetState() != k_ESteamNetworkingConnectionState_Connected )
+	if ( GetState() != k_EGameNetworkingConnectionState_Connected )
 	{
 		m_senderState.ClearNagleTimers();
 		return k_EResultIgnored;
@@ -442,15 +442,15 @@ EResult CSteamNetworkConnectionBase::SNP_FlushMessage( SteamNetworkingMicrosecon
 	m_senderState.ClearNagleTimers();
 
 	// Schedule wakeup at the appropriate time.  (E.g. right now, if we're ready to send.)
-	SteamNetworkingMicroseconds usecNextThink = SNP_GetNextThinkTime( usecNow );
+	GameNetworkingMicroseconds usecNextThink = SNP_GetNextThinkTime( usecNow );
 	EnsureMinThinkTime( usecNextThink );
 	return k_EResultOK;
 }
 
-bool CSteamNetworkConnectionBase::ProcessPlainTextDataChunk( int usecTimeSinceLast, RecvPacketContext_t &ctx )
+bool CGameNetworkConnectionBase::ProcessPlainTextDataChunk( int usecTimeSinceLast, RecvPacketContext_t &ctx )
 {
 	#define DECODE_ERROR( ... ) do { \
-		ConnectionState_ProblemDetectedLocally( k_ESteamNetConnectionEnd_Misc_InternalError, __VA_ARGS__ ); \
+		ConnectionState_ProblemDetectedLocally( k_EGameNetConnectionEnd_Misc_InternalError, __VA_ARGS__ ); \
 		return false; } while(false)
 
 	#define EXPECT_BYTES(n,pszWhatFor) \
@@ -515,7 +515,7 @@ bool CSteamNetworkConnectionBase::ProcessPlainTextDataChunk( int usecTimeSinceLa
 	// Make sure we have initialized the connection
 	Assert( BStateIsActive() );
 
-	const SteamNetworkingMicroseconds usecNow = ctx.m_usecNow;
+	const GameNetworkingMicroseconds usecNow = ctx.m_usecNow;
 	const int64 nPktNum = ctx.m_nPktNum;
 	bool bInhibitMarkReceived = false;
 
@@ -854,8 +854,8 @@ bool CSteamNetworkConnectionBase::ProcessPlainTextDataChunk( int usecTimeSinceLa
 				READ_16BITU( nPackedDelay, "ack delay" );
 				if ( nPackedDelay != 0xffff && inFlightPkt->first == nLatestRecvSeqNum && inFlightPkt->second.m_pTransport == ctx.m_pTransport )
 				{
-					SteamNetworkingMicroseconds usecDelay = SteamNetworkingMicroseconds( nPackedDelay ) << k_nAckDelayPrecisionShift;
-					SteamNetworkingMicroseconds usecElapsed = usecNow - inFlightPkt->second.m_usecWhenSent;
+					GameNetworkingMicroseconds usecDelay = GameNetworkingMicroseconds( nPackedDelay ) << k_nAckDelayPrecisionShift;
+					GameNetworkingMicroseconds usecElapsed = usecNow - inFlightPkt->second.m_usecWhenSent;
 					Assert( usecElapsed >= 0 );
 
 					// Account for their reported delay, and calculate ping, in MS
@@ -915,7 +915,7 @@ bool CSteamNetworkConnectionBase::ProcessPlainTextDataChunk( int usecTimeSinceLa
 				// ack everything is not what we want to do.  Instead, we should
 				// use a separate timer for when we need to flush out a stop_waiting
 				// packet!
-				SteamNetworkingMicroseconds usecDelay = 250*1000 / nBlocks;
+				GameNetworkingMicroseconds usecDelay = 250*1000 / nBlocks;
 				QueueFlushAllAcks( usecNow + usecDelay );
 			}
 
@@ -1133,7 +1133,7 @@ bool CSteamNetworkConnectionBase::ProcessPlainTextDataChunk( int usecTimeSinceLa
 	#undef READ_SEGMENT_DATA_SIZE
 }
 
-void CSteamNetworkConnectionBase::SNP_SenderProcessPacketNack( int64 nPktNum, SNPInFlightPacket_t &pkt, const char *pszDebug )
+void CGameNetworkConnectionBase::SNP_SenderProcessPacketNack( int64 nPktNum, SNPInFlightPacket_t &pkt, const char *pszDebug )
 {
 
 	// Did we already treat the packet as dropped (implicitly or explicitly)?
@@ -1176,7 +1176,7 @@ void CSteamNetworkConnectionBase::SNP_SenderProcessPacketNack( int64 nPktNum, SN
 	}
 }
 
-SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_SenderCheckInFlightPackets( SteamNetworkingMicroseconds usecNow )
+GameNetworkingMicroseconds CGameNetworkConnectionBase::SNP_SenderCheckInFlightPackets( GameNetworkingMicroseconds usecNow )
 {
 	// Connection must be locked, but we don't require the global lock here!
 	m_pLock->AssertHeldByCurrentThread();
@@ -1190,12 +1190,12 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_SenderCheckInFlight
 	}
 	Assert( m_senderState.m_mapInFlightPacketsByPktNum.begin()->first < 0 );
 
-	SteamNetworkingMicroseconds usecNextRetry = k_nThinkTime_Never;
+	GameNetworkingMicroseconds usecNextRetry = k_nThinkTime_Never;
 
 	// Process retry timeout.  Here we use a shorter timeout to trigger retry
 	// than we do to totally forgot about the packet, in case an ack comes in late,
 	// we can take advantage of it.
-	SteamNetworkingMicroseconds usecRTO = m_statsEndToEnd.CalcSenderRetryTimeout();
+	GameNetworkingMicroseconds usecRTO = m_statsEndToEnd.CalcSenderRetryTimeout();
 	while ( m_senderState.m_itNextInFlightPacketToTimeout != m_senderState.m_mapInFlightPacketsByPktNum.end() )
 	{
 		Assert( m_senderState.m_itNextInFlightPacketToTimeout->first > 0 );
@@ -1205,7 +1205,7 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_SenderCheckInFlight
 		{
 
 			// Not yet time to give up?
-			SteamNetworkingMicroseconds usecRetryPkt = m_senderState.m_itNextInFlightPacketToTimeout->second.m_usecWhenSent + usecRTO;
+			GameNetworkingMicroseconds usecRetryPkt = m_senderState.m_itNextInFlightPacketToTimeout->second.m_usecWhenSent + usecRTO;
 			if ( usecRetryPkt > usecNow )
 			{
 				usecNextRetry = usecRetryPkt;
@@ -1233,20 +1233,20 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_SenderCheckInFlight
 	// about these packets now, and then they later are acked, we won't be able
 	// to update our RTT, and so we will be stuck with an RTT estimate that
 	// is too small
-	SteamNetworkingMicroseconds usecExpiry = usecRTO*2;
+	GameNetworkingMicroseconds usecExpiry = usecRTO*2;
 	if ( m_statsEndToEnd.m_ping.m_nValidPings < 1 )
 	{
 		usecExpiry += k_nMillion;
 	}
 	else
 	{
-		SteamNetworkingMicroseconds usecMostRecentPingAge = usecNow - m_statsEndToEnd.m_ping.TimeRecvMostRecentPing();
+		GameNetworkingMicroseconds usecMostRecentPingAge = usecNow - m_statsEndToEnd.m_ping.TimeRecvMostRecentPing();
 		usecMostRecentPingAge = std::min( usecMostRecentPingAge, k_nMillion*3 );
 		if ( usecMostRecentPingAge > usecExpiry )
 			usecExpiry = usecMostRecentPingAge;
 	}
 
-	SteamNetworkingMicroseconds usecWhenExpiry = usecNow - usecExpiry;
+	GameNetworkingMicroseconds usecWhenExpiry = usecNow - usecExpiry;
 	for (;;)
 	{
 		if ( inFlightPkt->second.m_usecWhenSent > usecWhenExpiry )
@@ -1282,11 +1282,11 @@ struct EncodedSegment
 	static constexpr int k_cbMaxHdr = 16; 
 	uint8 m_hdr[ k_cbMaxHdr ];
 	int m_cbHdr; // Doesn't include any size byte
-	CSteamNetworkingMessage *m_pMsg;
+	CGameNetworkingMessage *m_pMsg;
 	int m_cbSegSize;
 	int m_nOffset;
 
-	inline void SetupReliable( CSteamNetworkingMessage *pMsg, int64 nBegin, int64 nEnd, int64 nLastReliableStreamPosEnd )
+	inline void SetupReliable( CGameNetworkingMessage *pMsg, int64 nBegin, int64 nEnd, int64 nLastReliableStreamPosEnd )
 	{
 		Assert( nBegin < nEnd );
 		//Assert( nBegin + k_cbGameNetworkingSocketsMaxReliableMessageSegment >= nEnd ); // Max sure we don't exceed max segment size
@@ -1346,7 +1346,7 @@ struct EncodedSegment
 		m_cbSegSize = cbSegData;
 	}
 
-	inline void SetupUnreliable( CSteamNetworkingMessage *pMsg, int nOffset, int64 nLastMsgNum )
+	inline void SetupUnreliable( CGameNetworkingMessage *pMsg, int nOffset, int64 nLastMsgNum )
 	{
 
 		// Start filling out the header with the top two bits = 00,
@@ -1422,7 +1422,7 @@ inline bool HasOverlappingRange( const SNPRange_t &range, const std_map<SNPRange
 	return false;
 }
 
-bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTransport, SendPacketContext_t &ctx )
+bool CGameNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTransport, SendPacketContext_t &ctx )
 {
 	// To send packets we need both the global lock and the connection lock
 	AssertLocksHeldByCurrentThread( "SNP_SendPacket" );
@@ -1436,12 +1436,12 @@ bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTranspo
 		return false;
 	}
 
-	SteamNetworkingMicroseconds usecNow = ctx.m_usecNow;
+	GameNetworkingMicroseconds usecNow = ctx.m_usecNow;
 
 	// Get max size of plaintext we could send.
 	// AES-GCM has a fixed size overhead, for the tag.
 	// FIXME - but what we if we aren't using AES-GCM!
-	int cbMaxPlaintextPayload = std::max( 0, ctx.m_cbMaxEncryptedPayload-k_cbSteamNetwokingSocketsEncrytionTagSize );
+	int cbMaxPlaintextPayload = std::max( 0, ctx.m_cbMaxEncryptedPayload-k_cbGameNetwokingSocketsEncrytionTagSize );
 	cbMaxPlaintextPayload = std::min( cbMaxPlaintextPayload, m_cbMaxPlaintextPayloadSend );
 
 	uint8 payload[ k_cbGameNetworkingSocketsMaxPlaintextPayloadSend ];
@@ -1606,7 +1606,7 @@ bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTranspo
 				m_senderState.m_cbCurrentSendMessageSent = 0;
 				break;
 			}
-			CSteamNetworkingMessage *pSendMsg = m_senderState.m_messagesQueued.m_pFirst;
+			CGameNetworkingMessage *pSendMsg = m_senderState.m_messagesQueued.m_pFirst;
 			Assert( m_senderState.m_cbCurrentSendMessageSent < pSendMsg->m_cbSize );
 
 			// Start a new segment
@@ -1970,7 +1970,7 @@ bool CSteamNetworkConnectionBase::SNP_SendPacket( CConnectionTransport *pTranspo
 	return true;
 }
 
-void CSteamNetworkConnectionBase::SNP_SentNonDataPacket( CConnectionTransport *pTransport, int cbPkt, SteamNetworkingMicroseconds usecNow )
+void CGameNetworkConnectionBase::SNP_SentNonDataPacket( CConnectionTransport *pTransport, int cbPkt, GameNetworkingMicroseconds usecNow )
 {
 	std::pair<int64,SNPInFlightPacket_t> pairInsert( m_statsEndToEnd.m_nNextSendSequenceNumber-1, SNPInFlightPacket_t{ usecNow, false, pTransport, {} } );
 	auto pairInsertResult = m_senderState.m_mapInFlightPacketsByPktNum.insert( pairInsert );
@@ -1980,7 +1980,7 @@ void CSteamNetworkConnectionBase::SNP_SentNonDataPacket( CConnectionTransport *p
 	m_sendRateData.m_flTokenBucket -= (float)cbPkt;
 }
 
-void CSteamNetworkConnectionBase::SNP_GatherAckBlocks( SNPAckSerializerHelper &helper, SteamNetworkingMicroseconds usecNow )
+void CGameNetworkConnectionBase::SNP_GatherAckBlocks( SNPAckSerializerHelper &helper, GameNetworkingMicroseconds usecNow )
 {
 	helper.m_nBlocks = 0;
 	helper.m_nBlocksNeedToAck = 0;
@@ -1993,8 +1993,8 @@ void CSteamNetworkConnectionBase::SNP_GatherAckBlocks( SNPAckSerializerHelper &h
 	// Let's not just flush the acks that are due right now.  Let's flush all of them
 	// that will be due any time before we have the bandwidth to send the next packet.
 	// (Assuming that we send the max packet size here.)
-	SteamNetworkingMicroseconds usecSendAcksDueBefore = usecNow;
-	SteamNetworkingMicroseconds usecTimeUntilNextPacket = SteamNetworkingMicroseconds( ( m_sendRateData.m_flTokenBucket - (float)m_cbMTUPacketSize ) / m_sendRateData.m_flCurrentSendRateUsed * -1e6 );
+	GameNetworkingMicroseconds usecSendAcksDueBefore = usecNow;
+	GameNetworkingMicroseconds usecTimeUntilNextPacket = GameNetworkingMicroseconds( ( m_sendRateData.m_flTokenBucket - (float)m_cbMTUPacketSize ) / m_sendRateData.m_flCurrentSendRateUsed * -1e6 );
 	if ( usecTimeUntilNextPacket > 0 )
 		usecSendAcksDueBefore += usecTimeUntilNextPacket;
 
@@ -2036,7 +2036,7 @@ void CSteamNetworkConnectionBase::SNP_GatherAckBlocks( SNPAckSerializerHelper &h
 		block.m_nNack = uint32( itCur->second.m_nEnd - itCur->first );
 
 		int64 nAckEnd;
-		SteamNetworkingMicroseconds usecWhenSentLast;
+		GameNetworkingMicroseconds usecWhenSentLast;
 		if ( n == 0 )
 		{
 			// itNext should be the sentinel
@@ -2080,7 +2080,7 @@ void CSteamNetworkConnectionBase::SNP_GatherAckBlocks( SNPAckSerializerHelper &h
 	}
 }
 
-uint8 *CSteamNetworkConnectionBase::SNP_SerializeAckBlocks( const SNPAckSerializerHelper &helper, uint8 *pOut, const uint8 *pOutEnd, SteamNetworkingMicroseconds usecNow )
+uint8 *CGameNetworkConnectionBase::SNP_SerializeAckBlocks( const SNPAckSerializerHelper &helper, uint8 *pOut, const uint8 *pOutEnd, GameNetworkingMicroseconds usecNow )
 {
 
 	// We shouldn't be called if we never received anything
@@ -2318,7 +2318,7 @@ uint8 *CSteamNetworkConnectionBase::SNP_SerializeAckBlocks( const SNPAckSerializ
 	return pOut;
 }
 
-uint8 *CSteamNetworkConnectionBase::SNP_SerializeStopWaitingFrame( uint8 *pOut, const uint8 *pOutEnd, SteamNetworkingMicroseconds usecNow )
+uint8 *CGameNetworkConnectionBase::SNP_SerializeStopWaitingFrame( uint8 *pOut, const uint8 *pOutEnd, GameNetworkingMicroseconds usecNow )
 {
 	// For now, we will always write this.  We should optimize this and try to be
 	// smart about when to send it (probably maybe once per RTT, or when N packets
@@ -2379,12 +2379,12 @@ uint8 *CSteamNetworkConnectionBase::SNP_SerializeStopWaitingFrame( uint8 *pOut, 
 	return pOut;
 }
 
-void CSteamNetworkConnectionBase::SNP_ReceiveUnreliableSegment( int64 nMsgNum, int nOffset, const void *pSegmentData, int cbSegmentSize, bool bLastSegmentInMessage, SteamNetworkingMicroseconds usecNow )
+void CGameNetworkConnectionBase::SNP_ReceiveUnreliableSegment( int64 nMsgNum, int nOffset, const void *pSegmentData, int cbSegmentSize, bool bLastSegmentInMessage, GameNetworkingMicroseconds usecNow )
 {
 	SpewDebugGroup( m_connectionConfig.m_LogLevel_PacketDecode.Get(), "[%s] RX msg %lld offset %d+%d=%d %02x ... %02x\n", GetDescription(), nMsgNum, nOffset, cbSegmentSize, nOffset+cbSegmentSize, ((byte*)pSegmentData)[0], ((byte*)pSegmentData)[cbSegmentSize-1] );
 
 	// Ignore data segments when we are not going to process them (e.g. linger)
-	if ( GetState() != k_ESteamNetworkingConnectionState_Connected )
+	if ( GetState() != k_EGameNetworkingConnectionState_Connected )
 	{
 		SpewDebugGroup( m_connectionConfig.m_LogLevel_PacketDecode.Get(), "[%s] discarding msg %lld [%d,%d) as connection is in state %d\n",
 			GetDescription(),
@@ -2400,7 +2400,7 @@ void CSteamNetworkConnectionBase::SNP_ReceiveUnreliableSegment( int64 nMsgNum, i
 
 		// Deliver it immediately, don't go through the fragmentation assembly process below.
 		// (Although that would work.)
-		ReceivedMessage( pSegmentData, cbSegmentSize, nMsgNum, k_nSteamNetworkingSend_Unreliable, usecNow );
+		ReceivedMessage( pSegmentData, cbSegmentSize, nMsgNum, k_nGameNetworkingSend_Unreliable, usecNow );
 		return;
 	}
 
@@ -2483,7 +2483,7 @@ void CSteamNetworkConnectionBase::SNP_ReceiveUnreliableSegment( int64 nMsgNum, i
 			return;
 	}
 
-	CSteamNetworkingMessage *pMsg = CSteamNetworkingMessage::New( this, cbMessageSize, nMsgNum, k_nSteamNetworkingSend_Unreliable, usecNow );
+	CGameNetworkingMessage *pMsg = CGameNetworkingMessage::New( this, cbMessageSize, nMsgNum, k_nGameNetworkingSend_Unreliable, usecNow );
 	if ( !pMsg )
 		return;
 
@@ -2512,7 +2512,7 @@ void CSteamNetworkConnectionBase::SNP_ReceiveUnreliableSegment( int64 nMsgNum, i
 	ReceivedMessage( pMsg );
 }
 
-bool CSteamNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int64 nSegBegin, const uint8 *pSegmentData, int cbSegmentSize, SteamNetworkingMicroseconds usecNow )
+bool CGameNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int64 nSegBegin, const uint8 *pSegmentData, int cbSegmentSize, GameNetworkingMicroseconds usecNow )
 {
 	int nLogLevelPacketDecode = m_connectionConfig.m_LogLevel_PacketDecode.Get();
 
@@ -2539,12 +2539,12 @@ bool CSteamNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int
 	// Ignore data segments when we are not going to process them (e.g. linger)
 	switch ( GetState() )
 	{
-		case k_ESteamNetworkingConnectionState_Connected:
-		case k_ESteamNetworkingConnectionState_FindingRoute: // Go ahead and process it here.  The higher level code should change the state soon enough.
+		case k_EGameNetworkingConnectionState_Connected:
+		case k_EGameNetworkingConnectionState_FindingRoute: // Go ahead and process it here.  The higher level code should change the state soon enough.
 			break;
 
-		case k_ESteamNetworkingConnectionState_Linger:
-		case k_ESteamNetworkingConnectionState_FinWait:
+		case k_EGameNetworkingConnectionState_Linger:
+		case k_EGameNetworkingConnectionState_FinWait:
 			// Discard data, but continue processing packet
 			SpewVerboseGroup( nLogLevelPacketDecode, "[%s]   discarding pkt %lld [%lld,%lld) as connection is in state %d\n",
 				GetDescription(),
@@ -2791,7 +2791,7 @@ bool CSteamNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int
 		uint8 nHeaderByte = *(pReliableDecode++);
 		if ( nHeaderByte & 0x80 )
 		{
-			ConnectionState_ProblemDetectedLocally( k_ESteamNetConnectionEnd_Misc_InternalError, "Invalid reliable message header byte 0x%02x", nHeaderByte );
+			ConnectionState_ProblemDetectedLocally( k_EGameNetConnectionEnd_Misc_InternalError, "Invalid reliable message header byte 0x%02x", nHeaderByte );
 			return false;
 		}
 
@@ -2818,7 +2818,7 @@ bool CSteamNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int
 			// legit, though.)
 			if ( nOffset > 1000000 || nMsgNum > m_receiverState.m_nHighestSeenMsgNum+10000 )
 			{
-				ConnectionState_ProblemDetectedLocally( k_ESteamNetConnectionEnd_Misc_InternalError,
+				ConnectionState_ProblemDetectedLocally( k_EGameNetConnectionEnd_Misc_InternalError,
 					"Reliable message number lurch.  Last reliable %lld, offset %llu, highest seen %lld",
 					(long long)m_receiverState.m_nLastRecvReliableMsgNum, (unsigned long long)nOffset,
 					(long long)m_receiverState.m_nHighestSeenMsgNum );
@@ -2853,7 +2853,7 @@ bool CSteamNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int
 			// (Although DeserializeVarInt doesn't detect overflow...)
 			if ( nMsgSizeUpperBits > (uint64)k_cbMaxMessageSizeRecv<<5 )
 			{
-				ConnectionState_ProblemDetectedLocally( k_ESteamNetConnectionEnd_Misc_InternalError,
+				ConnectionState_ProblemDetectedLocally( k_EGameNetConnectionEnd_Misc_InternalError,
 					"Reliable message size too large.  (%llu<<5 + %d)",
 					(unsigned long long)nMsgSizeUpperBits, cbMsgSize );
 				return false;
@@ -2863,7 +2863,7 @@ bool CSteamNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int
 			cbMsgSize += int( nMsgSizeUpperBits<<5 );
 			if ( cbMsgSize > k_cbMaxMessageSizeRecv )
 			{
-				ConnectionState_ProblemDetectedLocally( k_ESteamNetConnectionEnd_Misc_InternalError,
+				ConnectionState_ProblemDetectedLocally( k_EGameNetConnectionEnd_Misc_InternalError,
 					"Reliable message size %d too large.", cbMsgSize );
 				return false;
 			}
@@ -2877,7 +2877,7 @@ bool CSteamNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int
 		}
 
 		// We have a full message!  Queue it
-		if ( !ReceivedMessage( pReliableDecode, cbMsgSize, nMsgNum, k_nSteamNetworkingSend_Reliable, usecNow ) )
+		if ( !ReceivedMessage( pReliableDecode, cbMsgSize, nMsgNum, k_nGameNetworkingSend_Reliable, usecNow ) )
 			return false; // Weird failure.  Most graceful response is to not ack this packet, and maybe we will work next on retry.
 		pReliableDecode += cbMsgSize;
 		int cbStreamConsumed = pReliableDecode-pReliableStart;
@@ -2896,7 +2896,7 @@ bool CSteamNetworkConnectionBase::SNP_ReceiveReliableSegment( int64 nPktNum, int
 	return true; // packet is OK, can be acked, and continue processing it
 }
 
-void CSteamNetworkConnectionBase::SNP_RecordReceivedPktNum( int64 nPktNum, SteamNetworkingMicroseconds usecNow, bool bScheduleAck )
+void CGameNetworkConnectionBase::SNP_RecordReceivedPktNum( int64 nPktNum, GameNetworkingMicroseconds usecNow, bool bScheduleAck )
 {
 
 	// Check if sender has already told us they don't need us to
@@ -2921,7 +2921,7 @@ void CSteamNetworkConnectionBase::SNP_RecordReceivedPktNum( int64 nPktNum, Steam
 
 	// Latest time that this packet should be acked.
 	// (We might already be scheduled to send and ack that would include this packet.)
-	SteamNetworkingMicroseconds usecScheduleAck = bScheduleAck ? usecNow + k_usecMaxDataAckDelay : INT64_MAX;
+	GameNetworkingMicroseconds usecScheduleAck = bScheduleAck ? usecNow + k_usecMaxDataAckDelay : INT64_MAX;
 
 	// Check if this introduced a gap since the last sequence packet we have received
 	if ( nPktNum > m_statsEndToEnd.m_nMaxRecvPktNum )
@@ -3024,7 +3024,7 @@ void CSteamNetworkConnectionBase::SNP_RecordReceivedPktNum( int64 nPktNum, Steam
 					++m_receiverState.m_itPendingNack;
 
 				// Save time when we needed to ack the packets before this gap
-				SteamNetworkingMicroseconds usecWhenAckPrior = itGap->second.m_usecWhenAckPrior;
+				GameNetworkingMicroseconds usecWhenAckPrior = itGap->second.m_usecWhenAckPrior;
 
 				// Gap is totally filled.  Erase, and move to the next one,
 				// if any, so we can schedule ack below
@@ -3159,7 +3159,7 @@ void CSteamNetworkConnectionBase::SNP_RecordReceivedPktNum( int64 nPktNum, Steam
 					// If our number is lower than the thing that was scheduled next,
 					// then back up and re-schedule any blocks in between to be effectively
 					// the same time as they would have been flushed before.
-					SteamNetworkingMicroseconds usecOldSched = m_receiverState.m_itPendingAck->second.m_usecWhenAckPrior;
+					GameNetworkingMicroseconds usecOldSched = m_receiverState.m_itPendingAck->second.m_usecWhenAckPrior;
 					while ( --m_receiverState.m_itPendingAck != itGap )
 					{
 						m_receiverState.m_itPendingAck->second.m_usecWhenAckPrior = usecOldSched;
@@ -3204,7 +3204,7 @@ void CSteamNetworkConnectionBase::SNP_RecordReceivedPktNum( int64 nPktNum, Steam
 	}
 }
 
-int CSteamNetworkConnectionBase::SNP_ClampSendRate()
+int CGameNetworkConnectionBase::SNP_ClampSendRate()
 {
 	// Get effective clamp limits.  We clamp the limits themselves to be safe
 	// and make sure they are sane
@@ -3241,7 +3241,7 @@ int CSteamNetworkConnectionBase::SNP_ClampSendRate()
 }
 
 // Returns next think time
-SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_ThinkSendState( SteamNetworkingMicroseconds usecNow )
+GameNetworkingMicroseconds CGameNetworkConnectionBase::SNP_ThinkSendState( GameNetworkingMicroseconds usecNow )
 {
 	// Accumulate tokens based on how long it's been since last time
 	SNP_ClampSendRate();
@@ -3249,7 +3249,7 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_ThinkSendState( Ste
 
 	// Calculate next time we want to take action.  If it isn't right now, then we're either idle or throttled.
 	// Importantly, this will also check for retry timeout
-	SteamNetworkingMicroseconds usecNextThink = SNP_GetNextThinkTime( usecNow );
+	GameNetworkingMicroseconds usecNextThink = SNP_GetNextThinkTime( usecNow );
 	if ( usecNextThink > usecNow )
 		return usecNextThink;
 
@@ -3299,12 +3299,12 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_ThinkSendState( Ste
 	}
 
 	// Return time when we need to check in again.
-	SteamNetworkingMicroseconds usecNextAction = SNP_GetNextThinkTime( usecNow );
+	GameNetworkingMicroseconds usecNextAction = SNP_GetNextThinkTime( usecNow );
 	Assert( usecNextAction > usecNow );
 	return usecNextAction;
 }
 
-void CSteamNetworkConnectionBase::SNP_TokenBucket_Accumulate( SteamNetworkingMicroseconds usecNow )
+void CGameNetworkConnectionBase::SNP_TokenBucket_Accumulate( GameNetworkingMicroseconds usecNow )
 {
 	// If we're not connected, just keep our bucket full
 	if ( !BStateIsConnectedForWirePurposes() )
@@ -3329,7 +3329,7 @@ void CSteamNetworkConnectionBase::SNP_TokenBucket_Accumulate( SteamNetworkingMic
 	}
 }
 
-void SSNPReceiverState::QueueFlushAllAcks( SteamNetworkingMicroseconds usecWhen )
+void SSNPReceiverState::QueueFlushAllAcks( GameNetworkingMicroseconds usecWhen )
 {
 	DebugCheckPackGapMap();
 
@@ -3368,7 +3368,7 @@ void SSNPReceiverState::QueueFlushAllAcks( SteamNetworkingMicroseconds usecWhen 
 void SSNPReceiverState::DebugCheckPackGapMap() const
 {
 	int64 nPrevEnd = 0;
-	SteamNetworkingMicroseconds usecPrevAck = 0;
+	GameNetworkingMicroseconds usecPrevAck = 0;
 	bool bFoundPendingAck = false;
 	for ( auto it: m_mapPacketGaps )
 	{
@@ -3403,7 +3403,7 @@ void SSNPReceiverState::DebugCheckPackGapMap() const
 }
 #endif
 
-SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_TimeWhenWantToSendNextPacket() const
+GameNetworkingMicroseconds CGameNetworkConnectionBase::SNP_TimeWhenWantToSendNextPacket() const
 {
 	// Connection must be locked, but we don't require the global lock here!
 	m_pLock->AssertHeldByCurrentThread();
@@ -3420,7 +3420,7 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_TimeWhenWantToSendN
 		return 0;
 
 	// Anything queued?
-	SteamNetworkingMicroseconds usecNextSend;
+	GameNetworkingMicroseconds usecNextSend;
 	if ( m_senderState.m_messagesQueued.empty() )
 	{
 
@@ -3450,7 +3450,7 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_TimeWhenWantToSendN
 	return usecNextSend;
 }
 
-SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_GetNextThinkTime( SteamNetworkingMicroseconds usecNow )
+GameNetworkingMicroseconds CGameNetworkConnectionBase::SNP_GetNextThinkTime( GameNetworkingMicroseconds usecNow )
 {
 	// Connection must be locked, but we don't require the global lock here!
 	m_pLock->AssertHeldByCurrentThread();
@@ -3467,24 +3467,24 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_GetNextThinkTime( S
 		return k_nThinkTime_Never;
 
 	// Start with the time when the receiver needs to flush out ack.
-	SteamNetworkingMicroseconds usecNextThink = m_receiverState.TimeWhenFlushAcks();
+	GameNetworkingMicroseconds usecNextThink = m_receiverState.TimeWhenFlushAcks();
 
 	// Check retransmit timers.  If they have expired, this will move reliable
 	// segments into the "ready to retry" list, which will cause
 	// TimeWhenWantToSendNextPacket to think we want to send data.  If nothing has timed out,
 	// it will return the time when we need to check back in.  Or, if everything is idle it will
 	// return "never" (very large number).
-	SteamNetworkingMicroseconds usecNextRetry = SNP_SenderCheckInFlightPackets( usecNow );
+	GameNetworkingMicroseconds usecNextRetry = SNP_SenderCheckInFlightPackets( usecNow );
 
 	// If we want to send packets, then we might need to wake up and take action
-	SteamNetworkingMicroseconds usecTimeWantToSend = SNP_TimeWhenWantToSendNextPacket();
+	GameNetworkingMicroseconds usecTimeWantToSend = SNP_TimeWhenWantToSendNextPacket();
 	usecTimeWantToSend = std::min( usecNextRetry, usecTimeWantToSend );
 	if ( usecTimeWantToSend < usecNextThink )
 	{
 
 		// Time when we *could* send the next packet, ignoring Nagle
-		SteamNetworkingMicroseconds usecNextSend = usecNow;
-		SteamNetworkingMicroseconds usecQueueTime = m_sendRateData.CalcTimeUntilNextSend();
+		GameNetworkingMicroseconds usecNextSend = usecNow;
+		GameNetworkingMicroseconds usecQueueTime = m_sendRateData.CalcTimeUntilNextSend();
 		if ( usecQueueTime > 0 )
 		{
 			usecNextSend += usecQueueTime;
@@ -3506,7 +3506,7 @@ SteamNetworkingMicroseconds CSteamNetworkConnectionBase::SNP_GetNextThinkTime( S
 	return usecNextThink;
 }
 
-void CSteamNetworkConnectionBase::SNP_PopulateDetailedStats( SteamDatagramLinkStats &info )
+void CGameNetworkConnectionBase::SNP_PopulateDetailedStats( SteamDatagramLinkStats &info )
 {
 	info.m_latest.m_nSendRate = SNP_ClampSendRate();
 	info.m_latest.m_nPendingBytes = m_senderState.m_cbPendingUnreliable + m_senderState.m_cbPendingReliable;
@@ -3516,13 +3516,13 @@ void CSteamNetworkConnectionBase::SNP_PopulateDetailedStats( SteamDatagramLinkSt
 	info.m_lifetime.m_nMessagesRecvUnreliable  = m_receiverState.m_nMessagesRecvUnreliable;
 }
 
-void CSteamNetworkConnectionBase::SNP_PopulateQuickStats( SteamNetworkingQuickConnectionStatus &info, SteamNetworkingMicroseconds usecNow )
+void CGameNetworkConnectionBase::SNP_PopulateQuickStats( GameNetworkingQuickConnectionStatus &info, GameNetworkingMicroseconds usecNow )
 {
 	info.m_nSendRateBytesPerSecond = SNP_ClampSendRate();
 	info.m_cbPendingUnreliable = m_senderState.m_cbPendingUnreliable;
 	info.m_cbPendingReliable = m_senderState.m_cbPendingReliable;
 	info.m_cbSentUnackedReliable = m_senderState.m_cbSentUnackedReliable;
-	if ( GetState() == k_ESteamNetworkingConnectionState_Connected )
+	if ( GetState() == k_EGameNetworkingConnectionState_Connected )
 	{
 
 		// Accumulate tokens so that we can properly predict when the next time we'll be able to send something is

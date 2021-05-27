@@ -7,16 +7,16 @@
 #include "steamnetworkingtypes.h"
 #include "steam_api_common.h"
 
-struct SteamNetAuthenticationStatus_t;
-class ISteamNetworkingConnectionSignaling;
-class ISteamNetworkingSignalingRecvContext;
+struct GameNetAuthenticationStatus_t;
+class IGameNetworkingConnectionSignaling;
+class IGameNetworkingSignalingRecvContext;
 
 //-----------------------------------------------------------------------------
 /// Lower level networking API.
 ///
 /// - Connection-oriented API (like TCP, not UDP).  When sending and receiving
 ///   messages, a connection handle is used.  (For a UDP-style interface, see
-///   ISteamNetworkingMessages.)  In this TCP-style interface, the "server" will
+///   IGameNetworkingMessages.)  In this TCP-style interface, the "server" will
 ///   "listen" on a "listen socket."  A "client" will "connect" to the server,
 ///   and the server will "accept" the connection.
 /// - But unlike TCP, it's message-oriented, not stream-oriented.
@@ -32,7 +32,7 @@ class ISteamNetworkingSignalingRecvContext;
 /// keep the semantics as similar to the standard socket model when appropriate,
 /// but some deviations do exist.
 ///
-/// See also: ISteamNetworkingMessages, the UDP-style interface.  This API might be
+/// See also: IGameNetworkingMessages, the UDP-style interface.  This API might be
 /// easier to use, especially when porting existing UDP code.
 class IGameNetworkingSockets
 {
@@ -44,7 +44,7 @@ public:
 	/// You must select a specific local port to listen on and set it
 	/// the port field of the local address.
 	///
-	/// Usually you will set the IP portion of the address to zero (SteamNetworkingIPAddr::Clear()).
+	/// Usually you will set the IP portion of the address to zero (GameNetworkingIPAddr::Clear()).
 	/// This means that you will not bind to any particular local interface (i.e. the same
 	/// as INADDR_ANY in plain socket code).  Furthermore, if possible the socket will be bound
 	/// in "dual stack" mode, which means that it can accept both IPv4 and IPv6 client connections.
@@ -52,24 +52,24 @@ public:
 	/// appropriate IPv4 or IPv6 IP.
 	///
 	/// If you need to set any initial config options, pass them here.  See
-	/// SteamNetworkingConfigValue_t for more about why this is preferable to
+	/// GameNetworkingConfigValue_t for more about why this is preferable to
 	/// setting the options "immediately" after creation.
 	///
-	/// When a client attempts to connect, a SteamNetConnectionStatusChangedCallback_t
+	/// When a client attempts to connect, a GameNetConnectionStatusChangedCallback_t
 	/// will be posted.  The connection will be in the connecting state.
-	virtual HSteamListenSocket CreateListenSocketIP( const SteamNetworkingIPAddr &localAddress, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) = 0;
+	virtual HSteamListenSocket CreateListenSocketIP( const GameNetworkingIPAddr &localAddress, int nOptions, const GameNetworkingConfigValue_t *pOptions ) = 0;
 
 	/// Creates a connection and begins talking to a "server" over UDP at the
 	/// given IPv4 or IPv6 address.  The remote host must be listening with a
 	/// matching call to CreateListenSocketIP on the specified port.
 	///
-	/// A SteamNetConnectionStatusChangedCallback_t callback will be triggered when we start
+	/// A GameNetConnectionStatusChangedCallback_t callback will be triggered when we start
 	/// connecting, and then another one on either timeout or successful connection.
 	///
 	/// If the server does not have any identity configured, then their network address
 	/// will be the only identity in use.  Or, the network host may provide a platform-specific
 	/// identity with or without a valid certificate to authenticate that identity.  (These
-	/// details will be contained in the SteamNetConnectionStatusChangedCallback_t.)  It's
+	/// details will be contained in the GameNetConnectionStatusChangedCallback_t.)  It's
 	/// up to your application to decide whether to allow the connection.
 	///
 	/// By default, all connections will get basic encryption sufficient to prevent
@@ -79,9 +79,9 @@ public:
 	/// man-in-the-middle attacks.
 	///
 	/// If you need to set any initial config options, pass them here.  See
-	/// SteamNetworkingConfigValue_t for more about why this is preferable to
+	/// GameNetworkingConfigValue_t for more about why this is preferable to
 	/// setting the options "immediately" after creation.
-	virtual HSteamNetConnection ConnectByIPAddress( const SteamNetworkingIPAddr &address, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) = 0;
+	virtual HGameNetConnection ConnectByIPAddress( const GameNetworkingIPAddr &address, int nOptions, const GameNetworkingConfigValue_t *pOptions ) = 0;
 
 	/// Like CreateListenSocketIP, but clients will connect using ConnectP2P.
 	///
@@ -104,29 +104,29 @@ public:
 	/// your server even if they got disconnected from Steam or Steam is offline.
 	///
 	/// If you need to set any initial config options, pass them here.  See
-	/// SteamNetworkingConfigValue_t for more about why this is preferable to
+	/// GameNetworkingConfigValue_t for more about why this is preferable to
 	/// setting the options "immediately" after creation.
-	virtual HSteamListenSocket CreateListenSocketP2P( int nLocalVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) = 0;
+	virtual HSteamListenSocket CreateListenSocketP2P( int nLocalVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) = 0;
 
 	/// Begin connecting to a peer that is identified using a platform-specific identifier.
 	/// This uses the default rendezvous service, which depends on the platform and library
 	/// configuration.  (E.g. on Steam, it goes through the steam backend.)
 	///
 	/// If you need to set any initial config options, pass them here.  See
-	/// SteamNetworkingConfigValue_t for more about why this is preferable to
+	/// GameNetworkingConfigValue_t for more about why this is preferable to
 	/// setting the options "immediately" after creation.
 	///
 	/// To use your own signaling service, see:
 	/// - ConnectP2PCustomSignaling
-	/// - k_ESteamNetworkingConfig_Callback_CreateConnectionSignaling
-	virtual HSteamNetConnection ConnectP2P( const SteamNetworkingIdentity &identityRemote, int nRemoteVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) = 0;
+	/// - k_EGameNetworkingConfig_Callback_CreateConnectionSignaling
+	virtual HGameNetConnection ConnectP2P( const GameNetworkingIdentity &identityRemote, int nRemoteVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) = 0;
 
 	/// Accept an incoming connection that has been received on a listen socket.
 	///
 	/// When a connection attempt is received (perhaps after a few basic handshake
 	/// packets have been exchanged to prevent trivial spoofing), a connection interface
-	/// object is created in the k_ESteamNetworkingConnectionState_Connecting state
-	/// and a SteamNetConnectionStatusChangedCallback_t is posted.  At this point, your
+	/// object is created in the k_EGameNetworkingConnectionState_Connecting state
+	/// and a GameNetConnectionStatusChangedCallback_t is posted.  At this point, your
 	/// application MUST either accept or close the connection.  (It may not ignore it.)
 	/// Accepting the connection will transition it either into the connected state,
 	/// or the finding route state, depending on the connection type.
@@ -145,9 +145,9 @@ public:
 	/// If the application does not respond to the connection attempt in a timely manner,
 	/// and we stop receiving communication from the client, the connection attempt will
 	/// be timed out locally, transitioning the connection to the
-	/// k_ESteamNetworkingConnectionState_ProblemDetectedLocally state.  The client may also
+	/// k_EGameNetworkingConnectionState_ProblemDetectedLocally state.  The client may also
 	/// close the connection before it is accepted, and a transition to the
-	/// k_ESteamNetworkingConnectionState_ClosedByPeer is also possible depending the exact
+	/// k_EGameNetworkingConnectionState_ClosedByPeer is also possible depending the exact
 	/// sequence of events.
 	///
 	/// Returns k_EResultInvalidParam if the handle is invalid.
@@ -160,18 +160,18 @@ public:
 	/// socket, consider setting the options on the listen socket, since such options are
 	/// inherited automatically.  If you really do need to set options that are connection
 	/// specific, it is safe to set them on the connection before accepting the connection.
-	virtual EResult AcceptConnection( HSteamNetConnection hConn ) = 0;
+	virtual EResult AcceptConnection( HGameNetConnection hConn ) = 0;
 
 	/// Disconnects from the remote host and invalidates the connection handle.
 	/// Any unread data on the connection is discarded.
 	///
 	/// nReason is an application defined code that will be received on the other
 	/// end and recorded (when possible) in backend analytics.  The value should
-	/// come from a restricted range.  (See ESteamNetConnectionEnd.)  If you don't need
+	/// come from a restricted range.  (See EGameNetConnectionEnd.)  If you don't need
 	/// to communicate any information to the remote host, and do not want analytics to
 	/// be able to distinguish "normal" connection terminations from "exceptional" ones,
 	/// You may pass zero, in which case the generic value of
-	/// k_ESteamNetConnectionEnd_App_Generic will be used.
+	/// k_EGameNetConnectionEnd_App_Generic will be used.
 	///
 	/// pszDebug is an optional human-readable diagnostic string that will be received
 	/// by the remote host and recorded (when possible) in backend analytics.
@@ -183,7 +183,7 @@ public:
 	/// If the connection has already ended and you are just freeing up the
 	/// connection interface, the reason code, debug string, and linger flag are
 	/// ignored.
-	virtual bool CloseConnection( HSteamNetConnection hPeer, int nReason, const char *pszDebug, bool bEnableLinger ) = 0;
+	virtual bool CloseConnection( HGameNetConnection hPeer, int nReason, const char *pszDebug, bool bEnableLinger ) = 0;
 
 	/// Destroy a listen socket.  All the connections that were accepting on the listen
 	/// socket are closed ungracefully.
@@ -191,12 +191,12 @@ public:
 
 	/// Set connection user data.  the data is returned in the following places
 	/// - You can query it using GetConnectionUserData.
-	/// - The SteamNetworkingmessage_t structure.
-	/// - The SteamNetConnectionInfo_t structure.
-	///   (Which is a member of SteamNetConnectionStatusChangedCallback_t -- but see WARNINGS below!!!!)
+	/// - The GameNetworkingmessage_t structure.
+	/// - The GameNetConnectionInfo_t structure.
+	///   (Which is a member of GameNetConnectionStatusChangedCallback_t -- but see WARNINGS below!!!!)
 	///
 	/// Do you need to set this atomically when the connection is created?
-	/// See k_ESteamNetworkingConfig_ConnectionUserData.
+	/// See k_EGameNetworkingConfig_ConnectionUserData.
 	///
 	/// WARNING: Be *very careful* when using the value provided in callbacks structs.
 	/// Callbacks are queued, and the value that you will receive in your
@@ -211,22 +211,22 @@ public:
 	/// do not apply to retrieving messages.
 	///
 	/// Returns false if the handle is invalid.
-	virtual bool SetConnectionUserData( HSteamNetConnection hPeer, int64 nUserData ) = 0;
+	virtual bool SetConnectionUserData( HGameNetConnection hPeer, int64 nUserData ) = 0;
 
 	/// Fetch connection user data.  Returns -1 if handle is invalid
 	/// or if you haven't set any userdata on the connection.
-	virtual int64 GetConnectionUserData( HSteamNetConnection hPeer ) = 0;
+	virtual int64 GetConnectionUserData( HGameNetConnection hPeer ) = 0;
 
 	/// Set a name for the connection, used mostly for debugging
-	virtual void SetConnectionName( HSteamNetConnection hPeer, const char *pszName ) = 0;
+	virtual void SetConnectionName( HGameNetConnection hPeer, const char *pszName ) = 0;
 
 	/// Fetch connection name.  Returns false if handle is invalid
-	virtual bool GetConnectionName( HSteamNetConnection hPeer, char *pszName, int nMaxLen ) = 0;
+	virtual bool GetConnectionName( HGameNetConnection hPeer, char *pszName, int nMaxLen ) = 0;
 
 	/// Send a message to the remote host on the specified connection.
 	///
 	/// nSendFlags determines the delivery guarantees that will be provided,
-	/// when data should be buffered, etc.  E.g. k_nSteamNetworkingSend_Unreliable
+	/// when data should be buffered, etc.  E.g. k_nGameNetworkingSend_Unreliable
 	///
 	/// Note that the semantics we use for messages are not precisely
 	/// the same as the semantics of a standard "stream" socket.
@@ -256,11 +256,11 @@ public:
 	///   (See k_cbMaxGameNetworkingSocketsMessageSizeSend)
 	/// - k_EResultInvalidState: connection is in an invalid state
 	/// - k_EResultNoConnection: connection has ended
-	/// - k_EResultIgnored: You used k_nSteamNetworkingSend_NoDelay, and the message was dropped because
+	/// - k_EResultIgnored: You used k_nGameNetworkingSend_NoDelay, and the message was dropped because
 	///   we were not ready to send it.
 	/// - k_EResultLimitExceeded: there was already too much data queued to be sent.
-	///   (See k_ESteamNetworkingConfig_SendBufferSize)
-	virtual EResult SendMessageToConnection( HSteamNetConnection hConn, const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber ) = 0;
+	///   (See k_EGameNetworkingConfig_SendBufferSize)
+	virtual EResult SendMessageToConnection( HGameNetConnection hConn, const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber ) = 0;
 
 	/// Send one or more messages without copying the message payload.
 	/// This is the most efficient way to send messages. To use this
@@ -279,7 +279,7 @@ public:
 	///
 	/// You MUST also fill in:
 	/// - m_conn - the handle of the connection to send the message to
-	/// - m_nFlags - bitmask of k_nSteamNetworkingSend_xxx flags.
+	/// - m_nFlags - bitmask of k_nGameNetworkingSend_xxx flags.
 	///
 	/// All other fields are currently reserved and should not be modified.
 	///
@@ -294,7 +294,7 @@ public:
 	/// -k_EResultInvalidState if the connection was in an invalid state.
 	/// See IGameNetworkingSockets::SendMessageToConnection for possible
 	/// failure codes.
-	virtual void SendMessages( int nMessages, SteamNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult ) = 0;
+	virtual void SendMessages( int nMessages, GameNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult ) = 0;
 
 	/// Flush any messages waiting on the Nagle timer and send them
 	/// at the next transmission opportunity (often that means right now).
@@ -302,14 +302,14 @@ public:
 	/// If Nagle is enabled (it's on by default) then when calling 
 	/// SendMessageToConnection the message will be buffered, up to the Nagle time
 	/// before being sent, to merge small messages into the same packet.
-	/// (See k_ESteamNetworkingConfig_NagleTime)
+	/// (See k_EGameNetworkingConfig_NagleTime)
 	///
 	/// Returns:
 	/// k_EResultInvalidParam: invalid connection handle
 	/// k_EResultInvalidState: connection is in an invalid state
 	/// k_EResultNoConnection: connection has ended
 	/// k_EResultIgnored: We weren't (yet) connected, so this operation has no effect.
-	virtual EResult FlushMessagesOnConnection( HSteamNetConnection hConn ) = 0;
+	virtual EResult FlushMessagesOnConnection( HGameNetConnection hConn ) = 0;
 
 	/// Fetch the next available message(s) from the connection, if any.
 	/// Returns the number of messages returned into your array, up to nMaxMessages.
@@ -323,17 +323,17 @@ public:
 	/// each other or with respect to reliable messages.  The same unreliable message
 	/// may be received multiple times.
 	///
-	/// If any messages are returned, you MUST call SteamNetworkingMessage_t::Release() on each
+	/// If any messages are returned, you MUST call GameNetworkingMessage_t::Release() on each
 	/// of them free up resources after you are done.  It is safe to keep the object alive for
 	/// a little while (put it into some queue, etc), and you may call Release() from any thread.
-	virtual int ReceiveMessagesOnConnection( HSteamNetConnection hConn, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages ) = 0; 
+	virtual int ReceiveMessagesOnConnection( HGameNetConnection hConn, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages ) = 0; 
 
 	/// Returns basic information about the high-level state of the connection.
-	virtual bool GetConnectionInfo( HSteamNetConnection hConn, SteamNetConnectionInfo_t *pInfo ) = 0;
+	virtual bool GetConnectionInfo( HGameNetConnection hConn, GameNetConnectionInfo_t *pInfo ) = 0;
 
 	/// Returns a small set of information about the real-time state of the connection
 	/// Returns false if the connection handle is invalid, or the connection has ended.
-	virtual bool GetQuickConnectionStatus( HSteamNetConnection hConn, SteamNetworkingQuickConnectionStatus *pStats ) = 0;
+	virtual bool GetQuickConnectionStatus( HGameNetConnection hConn, GameNetworkingQuickConnectionStatus *pStats ) = 0;
 
 	/// Returns detailed connection stats in text format.  Useful
 	/// for dumping to a log, etc.
@@ -343,13 +343,13 @@ public:
 	/// 0 OK, your buffer was filled in and '\0'-terminated
 	/// >0 Your buffer was either nullptr, or it was too small and the text got truncated.
 	///    Try again with a buffer of at least N bytes.
-	virtual int GetDetailedConnectionStatus( HSteamNetConnection hConn, char *pszBuf, int cbBuf ) = 0;
+	virtual int GetDetailedConnectionStatus( HGameNetConnection hConn, char *pszBuf, int cbBuf ) = 0;
 
 	/// Returns local IP and port that a listen socket created using CreateListenSocketIP is bound to.
 	///
 	/// An IPv6 address of ::0 means "any IPv4 or IPv6"
 	/// An IPv6 address of ::ffff:0000:0000 means "any IPv4"
-	virtual bool GetListenSocketAddress( HSteamListenSocket hSocket, SteamNetworkingIPAddr *address ) = 0;
+	virtual bool GetListenSocketAddress( HSteamListenSocket hSocket, GameNetworkingIPAddr *address ) = 0;
 
 	/// Create a pair of connections that are talking to each other, e.g. a loopback connection.
 	/// This is very useful for testing, or so that your client/server code can work the same
@@ -371,14 +371,14 @@ public:
 	/// identity.  Otherwise, if you pass nullptr, the respective connection will assume a generic
 	/// "localhost" identity.  If you use real network loopback, this might be translated to the
 	/// actual bound loopback port.  Otherwise, the port will be zero.
-	virtual bool CreateSocketPair( HSteamNetConnection *pOutConnection1, HSteamNetConnection *pOutConnection2, bool bUseNetworkLoopback, const SteamNetworkingIdentity *pIdentity1, const SteamNetworkingIdentity *pIdentity2 ) = 0;
+	virtual bool CreateSocketPair( HGameNetConnection *pOutConnection1, HGameNetConnection *pOutConnection2, bool bUseNetworkLoopback, const GameNetworkingIdentity *pIdentity1, const GameNetworkingIdentity *pIdentity2 ) = 0;
 
 	/// Get the identity assigned to this interface.
 	/// E.g. on Steam, this is the user's SteamID, or for the gameserver interface, the SteamID assigned
 	/// to the gameserver.  Returns false and sets the result to an invalid identity if we don't know
 	/// our identity yet.  (E.g. GameServer has not logged in.  On Steam, the user will know their SteamID
 	/// even if they are not signed into Steam.)
-	virtual bool GetIdentity( SteamNetworkingIdentity *pIdentity ) = 0;
+	virtual bool GetIdentity( GameNetworkingIdentity *pIdentity ) = 0;
 
 	/// Indicate our desire to be ready participate in authenticated communications.
 	/// If we are currently not ready, then steps will be taken to obtain the necessary
@@ -389,7 +389,7 @@ public:
 	/// be making authenticated connections, so that we will be ready immediately when
 	/// those connections are attempted.  (Note that essentially all connections require
 	/// authentication, with the exception of ordinary UDP connections with authentication
-	/// disabled using k_ESteamNetworkingConfig_IP_AllowWithoutAuth.)  If you don't call
+	/// disabled using k_EGameNetworkingConfig_IP_AllowWithoutAuth.)  If you don't call
 	/// this function, we will wait until a feature is utilized that that necessitates
 	/// these resources.
 	///
@@ -399,20 +399,20 @@ public:
 	/// as before the first attempt: attempting authenticated communication or calling
 	/// this function will call the system to attempt to acquire the necessary resources.
 	///
-	/// You can use GetAuthenticationStatus or listen for SteamNetAuthenticationStatus_t
+	/// You can use GetAuthenticationStatus or listen for GameNetAuthenticationStatus_t
 	/// to monitor the status.
 	///
 	/// Returns the current value that would be returned from GetAuthenticationStatus.
-	virtual ESteamNetworkingAvailability InitAuthentication() = 0;
+	virtual EGameNetworkingAvailability InitAuthentication() = 0;
 
 	/// Query our readiness to participate in authenticated communications.  A
-	/// SteamNetAuthenticationStatus_t callback is posted any time this status changes,
+	/// GameNetAuthenticationStatus_t callback is posted any time this status changes,
 	/// but you can use this function to query it at any time.
 	///
-	/// The value of SteamNetAuthenticationStatus_t::m_eAvail is returned.  If you only
+	/// The value of GameNetAuthenticationStatus_t::m_eAvail is returned.  If you only
 	/// want this high level status, you can pass NULL for pDetails.  If you want further
 	/// details, pass non-NULL to receive them.
-	virtual ESteamNetworkingAvailability GetAuthenticationStatus( SteamNetAuthenticationStatus_t *pDetails ) = 0;
+	virtual EGameNetworkingAvailability GetAuthenticationStatus( GameNetAuthenticationStatus_t *pDetails ) = 0;
 
 	//
 	// Poll groups.  A poll group is a set of connections that can be polled efficiently.
@@ -423,20 +423,20 @@ public:
 	/// Create a new poll group.
 	///
 	/// You should destroy the poll group when you are done using DestroyPollGroup
-	virtual HSteamNetPollGroup CreatePollGroup() = 0;
+	virtual HGameNetPollGroup CreatePollGroup() = 0;
 
 	/// Destroy a poll group created with CreatePollGroup().
 	///
 	/// If there are any connections in the poll group, they are removed from the group,
 	/// and left in a state where they are not part of any poll group.
 	/// Returns false if passed an invalid poll group handle.
-	virtual bool DestroyPollGroup( HSteamNetPollGroup hPollGroup ) = 0;
+	virtual bool DestroyPollGroup( HGameNetPollGroup hPollGroup ) = 0;
 
 	/// Assign a connection to a poll group.  Note that a connection may only belong to a
 	/// single poll group.  Adding a connection to a poll group implicitly removes it from
 	/// any other poll group it is in.
 	///
-	/// You can pass k_HSteamNetPollGroup_Invalid to remove a connection from its current
+	/// You can pass k_HGameNetPollGroup_Invalid to remove a connection from its current
 	/// poll group without adding it to a new poll group.
 	///
 	/// If there are received messages currently pending on the connection, an attempt
@@ -445,12 +445,12 @@ public:
 	/// group at the time that the messages were received.
 	///
 	/// Returns false if the connection handle is invalid, or if the poll group handle
-	/// is invalid (and not k_HSteamNetPollGroup_Invalid).
-	virtual bool SetConnectionPollGroup( HSteamNetConnection hConn, HSteamNetPollGroup hPollGroup ) = 0;
+	/// is invalid (and not k_HGameNetPollGroup_Invalid).
+	virtual bool SetConnectionPollGroup( HGameNetConnection hConn, HGameNetPollGroup hPollGroup ) = 0;
 
 	/// Same as ReceiveMessagesOnConnection, but will return the next messages available
-	/// on any connection in the poll group.  Examine SteamNetworkingMessage_t::m_conn
-	/// to know which connection.  (SteamNetworkingMessage_t::m_nConnUserData might also
+	/// on any connection in the poll group.  Examine GameNetworkingMessage_t::m_conn
+	/// to know which connection.  (GameNetworkingMessage_t::m_nConnUserData might also
 	/// be useful.)
 	///
 	/// Delivery order of messages among different connections will usually match the
@@ -463,7 +463,7 @@ public:
 	/// (But the messages are not grouped by connection, so they will not necessarily
 	/// appear consecutively in the list; they may be interleaved with messages for
 	/// other connections.)
-	virtual int ReceiveMessagesOnPollGroup( HSteamNetPollGroup hPollGroup, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages ) = 0; 
+	virtual int ReceiveMessagesOnPollGroup( HGameNetPollGroup hPollGroup, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages ) = 0; 
 
 	//
 	// Clients connecting to dedicated servers hosted in a data center,
@@ -484,7 +484,7 @@ public:
 	///
 	/// Typically this is useful just to confirm that you have a ticket, before you
 	/// call ConnectToHostedDedicatedServer to connect to the server.
-	virtual int FindRelayAuthTicketForServer( const SteamNetworkingIdentity &identityGameServer, int nRemoteVirtualPort, SteamDatagramRelayAuthTicket *pOutParsedTicket ) = 0;
+	virtual int FindRelayAuthTicketForServer( const GameNetworkingIdentity &identityGameServer, int nRemoteVirtualPort, SteamDatagramRelayAuthTicket *pOutParsedTicket ) = 0;
 
 	/// Client call to connect to a server hosted in a Valve data center, on the specified virtual
 	/// port.  You must have placed a ticket for this server into the cache, or else this connect
@@ -500,9 +500,9 @@ public:
 	/// when your app initializes
 	///
 	/// If you need to set any initial config options, pass them here.  See
-	/// SteamNetworkingConfigValue_t for more about why this is preferable to
+	/// GameNetworkingConfigValue_t for more about why this is preferable to
 	/// setting the options "immediately" after creation.
-	virtual HSteamNetConnection ConnectToHostedDedicatedServer( const SteamNetworkingIdentity &identityTarget, int nRemoteVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) = 0;
+	virtual HGameNetConnection ConnectToHostedDedicatedServer( const GameNetworkingIdentity &identityTarget, int nRemoteVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) = 0;
 
 	//
 	// Servers hosted in data centers known to the Valve relay network
@@ -519,7 +519,7 @@ public:
 
 	/// Returns 0 if SDR_LISTEN_PORT is not set.  Otherwise, returns the data center the server
 	/// is running in.  This will be k_SteamDatagramPOPID_dev in non-production environment.
-	virtual SteamNetworkingPOPID GetHostedDedicatedServerPOPID() = 0;
+	virtual GameNetworkingPOPID GetHostedDedicatedServerPOPID() = 0;
 
 	/// Return info about the hosted server.  This contains the PoPID of the server,
 	/// and opaque routing information that can be used by the relays to send traffic
@@ -560,9 +560,9 @@ public:
 	/// port will need a ticket, and they must connect using ConnectToHostedDedicatedServer.
 	///
 	/// If you need to set any initial config options, pass them here.  See
-	/// SteamNetworkingConfigValue_t for more about why this is preferable to
+	/// GameNetworkingConfigValue_t for more about why this is preferable to
 	/// setting the options "immediately" after creation.
-	virtual HSteamListenSocket CreateHostedDedicatedServerListenSocket( int nLocalVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) = 0;
+	virtual HSteamListenSocket CreateHostedDedicatedServerListenSocket( int nLocalVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) = 0;
 
 	/// Generate an authentication blob that can be used to securely login with
 	/// your backend, using SteamDatagram_ParseHostedServerLogin.  (See
@@ -619,10 +619,10 @@ public:
 	/// This function will immediately construct a connection in the "connecting"
 	/// state.  Soon after (perhaps before this function returns, perhaps in another thread),
 	/// the connection will begin sending signaling messages by calling
-	/// ISteamNetworkingConnectionSignaling::SendSignal.
+	/// IGameNetworkingConnectionSignaling::SendSignal.
 	///
 	/// When the remote peer accepts the connection (See
-	/// ISteamNetworkingSignalingRecvContext::OnConnectRequest),
+	/// IGameNetworkingSignalingRecvContext::OnConnectRequest),
 	/// it will begin sending signaling messages.  When these messages are received,
 	/// you can pass them to the connection using ReceivedP2PCustomSignal.
 	///
@@ -635,9 +635,9 @@ public:
 	/// when your app initializes
 	///
 	/// If you need to set any initial config options, pass them here.  See
-	/// SteamNetworkingConfigValue_t for more about why this is preferable to
+	/// GameNetworkingConfigValue_t for more about why this is preferable to
 	/// setting the options "immediately" after creation.
-	virtual HSteamNetConnection ConnectP2PCustomSignaling( ISteamNetworkingConnectionSignaling *pSignaling, const SteamNetworkingIdentity *pPeerIdentity, int nRemoteVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) = 0;
+	virtual HGameNetConnection ConnectP2PCustomSignaling( IGameNetworkingConnectionSignaling *pSignaling, const GameNetworkingIdentity *pPeerIdentity, int nRemoteVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) = 0;
 
 	/// Called when custom signaling has received a message.  When your
 	/// signaling channel receives a message, it should save off whatever
@@ -648,7 +648,7 @@ public:
 	///
 	/// - If the signal is associated with existing connection, it is dealt
 	///   with immediately.  If any replies need to be sent, they will be
-	///   dispatched using the ISteamNetworkingConnectionSignaling
+	///   dispatched using the IGameNetworkingConnectionSignaling
 	///   associated with the connection.
 	/// - If the message represents a connection request (and the request
 	///   is not redundant for an existing connection), a new connection
@@ -668,7 +668,7 @@ public:
 	///
 	/// If you expect to be using relayed connections, then you probably want
 	/// to call IGameNetworkingUtils::InitRelayNetworkAccess() when your app initializes
-	virtual bool ReceivedP2PCustomSignal( const void *pMsg, int cbMsg, ISteamNetworkingSignalingRecvContext *pContext ) = 0;
+	virtual bool ReceivedP2PCustomSignal( const void *pMsg, int cbMsg, IGameNetworkingSignalingRecvContext *pContext ) = 0;
 
 //
 // Certificate provision by the application.  On Steam, we normally handle all this automatically
@@ -681,11 +681,11 @@ public:
 	/// size.  (256 bytes is a very conservative estimate.)
 	///
 	/// Pass this blob to your game coordinator and call SteamDatagram_CreateCert.
-	virtual bool GetCertificateRequest( int *pcbBlob, void *pBlob, SteamNetworkingErrMsg &errMsg ) = 0;
+	virtual bool GetCertificateRequest( int *pcbBlob, void *pBlob, GameNetworkingErrMsg &errMsg ) = 0;
 
 	/// Set the certificate.  The certificate blob should be the output of
 	/// SteamDatagram_CreateCert.
-	virtual bool SetCertificate( const void *pCertificate, int cbCertificate, SteamNetworkingErrMsg &errMsg ) = 0;
+	virtual bool SetCertificate( const void *pCertificate, int cbCertificate, GameNetworkingErrMsg &errMsg ) = 0;
 
 	/// Reset the identity associated with this instance.
 	/// Any open connections are closed.  Any previous certificates, etc are discarded.
@@ -695,10 +695,10 @@ public:
 	/// NOTE: This function is not actually supported on Steam!  It is included
 	///       for use on other platforms where the active user can sign out and
 	///       a new user can sign in.
-	virtual void ResetIdentity( const SteamNetworkingIdentity *pIdentity ) = 0;
+	virtual void ResetIdentity( const GameNetworkingIdentity *pIdentity ) = 0;
 
 	/// Invoke all callback functions queued for this interface.
-	/// See k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, etc
+	/// See k_EGameNetworkingConfig_Callback_ConnectionStatusChanged, etc
 	///
 	/// You don't need to call this if you are using Steam's callback dispatch
 	/// mechanism (SteamAPI_RunCallbacks and SteamGameserver_RunCallbacks).
@@ -760,24 +760,24 @@ protected:
 ///
 /// You will usually need to listen for this callback to know when:
 /// - A new connection arrives on a listen socket.
-///   m_info.m_hListenSocket will be set, m_eOldState = k_ESteamNetworkingConnectionState_None,
-///   and m_info.m_eState = k_ESteamNetworkingConnectionState_Connecting.
-///   See ISteamNetworkigSockets::AcceptConnection.
+///   m_info.m_hListenSocket will be set, m_eOldState = k_EGameNetworkingConnectionState_None,
+///   and m_info.m_eState = k_EGameNetworkingConnectionState_Connecting.
+///   See IGameNetworkigSockets::AcceptConnection.
 /// - A connection you initiated has been accepted by the remote host.
-///   m_eOldState = k_ESteamNetworkingConnectionState_Connecting, and
-///   m_info.m_eState = k_ESteamNetworkingConnectionState_Connected.
-///   Some connections might transition to k_ESteamNetworkingConnectionState_FindingRoute first.
+///   m_eOldState = k_EGameNetworkingConnectionState_Connecting, and
+///   m_info.m_eState = k_EGameNetworkingConnectionState_Connected.
+///   Some connections might transition to k_EGameNetworkingConnectionState_FindingRoute first.
 /// - A connection has been actively rejected or closed by the remote host.
-///   m_eOldState = k_ESteamNetworkingConnectionState_Connecting or k_ESteamNetworkingConnectionState_Connected,
-///   and m_info.m_eState = k_ESteamNetworkingConnectionState_ClosedByPeer.  m_info.m_eEndReason
+///   m_eOldState = k_EGameNetworkingConnectionState_Connecting or k_EGameNetworkingConnectionState_Connected,
+///   and m_info.m_eState = k_EGameNetworkingConnectionState_ClosedByPeer.  m_info.m_eEndReason
 ///   and m_info.m_szEndDebug will have for more details.
 ///   NOTE: upon receiving this callback, you must still destroy the connection using
 ///   IGameNetworkingSockets::CloseConnection to free up local resources.  (The details
 ///   passed to the function are not used in this case, since the connection is already closed.)
 /// - A problem was detected with the connection, and it has been closed by the local host.
 ///   The most common failure is timeout, but other configuration or authentication failures
-///   can cause this.  m_eOldState = k_ESteamNetworkingConnectionState_Connecting or
-///   k_ESteamNetworkingConnectionState_Connected, and m_info.m_eState = k_ESteamNetworkingConnectionState_ProblemDetectedLocally.
+///   can cause this.  m_eOldState = k_EGameNetworkingConnectionState_Connecting or
+///   k_EGameNetworkingConnectionState_Connected, and m_info.m_eState = k_EGameNetworkingConnectionState_ProblemDetectedLocally.
 ///   m_info.m_eEndReason and m_info.m_szEndDebug will have for more details.
 ///   NOTE: upon receiving this callback, you must still destroy the connection using
 ///   IGameNetworkingSockets::CloseConnection to free up local resources.  (The details
@@ -788,18 +788,18 @@ protected:
 /// state by the time you process this callback.
 ///
 /// Also note that callbacks will be posted when connections are created and destroyed by your own API calls.
-struct SteamNetConnectionStatusChangedCallback_t
+struct GameNetConnectionStatusChangedCallback_t
 { 
 	enum { k_iCallback = k_iGameNetworkingSocketsCallbacks + 1 };
 
 	/// Connection handle
-	HSteamNetConnection m_hConn;
+	HGameNetConnection m_hConn;
 
 	/// Full connection info
-	SteamNetConnectionInfo_t m_info;
+	GameNetConnectionInfo_t m_info;
 
 	/// Previous state.  (Current state is in m_info.m_eState)
-	ESteamNetworkingConnectionState m_eOldState;
+	EGameNetworkingConnectionState m_eOldState;
 };
 
 /// A struct used to describe our readiness to participate in authenticated,
@@ -810,12 +810,12 @@ struct SteamNetConnectionStatusChangedCallback_t
 /// - A valid certificate issued by a CA.
 ///
 /// This callback is posted whenever the state of our readiness changes.
-struct SteamNetAuthenticationStatus_t
+struct GameNetAuthenticationStatus_t
 { 
 	enum { k_iCallback = k_iGameNetworkingSocketsCallbacks + 2 };
 
 	/// Status
-	ESteamNetworkingAvailability m_eAvail;
+	EGameNetworkingAvailability m_eAvail;
 
 	/// Non-localized English language status.  For diagnostic/debugging
 	/// purposes only.

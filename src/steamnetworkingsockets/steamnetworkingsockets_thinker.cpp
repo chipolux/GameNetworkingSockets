@@ -63,7 +63,7 @@ static ShortDurationLock s_mutexThinkerTable( "thinker" );
 // Base class isn't lockable
 bool IThinker::TryLock() const { return true; }
 
-void IThinker::InternalEnsureMinThinkTime( SteamNetworkingMicroseconds usecTargetThinkTime )
+void IThinker::InternalEnsureMinThinkTime( GameNetworkingMicroseconds usecTargetThinkTime )
 {
 	s_mutexThinkerTable.lock();
 	if ( usecTargetThinkTime < m_usecNextThinkTime )
@@ -71,7 +71,7 @@ void IThinker::InternalEnsureMinThinkTime( SteamNetworkingMicroseconds usecTarge
 	s_mutexThinkerTable.unlock();
 }
 
-void IThinker::SetNextThinkTime( SteamNetworkingMicroseconds usecTargetThinkTime )
+void IThinker::SetNextThinkTime( GameNetworkingMicroseconds usecTargetThinkTime )
 {
 	if ( usecTargetThinkTime == m_usecNextThinkTime )
 		return;
@@ -80,7 +80,7 @@ void IThinker::SetNextThinkTime( SteamNetworkingMicroseconds usecTargetThinkTime
 	s_mutexThinkerTable.unlock();
 }
 
-void IThinker::InternalSetNextThinkTime( SteamNetworkingMicroseconds usecTargetThinkTime )
+void IThinker::InternalSetNextThinkTime( GameNetworkingMicroseconds usecTargetThinkTime )
 {
 
 
@@ -111,7 +111,7 @@ void IThinker::InternalSetNextThinkTime( SteamNetworkingMicroseconds usecTargetT
 
 	// Save current time when the next thinker wants service
 	#ifndef IS_STEAMDATAGRAMROUTER
-		SteamNetworkingMicroseconds usecNextWake = ( s_queueThinkers.Count() > 0 ) ? s_queueThinkers.ElementAtHead()->GetNextThinkTime() : k_nThinkTime_Never;
+		GameNetworkingMicroseconds usecNextWake = ( s_queueThinkers.Count() > 0 ) ? s_queueThinkers.ElementAtHead()->GetNextThinkTime() : k_nThinkTime_Never;
 	#endif
 
 	// Not currently scheduled?
@@ -150,9 +150,9 @@ void IThinker::InternalSetNextThinkTime( SteamNetworkingMicroseconds usecTargetT
 	#endif
 }
 
-SteamNetworkingMicroseconds IThinker::Thinker_GetNextScheduledThinkTime()
+GameNetworkingMicroseconds IThinker::Thinker_GetNextScheduledThinkTime()
 {
-	SteamNetworkingMicroseconds usecResult = k_nThinkTime_Never;
+	GameNetworkingMicroseconds usecResult = k_nThinkTime_Never;
 	s_mutexThinkerTable.lock();
 	if ( s_queueThinkers.Count() )
 		usecResult = s_queueThinkers.ElementAtHead()->GetNextThinkTime();
@@ -179,7 +179,7 @@ void IThinker::Thinker_ProcessThinkers()
 		// timestamp (e.g. to mark when a packet was received) and then
 		// in our next iteration, we will use an older timestamp to process
 		// a thinker.
-		SteamNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
+		GameNetworkingMicroseconds usecNow = GameNetworkingSockets_GetLocalTimestamp();
 
 		// Scheduled too far in the future?
 		if ( pNextThinker->GetNextThinkTime() >= usecNow )

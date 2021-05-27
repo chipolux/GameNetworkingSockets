@@ -49,18 +49,18 @@ std::string Indent( const char *s )
 	return result;
 }
 
-const char *GetAvailabilityString( ESteamNetworkingAvailability a )
+const char *GetAvailabilityString( EGameNetworkingAvailability a )
 {
 	switch ( a )
 	{
-		case k_ESteamNetworkingAvailability_CannotTry: return "Dependency unavailable";
-		case k_ESteamNetworkingAvailability_Failed: return "Failed";
-		case k_ESteamNetworkingAvailability_Waiting: return "Waiting";
-		case k_ESteamNetworkingAvailability_Retrying: return "Retrying";
-		case k_ESteamNetworkingAvailability_Previously: return "Lost";
-		case k_ESteamNetworkingAvailability_NeverTried: return "Not Attempted";
-		case k_ESteamNetworkingAvailability_Attempting: return "Attempting";
-		case k_ESteamNetworkingAvailability_Current: return "OK";
+		case k_EGameNetworkingAvailability_CannotTry: return "Dependency unavailable";
+		case k_EGameNetworkingAvailability_Failed: return "Failed";
+		case k_EGameNetworkingAvailability_Waiting: return "Waiting";
+		case k_EGameNetworkingAvailability_Retrying: return "Retrying";
+		case k_EGameNetworkingAvailability_Previously: return "Lost";
+		case k_EGameNetworkingAvailability_NeverTried: return "Not Attempted";
+		case k_EGameNetworkingAvailability_Attempting: return "Attempting";
+		case k_EGameNetworkingAvailability_Current: return "OK";
 	}
 
 	Assert( false );
@@ -107,14 +107,14 @@ uint32 Murmorhash32( const void *data, size_t len )
   return h;
 }
 
-uint32 SteamNetworkingIdentityHash::operator()(struct SteamNetworkingIdentity const &x ) const
+uint32 GameNetworkingIdentityHash::operator()(struct GameNetworkingIdentity const &x ) const
 {
 	// Make sure we don't have any packing or alignment issues
-	COMPILE_TIME_ASSERT( offsetof( SteamNetworkingIdentity, m_eType ) == 0 );
+	COMPILE_TIME_ASSERT( offsetof( GameNetworkingIdentity, m_eType ) == 0 );
 	COMPILE_TIME_ASSERT( sizeof( x.m_eType ) == 4 );
-	COMPILE_TIME_ASSERT( offsetof( SteamNetworkingIdentity, m_cbSize ) == 4 );
+	COMPILE_TIME_ASSERT( offsetof( GameNetworkingIdentity, m_cbSize ) == 4 );
 	COMPILE_TIME_ASSERT( sizeof( x.m_cbSize ) == 4 );
-	COMPILE_TIME_ASSERT( offsetof( SteamNetworkingIdentity, m_steamID64 ) == 8 );
+	COMPILE_TIME_ASSERT( offsetof( GameNetworkingIdentity, m_steamID64 ) == 8 );
 
 	return Murmorhash32( &x, sizeof( x.m_eType ) + sizeof( x.m_cbSize ) + x.m_cbSize );
 }
@@ -124,11 +124,11 @@ using namespace GameNetworkingSocketsLib;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// SteamNetworkingIdentity helpers
+// GameNetworkingIdentity helpers
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr *pAddr, char *buf, size_t cbBuf, bool bWithPort )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingIPAddr_ToString( const GameNetworkingIPAddr *pAddr, char *buf, size_t cbBuf, bool bWithPort )
 {
 	if ( pAddr->IsIPv4() )
 	{
@@ -153,7 +153,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIPAddr_ToString( const Stea
 	}
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr )
+STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingIPAddr_ParseString( GameNetworkingIPAddr *pAddr, const char *pszStr )
 {
 	// IPv4?
 	{
@@ -203,29 +203,29 @@ STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIPAddr_ParseString( SteamNe
 	return true;
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity *pIdentity, char *buf, size_t cbBuf )
+STEAMNETWORKINGSOCKETS_INTERFACE void GameNetworkingIdentity_ToString( const GameNetworkingIdentity *pIdentity, char *buf, size_t cbBuf )
 {
 	switch ( pIdentity->m_eType )
 	{
-		case k_ESteamNetworkingIdentityType_Invalid:
+		case k_EGameNetworkingIdentityType_Invalid:
 			V_strncpy( buf, "invalid", cbBuf );
 			break;
 
-		case k_ESteamNetworkingIdentityType_SteamID:
+		case k_EGameNetworkingIdentityType_SteamID:
 			V_snprintf( buf, cbBuf, "steamid:%llu", (unsigned long long)pIdentity->m_steamID64 );
 			break;
 
-		case k_ESteamNetworkingIdentityType_IPAddress:
+		case k_EGameNetworkingIdentityType_IPAddress:
 			V_strncpy( buf, "ip:", cbBuf );
 			if ( cbBuf > 4 )
 				pIdentity->m_ip.ToString( buf+3, cbBuf-3, pIdentity->m_ip.m_port != 0 );
 			break;
 
-		case k_ESteamNetworkingIdentityType_GenericString:
+		case k_EGameNetworkingIdentityType_GenericString:
 			V_snprintf( buf, cbBuf, "str:%s", pIdentity->m_szGenericString );
 			break;
 
-		case k_ESteamNetworkingIdentityType_GenericBytes:
+		case k_EGameNetworkingIdentityType_GenericBytes:
 			V_strncpy( buf, "gen:", cbBuf );
 			if ( cbBuf > 5 )
 			{
@@ -242,7 +242,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIdentity_ToString( const St
 			}
 			break;
 
-		case k_ESteamNetworkingIdentityType_UnknownType:
+		case k_EGameNetworkingIdentityType_UnknownType:
 			V_strncpy( buf, pIdentity->m_szUnknownRawString, cbBuf );
 			break;
 
@@ -251,9 +251,9 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingIdentity_ToString( const St
 	}
 }
 
-STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, size_t sizeofIdentity, const char *pszStr )
+STEAMNETWORKINGSOCKETS_INTERFACE bool GameNetworkingIdentity_ParseString( GameNetworkingIdentity *pIdentity, size_t sizeofIdentity, const char *pszStr )
 {
-	const size_t sizeofHeader = offsetof( SteamNetworkingIdentity, m_cbSize ) + sizeof( pIdentity->m_cbSize );
+	const size_t sizeofHeader = offsetof( GameNetworkingIdentity, m_cbSize ) + sizeof( pIdentity->m_cbSize );
 	COMPILE_TIME_ASSERT( sizeofHeader == 8 );
 
 	// Safety check against totally bogus size
@@ -287,7 +287,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIdentity_ParseString( Steam
 	if ( V_strncmp( pszStr, "ip:", 3 ) == 0 )
 	{
 		pszStr += 3;
-		SteamNetworkingIPAddr tempAddr;
+		GameNetworkingIPAddr tempAddr;
 		if ( sizeofData < sizeof(tempAddr) )
 			return false;
 		if ( !tempAddr.ParseString( pszStr ) )
@@ -312,7 +312,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIdentity_ParseString( Steam
 		if ( l < 2 || (l & 1 ) != 0 )
 			return false;
 		size_t nBytes = l>>1;
-		uint8 tmp[ SteamNetworkingIdentity::k_cbMaxGenericBytes ];
+		uint8 tmp[ GameNetworkingIdentity::k_cbMaxGenericBytes ];
 		if ( nBytes >= sizeofData || nBytes > sizeof(tmp) )
 			return false;
 		for ( size_t i = 0 ; i < nBytes ; ++i )
@@ -361,7 +361,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIdentity_ParseString( Steam
 
 		// OK, as far as we can tell, it might be valid --- unless it's too long
 		int cbSize = V_strlen(pszStr)+1;
-		if ( cbSize > SteamNetworkingIdentity::k_cchMaxString )
+		if ( cbSize > GameNetworkingIdentity::k_cchMaxString )
 			return false;
 		if ( (size_t)cbSize > sizeofData )
 			return false;
@@ -369,7 +369,7 @@ STEAMNETWORKINGSOCKETS_INTERFACE bool SteamNetworkingIdentity_ParseString( Steam
 		// Just save the exact raw string we were asked to "parse".  We don't
 		// really understand it, but for many purposes just using the string
 		// as an identifier will work fine!
-		pIdentity->m_eType = k_ESteamNetworkingIdentityType_UnknownType;
+		pIdentity->m_eType = k_EGameNetworkingIdentityType_UnknownType;
 		pIdentity->m_cbSize = cbSize;
 		memcpy( pIdentity->m_szUnknownRawString, pszStr, cbSize );
 

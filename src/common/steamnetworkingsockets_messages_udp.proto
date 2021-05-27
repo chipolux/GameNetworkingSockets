@@ -14,18 +14,18 @@ import "steamnetworkingsockets_messages_certs.proto";
 import "steamnetworkingsockets_messages.proto";
 
 /// Control message ID.
-enum ESteamNetworkingUDPMsgID
+enum EGameNetworkingUDPMsgID
 {
 	// Steam networking using direct UDP connect
-	k_ESteamNetworkingUDPMsg_ChallengeRequest = 32;			// Client->server
-	k_ESteamNetworkingUDPMsg_ChallengeReply = 33;			// Server->client
-	k_ESteamNetworkingUDPMsg_ConnectRequest = 34;			// Client->server
-	k_ESteamNetworkingUDPMsg_ConnectOK = 35;				// Server->client
-	k_ESteamNetworkingUDPMsg_ConnectionClosed = 36;			// Client<->server.  A reply is requested to this packet
-	k_ESteamNetworkingUDPMsg_NoConnection = 37;				// Client<->server.  A reply should never be sent to this packet
+	k_EGameNetworkingUDPMsg_ChallengeRequest = 32;			// Client->server
+	k_EGameNetworkingUDPMsg_ChallengeReply = 33;			// Server->client
+	k_EGameNetworkingUDPMsg_ConnectRequest = 34;			// Client->server
+	k_EGameNetworkingUDPMsg_ConnectOK = 35;				// Server->client
+	k_EGameNetworkingUDPMsg_ConnectionClosed = 36;			// Client<->server.  A reply is requested to this packet
+	k_EGameNetworkingUDPMsg_NoConnection = 37;				// Client<->server.  A reply should never be sent to this packet
 };
 
-// k_ESteamNetworkingUDPMsg_ChallengeRequest
+// k_EGameNetworkingUDPMsg_ChallengeRequest
 message CMsgSteamSockets_UDP_ChallengeRequest
 {
 	optional fixed32 connection_id = 1;
@@ -36,7 +36,7 @@ message CMsgSteamSockets_UDP_ChallengeRequest
 	optional uint32 protocol_version = 4;
 };
 
-// k_ESteamNetworkingUDPMsg_ChallengeReply
+// k_EGameNetworkingUDPMsg_ChallengeReply
 message CMsgSteamSockets_UDP_ChallengeReply
 {
 	optional fixed32 connection_id = 1;
@@ -48,7 +48,7 @@ message CMsgSteamSockets_UDP_ChallengeReply
 	optional uint32 protocol_version = 4;
 };
 
-// k_ESteamNetworkingUDPMsg_ConnectRequest
+// k_EGameNetworkingUDPMsg_ConnectRequest
 message CMsgSteamSockets_UDP_ConnectRequest
 {
 	optional fixed32 client_connection_id = 1;
@@ -81,7 +81,7 @@ message CMsgSteamSockets_UDP_ConnectRequest
 	//
 
 	optional fixed64 legacy_client_steam_id = 3;
-	optional CMsgSteamNetworkingIdentityLegacyBinary legacy_identity_binary = 9;
+	optional CMsgGameNetworkingIdentityLegacyBinary legacy_identity_binary = 9;
 };
 
 // k_ESteamDatagramMsg_UDP_ConnectOK
@@ -110,7 +110,7 @@ message CMsgSteamSockets_UDP_ConnectOK
 
 	optional fixed64 legacy_server_steam_id = 2;
 	//optional uint32 protocol_version = 9; // moved into crypt, to prevent tampering
-	optional CMsgSteamNetworkingIdentityLegacyBinary legacy_identity_binary = 10;
+	optional CMsgGameNetworkingIdentityLegacyBinary legacy_identity_binary = 10;
 };
 
 // k_ESteamDatagramMsg_UDP_ConnectionClosed

@@ -18,7 +18,7 @@ namespace GameNetworkingSocketsLib {
 
 /// Special disconnection reason code that is used in signals
 /// to indicate "no connection"
-const uint32 k_ESteamNetConnectionEnd_Internal_P2PNoConnection = 9999;
+const uint32 k_EGameNetConnectionEnd_Internal_P2PNoConnection = 9999;
 
 // If we are the "controlled" agent, add this penalty to routes
 // other than the one that are not the one the controlling agent
@@ -33,17 +33,17 @@ constexpr int k_nP2P_TransportOverride_None = 0;
 constexpr int k_nP2P_TransportOverride_SDR = 1;
 constexpr int k_nP2P_TransportOverride_ICE = 2;
 
-constexpr int k_nICECloseCode_Local_NotCompiled = k_ESteamNetConnectionEnd_Local_Max;
-constexpr int k_nICECloseCode_Local_UserNotEnabled = k_ESteamNetConnectionEnd_Local_Max-1;
-constexpr int k_nICECloseCode_Local_Special = k_ESteamNetConnectionEnd_Local_Max-2; // Not enabled because we are forcing a particular transport that isn't ICE
-constexpr int k_nICECloseCode_Aborted = k_ESteamNetConnectionEnd_Local_Max-2;
-constexpr int k_nICECloseCode_Remote_NotEnabled = k_ESteamNetConnectionEnd_Remote_Max;
+constexpr int k_nICECloseCode_Local_NotCompiled = k_EGameNetConnectionEnd_Local_Max;
+constexpr int k_nICECloseCode_Local_UserNotEnabled = k_EGameNetConnectionEnd_Local_Max-1;
+constexpr int k_nICECloseCode_Local_Special = k_EGameNetConnectionEnd_Local_Max-2; // Not enabled because we are forcing a particular transport that isn't ICE
+constexpr int k_nICECloseCode_Aborted = k_EGameNetConnectionEnd_Local_Max-2;
+constexpr int k_nICECloseCode_Remote_NotEnabled = k_EGameNetConnectionEnd_Remote_Max;
 
 class CConnectionTransportP2PSDR;
 class CConnectionTransportToSDRServer;
 class CConnectionTransportFromSDRClient;
 class CConnectionTransportP2PICE;
-class CSteamNetworkListenSocketSDRServer;
+class CGameNetworkListenSocketSDRServer;
 struct CachedRelayAuthTicket;
 
 //-----------------------------------------------------------------------------
@@ -53,16 +53,16 @@ struct CachedRelayAuthTicket;
 /// Current derived classes are true "P2P" connections, and connections to
 /// servers hosted in known data centers.
 
-class CSteamNetworkListenSocketP2P : public CSteamNetworkListenSocketBase
+class CGameNetworkListenSocketP2P : public CGameNetworkListenSocketBase
 {
 public:
-	CSteamNetworkListenSocketP2P( CGameNetworkingSockets *pGameNetworkingSocketsInterface );
+	CGameNetworkListenSocketP2P( CGameNetworkingSockets *pGameNetworkingSocketsInterface );
 
-	// CSteamNetworkListenSocketBase overrides
+	// CGameNetworkListenSocketBase overrides
 	virtual bool BSupportsSymmetricMode() override { return true; }
 
 	/// Setup
-	virtual bool BInit( int nLocalVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
+	virtual bool BInit( int nLocalVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
 
 	inline int LocalVirtualPort() const
 	{
@@ -83,7 +83,7 @@ public:
 	#endif
 
 protected:
-	virtual ~CSteamNetworkListenSocketP2P();
+	virtual ~CGameNetworkListenSocketP2P();
 };
 
 /// Mixin base class for different P2P transports.
@@ -108,13 +108,13 @@ public:
 	// explicitly sent at this layer.  Ideally we would hook into the SNP code, because
 	// almost every data packet we send contains ping-related information.
 	PingTrackerForRouteSelection m_pingEndToEnd;
-	SteamNetworkingMicroseconds m_usecEndToEndInFlightReplyTimeout;
+	GameNetworkingMicroseconds m_usecEndToEndInFlightReplyTimeout;
 	int m_nReplyTimeoutsSinceLastRecv;
 	int m_nKeepTryingToPingCounter;
-	SteamNetworkingMicroseconds m_usecWhenSelected; // nonzero if we are the current transport
-	SteamNetworkingMicroseconds m_usecTimeSelectedAccumulator; // How much time have we spent selected, not counting the current activation
+	GameNetworkingMicroseconds m_usecWhenSelected; // nonzero if we are the current transport
+	GameNetworkingMicroseconds m_usecTimeSelectedAccumulator; // How much time have we spent selected, not counting the current activation
 
-	SteamNetworkingMicroseconds CalcTotalTimeSelected( SteamNetworkingMicroseconds usecNow ) const;
+	GameNetworkingMicroseconds CalcTotalTimeSelected( GameNetworkingMicroseconds usecNow ) const;
 
 	struct P2PRouteQualityMetrics
 	{
@@ -142,19 +142,19 @@ public:
 	};
 	P2PRouteQualityMetrics m_routeMetrics;
 
-	void P2PTransportTrackRecvEndToEndPacket( SteamNetworkingMicroseconds usecNow )
+	void P2PTransportTrackRecvEndToEndPacket( GameNetworkingMicroseconds usecNow )
 	{
 		m_usecEndToEndInFlightReplyTimeout = 0;
 		m_nReplyTimeoutsSinceLastRecv = 0;
 	}
-	void P2PTransportTrackSentEndToEndPingRequest( SteamNetworkingMicroseconds usecNow, bool bAllowDelayedReply );
-	void P2PTransportEndToEndConnectivityConfirmed( SteamNetworkingMicroseconds usecNow );
-	void P2PTransportEndToEndConnectivityNotConfirmed( SteamNetworkingMicroseconds usecNow );
+	void P2PTransportTrackSentEndToEndPingRequest( GameNetworkingMicroseconds usecNow, bool bAllowDelayedReply );
+	void P2PTransportEndToEndConnectivityConfirmed( GameNetworkingMicroseconds usecNow );
+	void P2PTransportEndToEndConnectivityNotConfirmed( GameNetworkingMicroseconds usecNow );
 
 	// Populate m_routeMetrics.  If we're not really available, then the metrics should be set to a huge score
-	virtual void P2PTransportUpdateRouteMetrics( SteamNetworkingMicroseconds usecNow ) = 0;
+	virtual void P2PTransportUpdateRouteMetrics( GameNetworkingMicroseconds usecNow ) = 0;
 
-	inline void EnsureP2PTransportThink( SteamNetworkingMicroseconds usecWhen )
+	inline void EnsureP2PTransportThink( GameNetworkingMicroseconds usecWhen )
 	{
 		m_scheduleP2PTransportThink.EnsureMinScheduleTime( this, &CConnectionTransportP2PBase::P2PTransportThink, usecWhen );
 	}
@@ -168,64 +168,64 @@ protected:
 	virtual ~CConnectionTransportP2PBase();
 
 	// Shortcut to get connection and upcast
-	CSteamNetworkConnectionP2P &Connection() const;
+	CGameNetworkConnectionP2P &Connection() const;
 
-	virtual void P2PTransportThink( SteamNetworkingMicroseconds usecNow );
+	virtual void P2PTransportThink( GameNetworkingMicroseconds usecNow );
 	ScheduledMethodThinkerLockable<CConnectionTransportP2PBase> m_scheduleP2PTransportThink;
 };
 
 /// A peer-to-peer connection that can use different types of underlying transport
-class CSteamNetworkConnectionP2P : public CSteamNetworkConnectionBase
+class CGameNetworkConnectionP2P : public CGameNetworkConnectionBase
 {
 public:
-	CSteamNetworkConnectionP2P( CGameNetworkingSockets *pGameNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
+	CGameNetworkConnectionP2P( CGameNetworkingSockets *pGameNetworkingSocketsInterface, ConnectionScopeLock &scopeLock );
 
 	/// Start connecting to a remote peer at the specified virtual port
 	bool BInitConnect(
-		ISteamNetworkingConnectionSignaling *pSignaling,
-		const SteamNetworkingIdentity *pIdentityRemote, int nRemoteVirtualPort,
-		int nOptions, const SteamNetworkingConfigValue_t *pOptions,
-		CSteamNetworkConnectionP2P **pOutMatchingSymmetricConnection,
+		IGameNetworkingConnectionSignaling *pSignaling,
+		const GameNetworkingIdentity *pIdentityRemote, int nRemoteVirtualPort,
+		int nOptions, const GameNetworkingConfigValue_t *pOptions,
+		CGameNetworkConnectionP2P **pOutMatchingSymmetricConnection,
 		SteamDatagramErrMsg &errMsg
 	);
 
 	/// Begin accepting a P2P connection
 	virtual bool BBeginAcceptFromSignal(
-		const CMsgSteamNetworkingP2PRendezvous_ConnectRequest &msgConnectRequest,
+		const CMsgGameNetworkingP2PRendezvous_ConnectRequest &msgConnectRequest,
 		SteamDatagramErrMsg &errMsg,
-		SteamNetworkingMicroseconds usecNow
+		GameNetworkingMicroseconds usecNow
 	);
 
 	/// Called on a connection that we initiated, when we have a matching symmetric incoming connection,
 	/// and we need to change the role of our connection to be "server"
-	void ChangeRoleToServerAndAccept( const CMsgSteamNetworkingP2PRendezvous &msg, SteamNetworkingMicroseconds usecNow );
+	void ChangeRoleToServerAndAccept( const CMsgGameNetworkingP2PRendezvous &msg, GameNetworkingMicroseconds usecNow );
 
-	// CSteamNetworkConnectionBase overrides
+	// CGameNetworkConnectionBase overrides
 	virtual void FreeResources() override;
-	virtual EResult AcceptConnection( SteamNetworkingMicroseconds usecNow ) override;
+	virtual EResult AcceptConnection( GameNetworkingMicroseconds usecNow ) override;
 	virtual void GetConnectionTypeDescription( ConnectionTypeDescription_t &szDescription ) const override;
-	virtual void ThinkConnection( SteamNetworkingMicroseconds usecNow ) override;
-	virtual SteamNetworkingMicroseconds ThinkConnection_ClientConnecting( SteamNetworkingMicroseconds usecNow ) override;
+	virtual void ThinkConnection( GameNetworkingMicroseconds usecNow ) override;
+	virtual GameNetworkingMicroseconds ThinkConnection_ClientConnecting( GameNetworkingMicroseconds usecNow ) override;
 	virtual void DestroyTransport() override;
-	virtual CSteamNetworkConnectionP2P *AsSteamNetworkConnectionP2P() override;
-	virtual void ConnectionStateChanged( ESteamNetworkingConnectionState eOldState ) override;
+	virtual CGameNetworkConnectionP2P *AsGameNetworkConnectionP2P() override;
+	virtual void ConnectionStateChanged( EGameNetworkingConnectionState eOldState ) override;
 	virtual void ProcessSNPPing( int msPing, RecvPacketContext_t &ctx ) override;
 	virtual bool BSupportsSymmetricMode() override;
-	ESteamNetConnectionEnd CheckRemoteCert( const CertAuthScope *pCACertAuthScope, SteamNetworkingErrMsg &errMsg ) override;
+	EGameNetConnectionEnd CheckRemoteCert( const CertAuthScope *pCACertAuthScope, GameNetworkingErrMsg &errMsg ) override;
 
-	void SendConnectOKSignal( SteamNetworkingMicroseconds usecNow );
-	void SendConnectionClosedSignal( SteamNetworkingMicroseconds usecNow );
-	void SendNoConnectionSignal( SteamNetworkingMicroseconds usecNow );
+	void SendConnectOKSignal( GameNetworkingMicroseconds usecNow );
+	void SendConnectionClosedSignal( GameNetworkingMicroseconds usecNow );
+	void SendNoConnectionSignal( GameNetworkingMicroseconds usecNow );
 
 	void ScheduleSendSignal( const char *pszReason );
-	void QueueSignalReliableMessage( CMsgSteamNetworkingP2PRendezvous_ReliableMessage &&msg, const char *pszDebug );
+	void QueueSignalReliableMessage( CMsgGameNetworkingP2PRendezvous_ReliableMessage &&msg, const char *pszDebug );
 
-	/// Given a partially-completed CMsgSteamNetworkingP2PRendezvous, finish filling out
+	/// Given a partially-completed CMsgGameNetworkingP2PRendezvous, finish filling out
 	/// the required fields, and send it to the peer via the signaling mechanism
-	void SetRendezvousCommonFieldsAndSendSignal( CMsgSteamNetworkingP2PRendezvous &msg, SteamNetworkingMicroseconds usecNow, const char *pszDebugReason );
+	void SetRendezvousCommonFieldsAndSendSignal( CMsgGameNetworkingP2PRendezvous &msg, GameNetworkingMicroseconds usecNow, const char *pszDebugReason );
 
-	bool ProcessSignal( const CMsgSteamNetworkingP2PRendezvous &msg, SteamNetworkingMicroseconds usecNow );
-	void ProcessSignal_ConnectOK( const CMsgSteamNetworkingP2PRendezvous_ConnectOK &msgConnectOK, SteamNetworkingMicroseconds usecNow );
+	bool ProcessSignal( const CMsgGameNetworkingP2PRendezvous &msg, GameNetworkingMicroseconds usecNow );
+	void ProcessSignal_ConnectOK( const CMsgGameNetworkingP2PRendezvous_ConnectOK &msgConnectOK, GameNetworkingMicroseconds usecNow );
 
 	// Return true if we are the "controlling" peer, in the ICE sense of the term.
 	// That is, the agent who will primarily make the route decisions, with the
@@ -259,7 +259,7 @@ public:
 	int m_idxMapP2PConnectionsByRemoteInfo;
 
 	/// How to send signals to the remote host for this
-	ISteamNetworkingConnectionSignaling *m_pSignaling;
+	IGameNetworkingConnectionSignaling *m_pSignaling;
 
 	//
 	// Different transports
@@ -270,7 +270,7 @@ public:
 
 		// Peer to peer, over SDR
 		CConnectionTransportP2PSDR *m_pTransportP2PSDR;
-		CMsgSteamNetworkingP2PSDRRoutingSummary m_msgSDRRoutingSummary;
+		CMsgGameNetworkingP2PSDRRoutingSummary m_msgSDRRoutingSummary;
 	#endif
 
 	// Client connecting to hosted dedicated server over SDR.  These are not really
@@ -282,8 +282,8 @@ public:
 	// use the special-case optimized transport.
 	#ifdef SDR_ENABLE_HOSTED_CLIENT
 		CConnectionTransportToSDRServer *m_pTransportToSDRServer;
-		bool BInitConnectToSDRServer( const SteamNetworkingIdentity &identityTarget, int nRemoteVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions, SteamNetworkingErrMsg &errMsg );
-		bool BSelectTransportToSDRServerFromSignal( const CMsgSteamNetworkingP2PRendezvous &msg );
+		bool BInitConnectToSDRServer( const GameNetworkingIdentity &identityTarget, int nRemoteVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions, GameNetworkingErrMsg &errMsg );
+		bool BSelectTransportToSDRServerFromSignal( const CMsgGameNetworkingP2PRendezvous &msg );
 		void InternalCreateTransportToSDRServer( const CachedRelayAuthTicket &authTicket );
 		inline bool IsSDRHostedServerClient() const
 		{
@@ -330,14 +330,14 @@ public:
 
 		// Summary of connection.  Note in particular that the failure reason (if any)
 		// is here.
-		CMsgSteamNetworkingICESessionSummary m_msgICESessionSummary;
+		CMsgGameNetworkingICESessionSummary m_msgICESessionSummary;
 
 		// Detailed failure reason string.
 		ConnectionEndDebugMsg m_szICECloseMsg;
 
 		void ICEFailed( int nReasonCode, const char *pszReason );
 		inline int GetICEFailureCode() const { return m_msgICESessionSummary.failure_reason_code(); }
-		void GuessICEFailureReason( ESteamNetConnectionEnd &nReasonCode, ConnectionEndDebugMsg &msg, SteamNetworkingMicroseconds usecNow );
+		void GuessICEFailureReason( EGameNetConnectionEnd &nReasonCode, ConnectionEndDebugMsg &msg, GameNetworkingMicroseconds usecNow );
 	#else
 		inline int GetICEFailureCode() const { return k_nICECloseCode_Local_NotCompiled; }
 	#endif
@@ -365,7 +365,7 @@ public:
 	}
 
 	/// Initialize SDR transport, as appropriate
-	virtual bool BInitSDRTransport( SteamNetworkingErrMsg &errMsg );
+	virtual bool BInitSDRTransport( GameNetworkingErrMsg &errMsg );
 
 	// Check if user permissions for the remote host are allowed, then
 	// create ICE.  Also, if the connection was initiated remotely,
@@ -376,43 +376,43 @@ public:
 	void CheckCleanupICE();
 
 	// If we don't already have a failure code for ice, set one now.
-	void EnsureICEFailureReasonSet( SteamNetworkingMicroseconds usecNow );
+	void EnsureICEFailureReasonSet( GameNetworkingMicroseconds usecNow );
 
 	//
 	// Transport evaluation and selection
 	//
 
-	SteamNetworkingMicroseconds m_usecWhenStartedFindingRoute;
+	GameNetworkingMicroseconds m_usecWhenStartedFindingRoute;
 
-	SteamNetworkingMicroseconds m_usecNextEvaluateTransport;
+	GameNetworkingMicroseconds m_usecNextEvaluateTransport;
 
 	/// True if we should be "sticky" to the current transport.
 	/// When major state changes happen, we clear this flag
 	/// and evaluate from scratch with no stickiness
 	bool m_bTransportSticky;
 
-	void ThinkSelectTransport( SteamNetworkingMicroseconds usecNow );
-	void TransportEndToEndConnectivityChanged( CConnectionTransportP2PBase *pTransportP2P, SteamNetworkingMicroseconds usecNow );
-	void SelectTransport( CConnectionTransportP2PBase *pTransport, SteamNetworkingMicroseconds usecNow );
+	void ThinkSelectTransport( GameNetworkingMicroseconds usecNow );
+	void TransportEndToEndConnectivityChanged( CConnectionTransportP2PBase *pTransportP2P, GameNetworkingMicroseconds usecNow );
+	void SelectTransport( CConnectionTransportP2PBase *pTransport, GameNetworkingMicroseconds usecNow );
 
-	void UpdateTransportSummaries( SteamNetworkingMicroseconds usecNow );
+	void UpdateTransportSummaries( GameNetworkingMicroseconds usecNow );
 
 	// FIXME - UDP transport for LAN discovery, so P2P works without any signaling
 
 	inline int LogLevel_P2PRendezvous() const { return m_connectionConfig.m_LogLevel_P2PRendezvous.Get(); }
 
-	static CSteamNetworkConnectionP2P *FindDuplicateConnection( CGameNetworkingSockets *pInterfaceLocal, int nLocalVirtualPort, const SteamNetworkingIdentity &identityRemote, int nRemoteVirtualPort, bool bOnlySymmetricConnections, CSteamNetworkConnectionP2P *pIgnore );
+	static CGameNetworkConnectionP2P *FindDuplicateConnection( CGameNetworkingSockets *pInterfaceLocal, int nLocalVirtualPort, const GameNetworkingIdentity &identityRemote, int nRemoteVirtualPort, bool bOnlySymmetricConnections, CGameNetworkConnectionP2P *pIgnore );
 
 	void RemoveP2PConnectionMapByRemoteInfo();
 	bool BEnsureInP2PConnectionMapByRemoteInfo( SteamDatagramErrMsg &errMsg );
 
 protected:
-	virtual ~CSteamNetworkConnectionP2P();
+	virtual ~CGameNetworkConnectionP2P();
 
 	/// Shared init
-	bool BInitP2PConnectionCommon( SteamNetworkingMicroseconds usecNow, int nOptions, const SteamNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
+	bool BInitP2PConnectionCommon( GameNetworkingMicroseconds usecNow, int nOptions, const GameNetworkingConfigValue_t *pOptions, SteamDatagramErrMsg &errMsg );
 
-	virtual void PopulateRendezvousMsgWithTransportInfo( CMsgSteamNetworkingP2PRendezvous &msg, SteamNetworkingMicroseconds usecNow );
+	virtual void PopulateRendezvousMsgWithTransportInfo( CMsgGameNetworkingP2PRendezvous &msg, GameNetworkingMicroseconds usecNow );
 
 private:
 
@@ -420,13 +420,13 @@ private:
 	{
 		uint32 m_nID;
 		int m_cbSerialized;
-		SteamNetworkingMicroseconds m_usecRTO; // Retry timeout
-		CMsgSteamNetworkingP2PRendezvous_ReliableMessage m_msg;
+		GameNetworkingMicroseconds m_usecRTO; // Retry timeout
+		CMsgGameNetworkingP2PRendezvous_ReliableMessage m_msg;
 	};
 	std_vector< OutboundMessage > m_vecUnackedOutboundMessages; // outbound messages that have not been acked
 
 	const char *m_pszNeedToSendSignalReason;
-	SteamNetworkingMicroseconds m_usecSendSignalDeadline;
+	GameNetworkingMicroseconds m_usecSendSignalDeadline;
 	uint32 m_nLastSendRendesvousMessageID;
 	uint32 m_nLastRecvRendesvousMessageID;
 
@@ -436,9 +436,9 @@ private:
 	void PeerSelectedTransportChanged();
 };
 
-inline CSteamNetworkConnectionP2P &CConnectionTransportP2PBase::Connection() const
+inline CGameNetworkConnectionP2P &CConnectionTransportP2PBase::Connection() const
 {
-	return *assert_cast<CSteamNetworkConnectionP2P *>( &m_pSelfAsConnectionTransport->m_connection );
+	return *assert_cast<CGameNetworkConnectionP2P *>( &m_pSelfAsConnectionTransport->m_connection );
 }
 
 } // namespace GameNetworkingSocketsLib

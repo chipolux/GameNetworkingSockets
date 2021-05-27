@@ -17,11 +17,11 @@
 #endif
 
 static FILE *g_fpLog = nullptr;
-static SteamNetworkingMicroseconds g_logTimeZero;
+static GameNetworkingMicroseconds g_logTimeZero;
 
 static void DebugOutput( EGameNetworkingSocketsDebugOutputType eType, const char *pszMsg )
 {
-	SteamNetworkingMicroseconds time = GameNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
+	GameNetworkingMicroseconds time = GameNetworkingUtils()->GetLocalTimestamp() - g_logTimeZero;
 	if ( g_fpLog )
 		fprintf( g_fpLog, "%10.6f %s\n", time*1e-6, pszMsg );
 	//if ( eType <= k_EGameNetworkingSocketsDebugOutputType_Msg )
@@ -40,7 +40,7 @@ static void DebugOutput( EGameNetworkingSocketsDebugOutputType eType, const char
 		// is occasionally triggering this assert.  Just ignroe that one
 		// error for now.
 		// Yes, this is a kludge.
-		if ( strstr( pszMsg, "SteamNetworkingGlobalLock held for" ) )
+		if ( strstr( pszMsg, "GameNetworkingGlobalLock held for" ) )
 			return;
 
 		assert( !"TEST FAILED" );
@@ -72,7 +72,7 @@ void TEST_Fatal( const char *fmt, ... )
 	exit(1);
 }
 
-void TEST_Init( const SteamNetworkingIdentity *pIdentity )
+void TEST_Init( const GameNetworkingIdentity *pIdentity )
 {
 	g_fpLog = fopen( "log.txt", "wt" );
 	g_logTimeZero = GameNetworkingUtils()->GetLocalTimestamp();
@@ -81,7 +81,7 @@ void TEST_Init( const SteamNetworkingIdentity *pIdentity )
 	//GameNetworkingUtils()->SetDebugOutputFunction( k_EGameNetworkingSocketsDebugOutputType_Verbose, DebugOutput );
 	//GameNetworkingUtils()->SetDebugOutputFunction( k_EGameNetworkingSocketsDebugOutputType_Msg, DebugOutput );
 
-	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_LogLevel_P2PRendezvous, k_EGameNetworkingSocketsDebugOutputType_Debug );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_EGameNetworkingConfig_LogLevel_P2PRendezvous, k_EGameNetworkingSocketsDebugOutputType_Debug );
 
 	#ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
 		SteamDatagramErrMsg errMsg;

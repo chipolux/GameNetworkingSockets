@@ -18,14 +18,14 @@
 #define PORT_SERVER			27200	// Default server port, UDP/TCP
 
 static std::default_random_engine g_rand;
-static SteamNetworkingMicroseconds g_usecTestElapsed;
+static GameNetworkingMicroseconds g_usecTestElapsed;
 
 static HSteamListenSocket g_hSteamListenSocket = k_HSteamListenSocket_Invalid;
 
 struct TestMsg
 {
 	int64 m_nMsgNum;
-	SteamNetworkingMicroseconds m_usecWhenSent;
+	GameNetworkingMicroseconds m_usecWhenSent;
 	bool m_bReliable;
 	int m_cbSize;
 	static constexpr int k_cbMaxSize = 10*1000;
@@ -46,10 +46,10 @@ struct SFakePeer
 	int64 m_nExpectedRecvMsg = 1;
 	float m_flReliableMsgDelay = 0.0f;
 	float m_flUnreliableMsgDelay = 0.0f;
-	HSteamNetConnection m_hSteamNetConnection = k_HSteamNetConnection_Invalid;
+	HGameNetConnection m_hGameNetConnection = k_HGameNetConnection_Invalid;
 	bool m_bIsConnected = false;
 	int m_nMaxPendingBytes = 384 * 1024;
-	SteamNetworkingQuickConnectionStatus m_info;
+	GameNetworkingQuickConnectionStatus m_info;
 	float m_flSendRate = 0.0f;
 	float m_flRecvRate = 0.0f;
 	int64 m_nSendInterval = 0;
@@ -66,7 +66,7 @@ struct SFakePeer
 
 	inline void UpdateStats()
 	{
-		GameNetworkingSockets()->GetQuickConnectionStatus( m_hSteamNetConnection, &m_info );
+		GameNetworkingSockets()->GetQuickConnectionStatus( m_hGameNetConnection, &m_info );
 	}
 
 	inline int GetQueuedSendBytes()
@@ -93,10 +93,10 @@ struct SFakePeer
 		m_nSendInterval += cbSend;
 
 		EResult result = GameNetworkingSockets()->SendMessageToConnection(
-			m_hSteamNetConnection, 
+			m_hGameNetConnection, 
 			&msg,
 			cbSend,
-			msg.m_bReliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_Unreliable, nullptr );
+			msg.m_bReliable ? k_nGameNetworkingSend_Reliable : k_nGameNetworkingSend_Unreliable, nullptr );
 
 		if ( result != k_EResultOK )
 		{
@@ -137,12 +137,12 @@ static void Recv( IGameNetworkingSockets *pSteamSocketNetworking )
 	while ( true )
 	{
 		SFakePeer *pConnection = &g_peerServer;
-		ISteamNetworkingMessage *pIncomingMsg = nullptr;
-		int numMsgs = pSteamSocketNetworking->ReceiveMessagesOnConnection( pConnection->m_hSteamNetConnection, &pIncomingMsg, 1 );
+		IGameNetworkingMessage *pIncomingMsg = nullptr;
+		int numMsgs = pSteamSocketNetworking->ReceiveMessagesOnConnection( pConnection->m_hGameNetConnection, &pIncomingMsg, 1 );
 		if ( numMsgs <= 0 )
 		{
 			pConnection = &g_peerClient;
-			numMsgs = pSteamSocketNetworking->ReceiveMessagesOnConnection( pConnection->m_hSteamNetConnection, &pIncomingMsg, 1 );
+			numMsgs = pSteamSocketNetworking->ReceiveMessagesOnConnection( pConnection->m_hGameNetConnection, &pIncomingMsg, 1 );
 			if ( numMsgs <= 0 )
 				return;
 		}
@@ -185,16 +185,16 @@ static void Recv( IGameNetworkingSockets *pSteamSocketNetworking )
 	}
 }
 
-void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pInfo )
+void OnGameNetConnectionStatusChanged( GameNetConnectionStatusChangedCallback_t *pInfo )
 {
 	// What's the state of the connection?
 	switch ( pInfo->m_info.m_eState )
 	{
-	case k_ESteamNetworkingConnectionState_ClosedByPeer:
-	case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
+	case k_EGameNetworkingConnectionState_ClosedByPeer:
+	case k_EGameNetworkingConnectionState_ProblemDetectedLocally:
 		TEST_Printf( "Steam Net connection %x %s, reason %d: %s\n",
 			pInfo->m_hConn,
-			( pInfo->m_info.m_eState == k_ESteamNetworkingConnectionState_ClosedByPeer ? "closed by peer" : "problem detected locally" ),
+			( pInfo->m_info.m_eState == k_EGameNetworkingConnectionState_ClosedByPeer ? "closed by peer" : "problem detected locally" ),
 			pInfo->m_info.m_eEndReason,
 			pInfo->m_info.m_szEndDebug
 		);
@@ -202,46 +202,46 @@ void OnSteamNetConnectionStatusChanged( SteamNetConnectionStatusChangedCallback_
 		// Close our end
 		GameNetworkingSockets()->CloseConnection( pInfo->m_hConn, 0, nullptr, false );
 
-		if ( g_peerServer.m_hSteamNetConnection == pInfo->m_hConn )
+		if ( g_peerServer.m_hGameNetConnection == pInfo->m_hConn )
 		{
-			g_peerServer.m_hSteamNetConnection = k_HSteamNetConnection_Invalid;
+			g_peerServer.m_hGameNetConnection = k_HGameNetConnection_Invalid;
 		}
-		if ( g_peerClient.m_hSteamNetConnection == pInfo->m_hConn )
+		if ( g_peerClient.m_hGameNetConnection == pInfo->m_hConn )
 		{
-			g_peerClient.m_hSteamNetConnection = k_HSteamNetConnection_Invalid;
+			g_peerClient.m_hGameNetConnection = k_HGameNetConnection_Invalid;
 		}
 
 		break;
 
 /*
-	case k_ESteamNetworkingConnectionState_None:
+	case k_EGameNetworkingConnectionState_None:
 		TEST_Printf( "No steam Net connection %x (%s)\n", pInfo->m_hConn, pInfo->m_info.m_steamIDRemote.Render() );
 
-		if ( g_hSteamNetConnection == pInfo->m_hConn )
+		if ( g_hGameNetConnection == pInfo->m_hConn )
 		{
 			g_bIsConnected = false;
-			g_hSteamNetConnection = k_HSteamNetConnection_Invalid;
+			g_hGameNetConnection = k_HGameNetConnection_Invalid;
 		}
 		break;
 */
 
-	case k_ESteamNetworkingConnectionState_Connecting:
+	case k_EGameNetworkingConnectionState_Connecting:
 
 		// Is this a connection we initiated, or one that we are receiving?
 		if ( g_hSteamListenSocket != k_HSteamListenSocket_Invalid && pInfo->m_info.m_hListenSocket == g_hSteamListenSocket )
 		{
 			// Somebody's knocking
 			TEST_Printf( "[%s] Accepting\n", pInfo->m_info.m_szConnectionDescription );
-			g_peerServer.m_hSteamNetConnection = pInfo->m_hConn;
+			g_peerServer.m_hGameNetConnection = pInfo->m_hConn;
 			g_peerServer.m_bIsConnected = true;
 			GameNetworkingSockets()->AcceptConnection( pInfo->m_hConn );
-			GameNetworkingSockets()->SetConnectionName( g_peerServer.m_hSteamNetConnection, "Server" );
+			GameNetworkingSockets()->SetConnectionName( g_peerServer.m_hGameNetConnection, "Server" );
 
 		}
 		break;
 
-	case k_ESteamNetworkingConnectionState_Connected:
-		if ( pInfo->m_hConn == g_peerClient.m_hSteamNetConnection )
+	case k_EGameNetworkingConnectionState_Connected:
+		if ( pInfo->m_hConn == g_peerClient.m_hGameNetConnection )
 		{
 			g_peerClient.m_bIsConnected = true;
 		}
@@ -260,8 +260,8 @@ static void PumpCallbacksAndMakeSureStillConnected()
 	TEST_PumpCallbacks();
 	assert( g_peerClient.m_bIsConnected  );
 	assert( g_peerServer.m_bIsConnected );
-	assert( g_peerServer.m_hSteamNetConnection != k_HSteamNetConnection_Invalid );
-	assert( g_peerClient.m_hSteamNetConnection != k_HSteamNetConnection_Invalid );
+	assert( g_peerServer.m_hGameNetConnection != k_HGameNetConnection_Invalid );
+	assert( g_peerClient.m_hGameNetConnection != k_HGameNetConnection_Invalid );
 }
 
 inline std::string FormatQuality( float q )
@@ -274,8 +274,8 @@ inline std::string FormatQuality( float q )
 
 static void PrintStatus( const SFakePeer &p1, const SFakePeer &p2 )
 {
-	const SteamNetworkingQuickConnectionStatus &info1 = p1.m_info;
-	const SteamNetworkingQuickConnectionStatus &info2 = p2.m_info;
+	const GameNetworkingQuickConnectionStatus &info1 = p1.m_info;
+	const GameNetworkingQuickConnectionStatus &info2 = p2.m_info;
 	TEST_Printf( "\n" );
 	TEST_Printf( "%12s %12s\n", p1.m_sName.c_str(), p2.m_sName.c_str() );
 	TEST_Printf( "%10dms %10dms  Ping\n", info1.m_nPing, info2.m_nPing );
@@ -306,40 +306,40 @@ static void TestNetworkConditions( int rate, float loss, int lag, float reorderP
 	TEST_Printf( "Act like game. . : %d\n", (int)bActLikeGame );
 	TEST_Printf( "---------------------------------------------------\n" );
 
-	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_SendRateMin, rate );
-	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_SendRateMax, rate );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_EGameNetworkingConfig_SendRateMin, rate );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_EGameNetworkingConfig_SendRateMax, rate );
 
-	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketLoss_Send, loss );
-	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketLoss_Recv, 0 );
-	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketLag_Send, lag );
-	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketLag_Recv, 0 );
-	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_ESteamNetworkingConfig_FakePacketReorder_Send, reorderPct );
-	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_FakePacketReorder_Time, reorderLag );
+	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_EGameNetworkingConfig_FakePacketLoss_Send, loss );
+	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_EGameNetworkingConfig_FakePacketLoss_Recv, 0 );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_EGameNetworkingConfig_FakePacketLag_Send, lag );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_EGameNetworkingConfig_FakePacketLag_Recv, 0 );
+	GameNetworkingUtils()->SetGlobalConfigValueFloat( k_EGameNetworkingConfig_FakePacketReorder_Send, reorderPct );
+	GameNetworkingUtils()->SetGlobalConfigValueInt32( k_EGameNetworkingConfig_FakePacketReorder_Time, reorderLag );
 
-	SteamNetworkingMicroseconds usecWhenStarted = GameNetworkingUtils()->GetLocalTimestamp();
+	GameNetworkingMicroseconds usecWhenStarted = GameNetworkingUtils()->GetLocalTimestamp();
 
 	// Loop!
 
-	//SteamNetworkingMicroseconds usecLastNow = usecWhenStarted;
+	//GameNetworkingMicroseconds usecLastNow = usecWhenStarted;
 
 #if defined(SANITIZER) || defined(LIGHT_TESTS)
-	const SteamNetworkingMicroseconds usecQuietDuration = 500000;
-	const SteamNetworkingMicroseconds usecActiveDuration = 500000;
+	const GameNetworkingMicroseconds usecQuietDuration = 500000;
+	const GameNetworkingMicroseconds usecActiveDuration = 500000;
 	const float flWaitBetweenPrints = 1.0f;
 	int nIterations = 1;
 #else
-	const SteamNetworkingMicroseconds usecQuietDuration = 10000000;
-	const SteamNetworkingMicroseconds usecActiveDuration = 25000000;
+	const GameNetworkingMicroseconds usecQuietDuration = 10000000;
+	const GameNetworkingMicroseconds usecActiveDuration = 25000000;
 	const float flWaitBetweenPrints = 5.0f;
 	int nIterations = 4;
 #endif
 	bool bQuiet = true;
-	SteamNetworkingMicroseconds usecWhenStateEnd = 0;
-	SteamNetworkingMicroseconds usecLastPrint = GameNetworkingUtils()->GetLocalTimestamp();
+	GameNetworkingMicroseconds usecWhenStateEnd = 0;
+	GameNetworkingMicroseconds usecLastPrint = GameNetworkingUtils()->GetLocalTimestamp();
 
 	while ( true )
 	{
-		SteamNetworkingMicroseconds now = GameNetworkingUtils()->GetLocalTimestamp();
+		GameNetworkingMicroseconds now = GameNetworkingUtils()->GetLocalTimestamp();
 		g_usecTestElapsed = now - usecWhenStarted;
 		// If flElapsed > 1.0 when in debug, just slamp it
 		//if ( Plat_IsInDebugSession() && now - flLastNow > 1.0f )
@@ -431,11 +431,11 @@ static void RunSteamDatagramConnectionTest()
 	// Command line options:
 	// -connect:ip -- don't create a server, just try to connect to the given ip
 	// -serveronly -- don't create a client only create a server and wait for connection
-	SteamNetworkingIPAddr bindServerAddress;
+	GameNetworkingIPAddr bindServerAddress;
 	bindServerAddress.Clear();
 	bindServerAddress.m_port = PORT_SERVER;
 
-	SteamNetworkingIPAddr connectToServerAddress;
+	GameNetworkingIPAddr connectToServerAddress;
 	connectToServerAddress.SetIPv4( 0x7f000001, PORT_SERVER );
 
 	//const char *s_pszConnectParm = "-connect:";
@@ -451,8 +451,8 @@ static void RunSteamDatagramConnectionTest()
 
 	// Initiate connection
 	g_hSteamListenSocket = pSteamSocketNetworking->CreateListenSocketIP( bindServerAddress, 0, nullptr );
-	g_peerClient.m_hSteamNetConnection = pSteamSocketNetworking->ConnectByIPAddress( connectToServerAddress, 0, nullptr );
-	pSteamSocketNetworking->SetConnectionName( g_peerClient.m_hSteamNetConnection, "Client" );
+	g_peerClient.m_hGameNetConnection = pSteamSocketNetworking->ConnectByIPAddress( connectToServerAddress, 0, nullptr );
+	pSteamSocketNetworking->SetConnectionName( g_peerClient.m_hGameNetConnection, "Client" );
 
 //	// Send a few random message, before we get connected, just to test that case
 //	g_peerClient.SendRandomMessage( true );
@@ -493,10 +493,10 @@ static void RunSteamDatagramConnectionTest()
 
 // Some tests for identity string handling.  Doesn't really have anything to do with
 // connectivity, this is just a conveinent place for this to live
-void TestSteamNetworkingIdentity()
+void TestGameNetworkingIdentity()
 {
-	SteamNetworkingIdentity id1, id2;
-	char tempBuf[ SteamNetworkingIdentity::k_cchMaxString ];
+	GameNetworkingIdentity id1, id2;
+	char tempBuf[ GameNetworkingIdentity::k_cchMaxString ];
 
 	{
 		CSteamID steamID( 1234, k_EUniversePublic, k_EAccountTypeIndividual );
@@ -531,11 +531,11 @@ void TestSteamNetworkingIdentity()
 int main(  )
 {
 	// Test some identity printing/parsing stuff
-	TestSteamNetworkingIdentity();
+	TestGameNetworkingIdentity();
 
 	// Create client and server sockets
 	TEST_Init( nullptr );
-	GameNetworkingUtils()->SetGlobalCallback_SteamNetConnectionStatusChanged( OnSteamNetConnectionStatusChanged );
+	GameNetworkingUtils()->SetGlobalCallback_GameNetConnectionStatusChanged( OnGameNetConnectionStatusChanged );
 
 	// Run the test
 	RunSteamDatagramConnectionTest();

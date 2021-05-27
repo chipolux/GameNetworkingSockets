@@ -41,7 +41,7 @@ void GenerateCert( CMsgSteamDatagramCertificateSigned &msgOut, const char *certD
 
 int main()
 {
-	SteamNetworkingErrMsg errMsg;
+	GameNetworkingErrMsg errMsg;
 
 	//
 	// Populate our cert store with some certs.
@@ -104,10 +104,10 @@ int main()
 	CMsgSteamDatagramCertificateSigned msgCertSigned;
 	CMsgSteamDatagramCertificate msgCert;
 	const CertAuthScope *pCertScope;
-	const SteamNetworkingPOPID iad = CalculateSteamNetworkingPOPIDFromString( "iad" );
-	const SteamNetworkingPOPID sto = CalculateSteamNetworkingPOPIDFromString( "sto" ); // 7566447
-	const SteamNetworkingPOPID mwh = CalculateSteamNetworkingPOPIDFromString( "mwh" );
-	const SteamNetworkingPOPID eat = CalculateSteamNetworkingPOPIDFromString( "eat" );
+	const GameNetworkingPOPID iad = CalculateGameNetworkingPOPIDFromString( "iad" );
+	const GameNetworkingPOPID sto = CalculateGameNetworkingPOPIDFromString( "sto" ); // 7566447
+	const GameNetworkingPOPID mwh = CalculateGameNetworkingPOPIDFromString( "mwh" );
+	const GameNetworkingPOPID eat = CalculateGameNetworkingPOPIDFromString( "eat" );
 
 	//
 	// Basic check for an identity cert issued by an intermediary.

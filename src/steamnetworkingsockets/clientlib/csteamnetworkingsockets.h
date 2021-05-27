@@ -24,7 +24,7 @@
 namespace GameNetworkingSocketsLib {
 
 class CGameNetworkingUtils;
-class CSteamNetworkListenSocketP2P;
+class CGameNetworkListenSocketP2P;
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -50,7 +50,7 @@ public:
 	bool BInitted() const { return m_bHaveLowLevelRef; }
 
 #ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
-	bool BInitGameNetworkingSockets( const SteamNetworkingIdentity *pIdentity, SteamDatagramErrMsg &errMsg );
+	bool BInitGameNetworkingSockets( const GameNetworkingIdentity *pIdentity, SteamDatagramErrMsg &errMsg );
 	void CacheIdentity() { m_identity.SetLocalHost(); }
 #else
 	virtual void CacheIdentity() = 0;
@@ -62,7 +62,7 @@ public:
 	void Destroy();
 	virtual void FreeResources();
 
-	const SteamNetworkingIdentity &InternalGetIdentity()
+	const GameNetworkingIdentity &InternalGetIdentity()
 	{
 		if ( m_identity.IsInvalid() )
 			CacheIdentity();
@@ -76,42 +76,42 @@ public:
 	}
 
 	// Implements IGameNetworkingSockets
-	virtual HSteamListenSocket CreateListenSocketIP( const SteamNetworkingIPAddr &localAddress, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override;
-	virtual HSteamNetConnection ConnectByIPAddress( const SteamNetworkingIPAddr &adress, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override;
-	virtual HSteamListenSocket CreateListenSocketP2P( int nLocalVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override;
-	virtual HSteamNetConnection ConnectP2P( const SteamNetworkingIdentity &identityRemote, int nRemoteVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override;
-	virtual EResult AcceptConnection( HSteamNetConnection hConn ) override;
-	virtual bool CloseConnection( HSteamNetConnection hConn, int nReason, const char *pszDebug, bool bEnableLinger ) override;
+	virtual HSteamListenSocket CreateListenSocketIP( const GameNetworkingIPAddr &localAddress, int nOptions, const GameNetworkingConfigValue_t *pOptions ) override;
+	virtual HGameNetConnection ConnectByIPAddress( const GameNetworkingIPAddr &adress, int nOptions, const GameNetworkingConfigValue_t *pOptions ) override;
+	virtual HSteamListenSocket CreateListenSocketP2P( int nLocalVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) override;
+	virtual HGameNetConnection ConnectP2P( const GameNetworkingIdentity &identityRemote, int nRemoteVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) override;
+	virtual EResult AcceptConnection( HGameNetConnection hConn ) override;
+	virtual bool CloseConnection( HGameNetConnection hConn, int nReason, const char *pszDebug, bool bEnableLinger ) override;
 	virtual bool CloseListenSocket( HSteamListenSocket hSocket ) override;
-	virtual bool SetConnectionUserData( HSteamNetConnection hPeer, int64 nUserData ) override;
-	virtual int64 GetConnectionUserData( HSteamNetConnection hPeer ) override;
-	virtual void SetConnectionName( HSteamNetConnection hPeer, const char *pszName ) override;
-	virtual bool GetConnectionName( HSteamNetConnection hPeer, char *pszName, int nMaxLen ) override;
-	virtual EResult SendMessageToConnection( HSteamNetConnection hConn, const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber ) override;
-	virtual void SendMessages( int nMessages, SteamNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult ) override;
-	virtual EResult FlushMessagesOnConnection( HSteamNetConnection hConn ) override;
-	virtual int ReceiveMessagesOnConnection( HSteamNetConnection hConn, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages ) override;
-	virtual bool GetConnectionInfo( HSteamNetConnection hConn, SteamNetConnectionInfo_t *pInfo ) override;
-	virtual bool GetQuickConnectionStatus( HSteamNetConnection hConn, SteamNetworkingQuickConnectionStatus *pStats ) override;
-	virtual int GetDetailedConnectionStatus( HSteamNetConnection hConn, char *pszBuf, int cbBuf ) override;
-	virtual bool GetListenSocketAddress( HSteamListenSocket hSocket, SteamNetworkingIPAddr *pAddress ) override;
-	virtual bool CreateSocketPair( HSteamNetConnection *pOutConnection1, HSteamNetConnection *pOutConnection2, bool bUseNetworkLoopback, const SteamNetworkingIdentity *pIdentity1, const SteamNetworkingIdentity *pIdentity2 ) override;
-	virtual bool GetIdentity( SteamNetworkingIdentity *pIdentity ) override;
+	virtual bool SetConnectionUserData( HGameNetConnection hPeer, int64 nUserData ) override;
+	virtual int64 GetConnectionUserData( HGameNetConnection hPeer ) override;
+	virtual void SetConnectionName( HGameNetConnection hPeer, const char *pszName ) override;
+	virtual bool GetConnectionName( HGameNetConnection hPeer, char *pszName, int nMaxLen ) override;
+	virtual EResult SendMessageToConnection( HGameNetConnection hConn, const void *pData, uint32 cbData, int nSendFlags, int64 *pOutMessageNumber ) override;
+	virtual void SendMessages( int nMessages, GameNetworkingMessage_t *const *pMessages, int64 *pOutMessageNumberOrResult ) override;
+	virtual EResult FlushMessagesOnConnection( HGameNetConnection hConn ) override;
+	virtual int ReceiveMessagesOnConnection( HGameNetConnection hConn, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages ) override;
+	virtual bool GetConnectionInfo( HGameNetConnection hConn, GameNetConnectionInfo_t *pInfo ) override;
+	virtual bool GetQuickConnectionStatus( HGameNetConnection hConn, GameNetworkingQuickConnectionStatus *pStats ) override;
+	virtual int GetDetailedConnectionStatus( HGameNetConnection hConn, char *pszBuf, int cbBuf ) override;
+	virtual bool GetListenSocketAddress( HSteamListenSocket hSocket, GameNetworkingIPAddr *pAddress ) override;
+	virtual bool CreateSocketPair( HGameNetConnection *pOutConnection1, HGameNetConnection *pOutConnection2, bool bUseNetworkLoopback, const GameNetworkingIdentity *pIdentity1, const GameNetworkingIdentity *pIdentity2 ) override;
+	virtual bool GetIdentity( GameNetworkingIdentity *pIdentity ) override;
 
-	virtual HSteamNetPollGroup CreatePollGroup() override;
-	virtual bool DestroyPollGroup( HSteamNetPollGroup hPollGroup ) override;
-	virtual bool SetConnectionPollGroup( HSteamNetConnection hConn, HSteamNetPollGroup hPollGroup ) override;
-	virtual int ReceiveMessagesOnPollGroup( HSteamNetPollGroup hPollGroup, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages ) override; 
-	virtual HSteamNetConnection ConnectP2PCustomSignaling( ISteamNetworkingConnectionSignaling *pSignaling, const SteamNetworkingIdentity *pPeerIdentity, int nVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override;
-	virtual bool ReceivedP2PCustomSignal( const void *pMsg, int cbMsg, ISteamNetworkingSignalingRecvContext *pContext ) override;
-	virtual int GetP2P_Transport_ICE_Enable( const SteamNetworkingIdentity &identityRemote, int *pOutUserFlags );
+	virtual HGameNetPollGroup CreatePollGroup() override;
+	virtual bool DestroyPollGroup( HGameNetPollGroup hPollGroup ) override;
+	virtual bool SetConnectionPollGroup( HGameNetConnection hConn, HGameNetPollGroup hPollGroup ) override;
+	virtual int ReceiveMessagesOnPollGroup( HGameNetPollGroup hPollGroup, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages ) override; 
+	virtual HGameNetConnection ConnectP2PCustomSignaling( IGameNetworkingConnectionSignaling *pSignaling, const GameNetworkingIdentity *pPeerIdentity, int nVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) override;
+	virtual bool ReceivedP2PCustomSignal( const void *pMsg, int cbMsg, IGameNetworkingSignalingRecvContext *pContext ) override;
+	virtual int GetP2P_Transport_ICE_Enable( const GameNetworkingIdentity &identityRemote, int *pOutUserFlags );
 
-	virtual bool GetCertificateRequest( int *pcbBlob, void *pBlob, SteamNetworkingErrMsg &errMsg ) override;
-	virtual bool SetCertificate( const void *pCertificate, int cbCertificate, SteamNetworkingErrMsg &errMsg ) override;
-	virtual void ResetIdentity( const SteamNetworkingIdentity *pIdentity ) override;
+	virtual bool GetCertificateRequest( int *pcbBlob, void *pBlob, GameNetworkingErrMsg &errMsg ) override;
+	virtual bool SetCertificate( const void *pCertificate, int cbCertificate, GameNetworkingErrMsg &errMsg ) override;
+	virtual void ResetIdentity( const GameNetworkingIdentity *pIdentity ) override;
 
 #ifdef STEAMNETWORKINGSOCKETS_STEAMCLIENT
-	virtual int ReceiveMessagesOnListenSocketLegacyPollGroup( HSteamListenSocket hSocket, SteamNetworkingMessage_t **ppOutMessages, int nMaxMessages ) override;
+	virtual int ReceiveMessagesOnListenSocketLegacyPollGroup( HSteamListenSocket hSocket, GameNetworkingMessage_t **ppOutMessages, int nMaxMessages ) override;
 #endif
 
 	virtual void RunCallbacks() override;
@@ -125,10 +125,10 @@ public:
 	static std::vector<CGameNetworkingSockets *> s_vecGameNetworkingSocketsInstances;
 
 	// P2P listen sockets
-	CUtlHashMap<int,CSteamNetworkListenSocketP2P *,std::equal_to<int>,std::hash<int>> m_mapListenSocketsByVirtualPort;
-	CSteamNetworkListenSocketP2P *InternalCreateListenSocketP2P( int nLocalVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions );
+	CUtlHashMap<int,CGameNetworkListenSocketP2P *,std::equal_to<int>,std::hash<int>> m_mapListenSocketsByVirtualPort;
+	CGameNetworkListenSocketP2P *InternalCreateListenSocketP2P( int nLocalVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions );
 
-	CSteamNetworkPollGroup *InternalCreatePollGroup( PollGroupScopeLock &scopeLock );
+	CGameNetworkPollGroup *InternalCreatePollGroup( PollGroupScopeLock &scopeLock );
 
 	//
 	// Authentication
@@ -148,34 +148,34 @@ public:
 	/// Called in any situation where we need to be able to authenticate, or anticipate
 	/// needing to be able to do so soon.  If we don't have one right now, we will begin
 	/// taking action to obtain one
-	virtual void CheckAuthenticationPrerequisites( SteamNetworkingMicroseconds usecNow );
+	virtual void CheckAuthenticationPrerequisites( GameNetworkingMicroseconds usecNow );
 	void AuthenticationNeeded() { CheckAuthenticationPrerequisites( GameNetworkingSockets_GetLocalTimestamp() ); }
 
-	virtual ESteamNetworkingAvailability InitAuthentication() override final;
-	virtual ESteamNetworkingAvailability GetAuthenticationStatus( SteamNetAuthenticationStatus_t *pAuthStatus ) override final;
+	virtual EGameNetworkingAvailability InitAuthentication() override final;
+	virtual EGameNetworkingAvailability GetAuthenticationStatus( GameNetAuthenticationStatus_t *pAuthStatus ) override final;
 	int GetSecondsUntilCertExpiry() const;
 
 	//
 	// Default signaling
 	//
 
-	CSteamNetworkConnectionBase *InternalConnectP2PDefaultSignaling(
-		const SteamNetworkingIdentity &identityRemote,
+	CGameNetworkConnectionBase *InternalConnectP2PDefaultSignaling(
+		const GameNetworkingIdentity &identityRemote,
 		int nRemoteVirtualPort,
-		int nOptions, const SteamNetworkingConfigValue_t *pOptions,
+		int nOptions, const GameNetworkingConfigValue_t *pOptions,
 		ConnectionScopeLock &scopeLock
 	);
-	CSteamNetworkingMessages *GetSteamNetworkingMessages();
-	CSteamNetworkingMessages *m_pSteamNetworkingMessages;
+	CGameNetworkingMessages *GetGameNetworkingMessages();
+	CGameNetworkingMessages *m_pGameNetworkingMessages;
 
 // Stubs if SDR not enabled
 #ifndef STEAMNETWORKINGSOCKETS_ENABLE_SDR
-	virtual int FindRelayAuthTicketForServer( const SteamNetworkingIdentity &identityGameServer, int nRemoteVirtualPort, SteamDatagramRelayAuthTicket *pOutParsedTicket ) override { return 0; }
-	virtual HSteamNetConnection ConnectToHostedDedicatedServer( const SteamNetworkingIdentity &identityTarget, int nRemoteVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override { return k_HSteamNetConnection_Invalid; }
+	virtual int FindRelayAuthTicketForServer( const GameNetworkingIdentity &identityGameServer, int nRemoteVirtualPort, SteamDatagramRelayAuthTicket *pOutParsedTicket ) override { return 0; }
+	virtual HGameNetConnection ConnectToHostedDedicatedServer( const GameNetworkingIdentity &identityTarget, int nRemoteVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) override { return k_HGameNetConnection_Invalid; }
 	virtual uint16 GetHostedDedicatedServerPort() override { return 0; }
-	virtual SteamNetworkingPOPID GetHostedDedicatedServerPOPID() override { return 0; }
+	virtual GameNetworkingPOPID GetHostedDedicatedServerPOPID() override { return 0; }
 	virtual EResult GetHostedDedicatedServerAddress( SteamDatagramHostedAddress *pRouting ) override { return k_EResultFail; }
-	virtual HSteamListenSocket CreateHostedDedicatedServerListenSocket( int nLocalVirtualPort, int nOptions, const SteamNetworkingConfigValue_t *pOptions ) override { return k_HSteamNetConnection_Invalid; }
+	virtual HSteamListenSocket CreateHostedDedicatedServerListenSocket( int nLocalVirtualPort, int nOptions, const GameNetworkingConfigValue_t *pOptions ) override { return k_HGameNetConnection_Invalid; }
 	virtual bool ReceivedRelayAuthTicket( const void *pvTicket, int cbTicket, SteamDatagramRelayAuthTicket *pOutParsedTicket ) override { return false; }
 	virtual EResult GetGameCoordinatorServerLogin( SteamDatagramGameCoordinatorServerLogin *pLogin, int *pcbSignedBlob, void *pBlob ) override { return k_EResultFail; }
 #endif
@@ -184,22 +184,22 @@ protected:
 
 	/// Overall authentication status.  Depends on the status of our cert, and the ability
 	/// to obtain the CA certs (from the network config)
-	SteamNetAuthenticationStatus_t m_AuthenticationStatus;
+	GameNetAuthenticationStatus_t m_AuthenticationStatus;
 
 	/// Set new status, dispatch callbacks if it actually changed
-	void SetAuthenticationStatus( const SteamNetAuthenticationStatus_t &newStatus );
+	void SetAuthenticationStatus( const GameNetAuthenticationStatus_t &newStatus );
 
 	/// Current status of our attempt to get a certificate
 	bool m_bEverTriedToGetCert;
 	bool m_bEverGotCert;
-	SteamNetAuthenticationStatus_t m_CertStatus;
+	GameNetAuthenticationStatus_t m_CertStatus;
 
 	/// Set cert status, and then update m_AuthenticationStatus and
 	/// dispatch any callbacks as needed
-	void SetCertStatus( ESteamNetworkingAvailability eAvail, const char *pszFmt, ... );
+	void SetCertStatus( EGameNetworkingAvailability eAvail, const char *pszFmt, ... );
 #ifdef STEAMNETWORKINGSOCKETS_CAN_REQUEST_CERT
 	void AsyncCertRequestFinished();
-	void CertRequestFailed( ESteamNetworkingAvailability eCertAvail, ESteamNetConnectionEnd nConnectionEndReason, const char *pszMsg );
+	void CertRequestFailed( EGameNetworkingAvailability eCertAvail, EGameNetConnectionEnd nConnectionEndReason, const char *pszMsg );
 #endif
 
 	/// Figure out the current authentication status.  And if it has changed, send out callbacks
@@ -208,29 +208,29 @@ protected:
 	void InternalInitIdentity();
 	void KillConnections();
 
-	SteamNetworkingIdentity m_identity;
+	GameNetworkingIdentity m_identity;
 
 	struct QueuedCallback
 	{
 		int nCallback;
 		void *fnCallback;
-		char data[ sizeof(SteamNetConnectionStatusChangedCallback_t) ]; // whatever the biggest callback struct we have is
+		char data[ sizeof(GameNetConnectionStatusChangedCallback_t) ]; // whatever the biggest callback struct we have is
 	};
 	std_vector<QueuedCallback> m_vecPendingCallbacks;
 	ShortDurationLock m_mutexPendingCallbacks;
 	virtual void InternalQueueCallback( int nCallback, int cbCallback, const void *pvCallback, void *fnRegisteredFunctionPtr );
 
 	bool m_bHaveLowLevelRef;
-	bool BInitLowLevel( SteamNetworkingErrMsg &errMsg );
+	bool BInitLowLevel( GameNetworkingErrMsg &errMsg );
 
-	CSteamNetworkConnectionBase *InternalConnectP2P(
-		ISteamNetworkingConnectionSignaling *pSignaling,
-		const SteamNetworkingIdentity *pPeerIdentity,
+	CGameNetworkConnectionBase *InternalConnectP2P(
+		IGameNetworkingConnectionSignaling *pSignaling,
+		const GameNetworkingIdentity *pPeerIdentity,
 		int nRemoteVirtualPort,
-		int nOptions, const SteamNetworkingConfigValue_t *pOptions,
+		int nOptions, const GameNetworkingConfigValue_t *pOptions,
 		ConnectionScopeLock &scopeLock
 	);
-	bool InternalReceivedP2PSignal( const void *pMsg, int cbMsg, ISteamNetworkingSignalingRecvContext *pContext, bool bDefaultPlatformSignaling );
+	bool InternalReceivedP2PSignal( const void *pMsg, int cbMsg, IGameNetworkingSignalingRecvContext *pContext, bool bDefaultPlatformSignaling );
 
 	// Protected - use Destroy()
 	virtual ~CGameNetworkingSockets();
@@ -242,30 +242,30 @@ public:
 	STEAMNETWORKINGSOCKETS_DECLARE_CLASS_OPERATOR_NEW
 	virtual ~CGameNetworkingUtils();
 
-	virtual SteamNetworkingMessage_t *AllocateMessage( int cbAllocateBuffer ) override;
+	virtual GameNetworkingMessage_t *AllocateMessage( int cbAllocateBuffer ) override;
 
-	virtual SteamNetworkingMicroseconds GetLocalTimestamp() override;
+	virtual GameNetworkingMicroseconds GetLocalTimestamp() override;
 	virtual void SetDebugOutputFunction( EGameNetworkingSocketsDebugOutputType eDetailLevel, FGameNetworkingSocketsDebugOutput pfnFunc ) override;
 
-	virtual bool SetConfigValue( ESteamNetworkingConfigValue eValue,
-		ESteamNetworkingConfigScope eScopeType, intptr_t scopeObj,
-		ESteamNetworkingConfigDataType eDataType, const void *pValue ) override;
+	virtual bool SetConfigValue( EGameNetworkingConfigValue eValue,
+		EGameNetworkingConfigScope eScopeType, intptr_t scopeObj,
+		EGameNetworkingConfigDataType eDataType, const void *pValue ) override;
 
-	virtual ESteamNetworkingGetConfigValueResult GetConfigValue(
-		ESteamNetworkingConfigValue eValue, ESteamNetworkingConfigScope eScopeType,
-		intptr_t scopeObj, ESteamNetworkingConfigDataType *pOutDataType,
+	virtual EGameNetworkingGetConfigValueResult GetConfigValue(
+		EGameNetworkingConfigValue eValue, EGameNetworkingConfigScope eScopeType,
+		intptr_t scopeObj, EGameNetworkingConfigDataType *pOutDataType,
 		void *pResult, size_t *cbResult ) override;
 
-	virtual bool GetConfigValueInfo( ESteamNetworkingConfigValue eValue,
-		const char **pOutName, ESteamNetworkingConfigDataType *pOutDataType,
-		ESteamNetworkingConfigScope *pOutScope, ESteamNetworkingConfigValue *pOutNextValue ) override;
+	virtual bool GetConfigValueInfo( EGameNetworkingConfigValue eValue,
+		const char **pOutName, EGameNetworkingConfigDataType *pOutDataType,
+		EGameNetworkingConfigScope *pOutScope, EGameNetworkingConfigValue *pOutNextValue ) override;
 
-	virtual ESteamNetworkingConfigValue GetFirstConfigValue() override;
+	virtual EGameNetworkingConfigValue GetFirstConfigValue() override;
 
-	virtual void SteamNetworkingIPAddr_ToString( const SteamNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort ) override;
-	virtual bool SteamNetworkingIPAddr_ParseString( SteamNetworkingIPAddr *pAddr, const char *pszStr ) override;
-	virtual void SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity &identity, char *buf, size_t cbBuf ) override;
-	virtual bool SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, const char *pszStr ) override;
+	virtual void GameNetworkingIPAddr_ToString( const GameNetworkingIPAddr &addr, char *buf, size_t cbBuf, bool bWithPort ) override;
+	virtual bool GameNetworkingIPAddr_ParseString( GameNetworkingIPAddr *pAddr, const char *pszStr ) override;
+	virtual void GameNetworkingIdentity_ToString( const GameNetworkingIdentity &identity, char *buf, size_t cbBuf ) override;
+	virtual bool GameNetworkingIdentity_ParseString( GameNetworkingIdentity *pIdentity, const char *pszStr ) override;
 
 	virtual AppId_t GetAppID() override;
 
@@ -289,27 +289,27 @@ public:
 
 	// Stubs if SDR not enabled
 #ifndef STEAMNETWORKINGSOCKETS_ENABLE_SDR
-	virtual ESteamNetworkingAvailability GetRelayNetworkStatus( SteamRelayNetworkStatus_t *pDetails ) override
+	virtual EGameNetworkingAvailability GetRelayNetworkStatus( SteamRelayNetworkStatus_t *pDetails ) override
 	{
 		if ( pDetails )
 		{
 			memset( pDetails, 0, sizeof(*pDetails) );
-			pDetails->m_eAvail = k_ESteamNetworkingAvailability_CannotTry;
-			pDetails->m_eAvailAnyRelay = k_ESteamNetworkingAvailability_CannotTry;
-			pDetails->m_eAvailNetworkConfig = k_ESteamNetworkingAvailability_CannotTry;
+			pDetails->m_eAvail = k_EGameNetworkingAvailability_CannotTry;
+			pDetails->m_eAvailAnyRelay = k_EGameNetworkingAvailability_CannotTry;
+			pDetails->m_eAvailNetworkConfig = k_EGameNetworkingAvailability_CannotTry;
 		}
-		return k_ESteamNetworkingAvailability_CannotTry;
+		return k_EGameNetworkingAvailability_CannotTry;
 	}
 	virtual bool CheckPingDataUpToDate( float flMaxAgeSeconds ) override { return false; }
-	virtual float GetLocalPingLocation( SteamNetworkPingLocation_t &result ) override { return -1.0f; }
-	virtual int EstimatePingTimeBetweenTwoLocations( const SteamNetworkPingLocation_t &location1, const SteamNetworkPingLocation_t &location2 ) override { return k_nSteamNetworkingPing_Unknown; }
-	virtual int EstimatePingTimeFromLocalHost( const SteamNetworkPingLocation_t &remoteLocation ) override { return k_nSteamNetworkingPing_Unknown; }
-	virtual void ConvertPingLocationToString( const SteamNetworkPingLocation_t &location, char *pszBuf, int cchBufSize ) override { if ( pszBuf ) *pszBuf = '\0'; }
-	virtual bool ParsePingLocationString( const char *pszString, SteamNetworkPingLocation_t &result ) override { return false; }
-	virtual int GetPingToDataCenter( SteamNetworkingPOPID popID, SteamNetworkingPOPID *pViaRelayPoP ) override { return k_nSteamNetworkingPing_Unknown; }
-	virtual int GetDirectPingToPOP( SteamNetworkingPOPID popID ) override { return k_nSteamNetworkingPing_Unknown; }
+	virtual float GetLocalPingLocation( GameNetworkPingLocation_t &result ) override { return -1.0f; }
+	virtual int EstimatePingTimeBetweenTwoLocations( const GameNetworkPingLocation_t &location1, const GameNetworkPingLocation_t &location2 ) override { return k_nGameNetworkingPing_Unknown; }
+	virtual int EstimatePingTimeFromLocalHost( const GameNetworkPingLocation_t &remoteLocation ) override { return k_nGameNetworkingPing_Unknown; }
+	virtual void ConvertPingLocationToString( const GameNetworkPingLocation_t &location, char *pszBuf, int cchBufSize ) override { if ( pszBuf ) *pszBuf = '\0'; }
+	virtual bool ParsePingLocationString( const char *pszString, GameNetworkPingLocation_t &result ) override { return false; }
+	virtual int GetPingToDataCenter( GameNetworkingPOPID popID, GameNetworkingPOPID *pViaRelayPoP ) override { return k_nGameNetworkingPing_Unknown; }
+	virtual int GetDirectPingToPOP( GameNetworkingPOPID popID ) override { return k_nGameNetworkingPing_Unknown; }
 	virtual int GetPOPCount() override { return 0; }
-	virtual int GetPOPList( SteamNetworkingPOPID *list, int nListSz ) override { return 0; }
+	virtual int GetPOPList( GameNetworkingPOPID *list, int nListSz ) override { return 0; }
 #endif
 
 protected:
