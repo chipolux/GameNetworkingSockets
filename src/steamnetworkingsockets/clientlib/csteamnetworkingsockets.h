@@ -267,9 +267,9 @@ public:
 	virtual void SteamNetworkingIdentity_ToString( const SteamNetworkingIdentity &identity, char *buf, size_t cbBuf ) override;
 	virtual bool SteamNetworkingIdentity_ParseString( SteamNetworkingIdentity *pIdentity, const char *pszStr ) override;
 
-	virtual AppId_t GetAppID();
+	virtual AppId_t GetAppID() override;
 
-	void SetAppID( AppId_t nAppID )
+	void SetAppID( AppId_t nAppID ) override
 	{
 		Assert( m_nAppID == 0 || m_nAppID == nAppID );
 		m_nAppID = nAppID;
