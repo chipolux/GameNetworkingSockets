@@ -1,4 +1,4 @@
-//========= Copyright © Valve Corporation, All rights reserved. ============//
+//========= Copyright Valve Corporation, All rights reserved. ============//
 #ifndef NETADR_H
 #define NETADR_H
 #ifdef _WIN32

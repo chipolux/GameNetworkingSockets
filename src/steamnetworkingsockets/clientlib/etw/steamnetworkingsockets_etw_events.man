@@ -1,4 +1,4 @@
-﻿<?xml version='1.0' encoding='utf-8' standalone='yes'?>
+<?xml version='1.0' encoding='utf-8' standalone='yes'?>
 <instrumentationManifest xmlns="http://schemas.microsoft.com/win/2004/08/events">
   <instrumentation
       xmlns:win="http://manifests.microsoft.com/win/2004/08/windows/events"
@@ -12,7 +12,7 @@
 
       Documentation of the data types available for event payload templates is here:
       http://msdn.microsoft.com/en-us/library/aa382774(v=VS.85).aspx
-      
+
       See also the Windows Platform SDK SimpleProvider sample and the Scenario
       libary at http://archive.msdn.microsoft.com/Scenario
 
@@ -58,7 +58,7 @@
 				</templates>
         <events>
           <event symbol="LongOp" template="T_LongOp" value="100" task="LongOp" opcode="LongOp" />
-          
+
 					<event symbol="UDPSendPacket" template="T_UDPPacket" value="200" task="UDP" opcode="SendTo" />
           <event symbol="UDPRecvPacket" template="T_UDPPacket" value="201" task="UDP" opcode="Recv" />
 

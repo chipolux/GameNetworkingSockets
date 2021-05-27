@@ -1654,7 +1654,7 @@ bool CSteamNetworkConnectionBase::BFinishCryptoHandshake( bool bServer )
 		return false;
 	}
 
-	// Diffie–Hellman key exchange to get "premaster secret"
+	// Diffie-Hellman key exchange to get "premaster secret"
 	AutoWipeFixedSizeBuffer<sizeof(SHA256Digest_t)> premasterSecret;
 	if ( !CCrypto::PerformKeyExchange( m_keyExchangePrivateKeyLocal, keyExchangePublicKeyRemote, &premasterSecret.m_buf ) )
 	{

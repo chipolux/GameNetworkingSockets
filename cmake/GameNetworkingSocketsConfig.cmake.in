@@ -19,10 +19,10 @@ endif()
 include(${CMAKE_CURRENT_LIST_DIR}/GameNetworkingSockets.cmake)
 
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
-    # Need to set IMPORTED_GLOBAL in order to create the aliases
+    # Need to set IMPORTED_GLOBAL in order to create the aliases
     # However, IMPORTED_GLOBAL only exists in 3.11 and up
     # Also, setting IMPORTED_GLOBAL from another directory from where it was first set blows up
-    # so we can only set it once.
+    # so we can only set it once.
 
     get_target_property(GNS_IMPORTED_GLOBAL_SET GameNetworkingSockets::GameNetworkingSockets IMPORTED_GLOBAL)
 

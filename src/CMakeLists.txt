@@ -317,8 +317,8 @@ if(NOT (USE_STEAMWEBRTC AND STEAMWEBRTC_ABSL_SOURCE STREQUAL submodule))
 
 	include(CMakePackageConfigHelpers)
 
-	# Ensure that variables used in GameNetworkingSocketsConfig.cmake.in have some value
-	# rather than an empty string.
+	# Ensure that variables used in GameNetworkingSocketsConfig.cmake.in have some value
+	# rather than an empty string.
 	if(NOT USE_CRYPTO)
 		set(USE_CRYPTO USE_CRYPTO-NOTFOUND)
 	endif()
