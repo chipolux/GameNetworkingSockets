@@ -16,7 +16,7 @@
 #ifdef STEAMNETWORKINGSOCKETS_STEAMCLIENT
 	#include <tier0/validator.h>
 #endif
-#include <steam/steamnetworkingtypes.h>
+#include <gns/steamnetworkingtypes.h>
 #include <tier1/netadr.h>
 #include <vstdlib/strtools.h>
 #include <vstdlib/random.h>
@@ -25,7 +25,7 @@
 #include "keypair.h"
 #include <tier0/memdbgoff.h>
 #include <steamnetworkingsockets_messages_certs.pb.h>
-#include <steam/isteamnetworkingutils.h> // for the rendering helpers
+#include <gns/isteamnetworkingutils.h> // for the rendering helpers
 
 #include <tier0/memdbgon.h>
 

@@ -12,7 +12,7 @@
 #endif
 
 
-#include "steam/steamtypes.h" // int64 define
+#include "gns/steamtypes.h" // int64 define
 
 #ifndef INCLUDED_STEAM2_USERID_STRUCTS
 
@@ -42,7 +42,7 @@ typedef struct
 #define INCLUDED_STEAM2_USERID_STRUCTS
 #endif
 
-#include "steam/steamclientpublic.h"	// must be after definitions of the above structures
+#include "gns/steamclientpublic.h"	// must be after definitions of the above structures
 
 #ifdef GENERICHASH_H
 inline uint32 HashItem( const CSteamID &item )

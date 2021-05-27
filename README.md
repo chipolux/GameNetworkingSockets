@@ -7,7 +7,7 @@ GameNetworkingSockets is a basic transport layer for games.  The features are:
 * Supports both reliable and unreliable message types
 * Messages can be larger than underlying MTU.  The protocol performs
   fragmentation, reassembly, and retransmission for reliable messages.
-* A [reliability layer](src/steamnetworkingsockets/clientlib/SNP_WIRE_FORMAT.md)
+* A [reliability layer](src/gamenetworkingsockets/clientlib/SNP_WIRE_FORMAT.md)
   significantly more sophisticated than a basic TCP-style sliding window.
   It is based on the "ack vector" model from DCCP (RFC 4340, section 11.4)
   and Google QUIC and discussed in the context of games by
@@ -26,7 +26,7 @@ GameNetworkingSockets is a basic transport layer for games.  The features are:
   * NAT traversal through google WebRTC's ICE implementation.
   * Plug in your own signaling service.
   * Unique "symmetric connect" mode.
-  * [``IGameNetworkingMessages``](include/steam/isteamnetworkingmessages.h) is an
+  * [``IGameNetworkingMessages``](include/gns/isteamnetworkingmessages.h) is an
     interface designed to make it easy to port UDP-based code to P2P use cases.  (By
     UDP-based, we mean non-connection-oriented code, where each time you send a
     packet, you specify the recipient's address.)
@@ -43,9 +43,9 @@ What it does *not* do:
 To get an idea of what the API is like, here are a few things to check out:
 
 * The [include/steam](include/steam) folder has the public API headers.
-  * [``IGameNetworkingSockets``](include/steam/isteamnetworkingsockets.h) is the
+  * [``IGameNetworkingSockets``](include/gns/isteamnetworkingsockets.h) is the
     most important interface.
-  * [``steamnetworkingtypes.h``](include/steam/steamnetworkingtypes.h) has misc
+  * [``steamnetworkingtypes.h``](include/gns/steamnetworkingtypes.h) has misc
     types and declarations.
 * The
   [Steamworks SDK documentation](https://partner.steamgames.com/doc/api/ISteamNetworkingSockets)

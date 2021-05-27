@@ -10,9 +10,9 @@
 #include <assert.h>
 
 #include "trivial_signaling_client.h"
-#include <steam/isteamnetworkingsockets.h>
-#include <steam/isteamnetworkingutils.h>
-#include <steam/steamnetworkingcustomsignaling.h>
+#include <gns/isteamnetworkingsockets.h>
+#include <gns/isteamnetworkingutils.h>
+#include <gns/steamnetworkingcustomsignaling.h>
 
 #ifdef POSIX
 	#include <unistd.h>

@@ -9,10 +9,10 @@
 #include <chrono>
 #include <thread>
 
-#include <steam/steamnetworkingsockets.h>
-#include <steam/isteamnetworkingutils.h>
+#include <gns/steamnetworkingsockets.h>
+#include <gns/isteamnetworkingutils.h>
 #ifndef STEAMNETWORKINGSOCKETS_OPENSOURCE
-#include <steam/steam_api.h>
+#include <gns/steam_api.h>
 #endif
 
 #define PORT_SERVER			27200	// Default server port, UDP/TCP

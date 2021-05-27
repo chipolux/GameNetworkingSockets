@@ -7,7 +7,7 @@
 #include "../steamnetworkingsockets_internal.h"
 #ifndef STEAMNETWORKINGSOCKETS_OPENSOURCE
 #include "../steamdatagram_internal.h"
-#include <steam/steamdatagram_tickets.h>
+#include <gns/steamdatagram_tickets.h>
 #endif
 #include "../steamnetworking_statsutils.h"
 #include <tier1/utlhashmap.h>

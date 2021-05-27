@@ -1,14 +1,14 @@
 //====== Copyright Valve Corporation, All rights reserved. ====================
 
-#include <steam/steamnetworkingsockets_flat.h>
+#include <gns/steamnetworkingsockets_flat.h>
 
 #ifdef STEAMNETWORKINGSOCKETS_ENABLE_SDR
-#include <steam/steamdatagram_tickets.h>
+#include <gns/steamdatagram_tickets.h>
 #endif
 
 #ifdef STEAMNETWORKINGSOCKETS_STANDALONELIB
-#include <steam/steamnetworkingsockets.h>
-#include <steam/steamnetworkingcustomsignaling.h>
+#include <gns/steamnetworkingsockets.h>
+#include <gns/steamnetworkingcustomsignaling.h>
 #endif
 
 //--- IGameNetworkingSockets-------------------------

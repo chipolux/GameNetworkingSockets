@@ -2,7 +2,7 @@
 
 #include <time.h>
 
-#include <steam/isteamnetworkingsockets.h>
+#include <gns/isteamnetworkingsockets.h>
 #include "steamnetworkingsockets_connections.h"
 #include "steamnetworkingsockets_lowlevel.h"
 #include "../steamnetworkingsockets_certstore.h"

@@ -6,12 +6,12 @@
 
 #include <time.h>
 #include <mutex>
-#include <steam/isteamnetworkingsockets.h>
-#include <steam/isteamnetworkingutils.h>
+#include <gns/isteamnetworkingsockets.h>
+#include <gns/isteamnetworkingutils.h>
 
 #if defined( STEAMNETWORKINGSOCKETS_STEAMCLIENT ) || defined( STEAMNETWORKINGSOCKETS_STREAMINGCLIENT )
-	#include "../../common/steam/iclientnetworkingsockets.h"
-	#include "../../common/steam/iclientnetworkingutils.h"
+	#include "../../common/gns/iclientnetworkingsockets.h"
+	#include "../../common/gns/iclientnetworkingutils.h"
 	#define ICLIENTNETWORKING_OVERRIDE override
 #else
 	typedef IGameNetworkingSockets IClientNetworkingSockets;

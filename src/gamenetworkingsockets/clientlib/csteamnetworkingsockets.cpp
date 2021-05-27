@@ -8,7 +8,7 @@
 #include "crypto.h"
 
 #ifdef STEAMNETWORKINGSOCKETS_STANDALONELIB
-#include <steam/steamnetworkingsockets.h>
+#include <gns/steamnetworkingsockets.h>
 #endif
 
 #ifdef STEAMNETWORKINGSOCKETS_ENABLE_STEAMNETWORKINGMESSAGES

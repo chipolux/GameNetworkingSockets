@@ -5,14 +5,14 @@
 #pragma once
 
 #include <tier1/utlhashmap.h>
-#include <steam/steamnetworkingtypes.h>
-#include <steam/isteamnetworkingmessages.h>
+#include <gns/steamnetworkingtypes.h>
+#include <gns/isteamnetworkingmessages.h>
 #include "steamnetworkingsockets_connections.h"
 
 #ifdef STEAMNETWORKINGSOCKETS_ENABLE_STEAMNETWORKINGMESSAGES
 
 #if defined( STEAMNETWORKINGSOCKETS_STEAMCLIENT ) || defined( STEAMNETWORKINGSOCKETS_STREAMINGCLIENT )
-	#include <steam/iclientnetworkingmessages.h>
+	#include <gns/iclientnetworkingmessages.h>
 #else
 	typedef IGameNetworkingMessages IClientNetworkingMessages;
 #endif

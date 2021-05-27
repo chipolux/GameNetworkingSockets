@@ -9,7 +9,7 @@
 #include <functional>
 #include <mutex>
 #include <thread>
-#include <steam/steamnetworkingtypes.h>
+#include <gns/steamnetworkingtypes.h>
 #include <tier1/netadr.h>
 #include <tier1/utlhashmap.h>
 #include "../steamnetworkingsockets_internal.h"

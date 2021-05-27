@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <steam/steamnetworkingcustomsignaling.h>
+#include <gns/steamnetworkingcustomsignaling.h>
 
 class IGameNetworkingSockets;
 
