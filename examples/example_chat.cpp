@@ -16,10 +16,10 @@
 #include <map>
 #include <cctype>
 
-#include <gns/steamnetworkingsockets.h>
-#include <gns/isteamnetworkingutils.h>
+#include <gns/gamenetworkingsockets.h>
+#include <gns/igamenetworkingutils.h>
 #ifndef STEAMNETWORKINGSOCKETS_OPENSOURCE
-#include <gns/steam_api.h>
+#include <gns/game_api.h>
 #endif
 
 #ifdef WIN32

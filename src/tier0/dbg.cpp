@@ -9,7 +9,7 @@
 #include <tier0/dbg.h>
 
 #ifdef STEAMNETWORKINGSOCKETS_FOREXPORT
-#include "../gamenetworkingsockets/clientlib/steamnetworkingsockets_lowlevel.h"
+#include "../gamenetworkingsockets/clientlib/gamenetworkingsockets_lowlevel.h"
 using namespace GameNetworkingSocketsLib;
 #endif
 

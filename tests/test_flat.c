@@ -1,4 +1,4 @@
-#include <gamenetworkingsockets/steamnetworkingsockets_flat.h>
+#include <gamenetworkingsockets/gamenetworkingsockets_flat.h>
 
 int main(int argc, char **argv)
 {

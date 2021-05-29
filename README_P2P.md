@@ -36,20 +36,20 @@ are involved.  With symmetric connect mode, sorting out these race
 conditions and producing a single connection is handled by the API.
 
 See the ``k_EGameNetworkingConfig_SymmetricConnect``
-connection flag in [steamnetworkingtypes.h](include/gns/steamnetworkingtypes.h)
+connection flag in [gamenetworkingtypes.h](include/gns/gamenetworkingtypes.h)
 for more info.
 
 ## IGameNetworkingMessages
 
 Most P2P libraries, such as google WebRTC, and indeed our own
-[IGameNetworkingSockets](include/gns/isteamnetworkingsockets.h), are *connection
+[IGameNetworkingSockets](include/gns/igamenetworkingsockets.h), are *connection
 oriented*.  To talk to a peer, you first establish a connection to the peer, and
 when you send and receive messages, the peer is identified by the connection handle.
 
 Much existing network code is based on UDP with a single socket, where
  connection handles are not used.  Instead, packets are sent with the IP address
  of the recipeient specified for each packet.   (E.g. ``sentto()`` and ``recvfrom()``).
-[IGameNetworkingMessages](include/gns/isteamnetworkingmessages.h) was created
+[IGameNetworkingMessages](include/gns/igamenetworkingmessages.h) was created
 to provide a more "ad-hoc" interface like UDP.  It can be useful when adding P2P
 support to existing code, depending on the abstraction you are working with.  If
 the code you are modifing already has the concept of a connection, then you might
@@ -133,7 +133,7 @@ You'll also need to activate two git submodules to pull down the google WebRTC c
 
 Take a look at these files for more information:
 
-* [steamnetworkingcustomsignaling.h](include/gns/steamnetworkingcustomsignaling.h)
+* [gamenetworkingcustomsignaling.h](include/gns/gamenetworkingcustomsignaling.h)
   contains the interfaces you'll need to implement for your signaling service.
 * An example of a really trivial signaling protocol:
   * [trivial_signaling_server.go](examples/trivial_signaling_server.go) server

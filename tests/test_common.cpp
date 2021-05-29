@@ -9,11 +9,11 @@
 #include <chrono>
 #include <thread>
 
-#include <gns/steamnetworkingsockets.h>
-#include <gns/isteamnetworkingutils.h>
+#include <gns/gamenetworkingsockets.h>
+#include <gns/igamenetworkingutils.h>
 
 #ifndef STEAMNETWORKINGSOCKETS_OPENSOURCE
-#include <gns/steam_api.h>
+#include <gns/game_api.h>
 #endif
 
 static FILE *g_fpLog = nullptr;

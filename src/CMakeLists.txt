@@ -8,30 +8,30 @@ find_package(Protobuf REQUIRED)
 find_package(Threads REQUIRED)
 
 set(GNS_PROTOS
-	"common/steamnetworkingsockets_messages_certs.proto"
-	"common/steamnetworkingsockets_messages.proto"
-	"common/steamnetworkingsockets_messages_udp.proto"
+	"common/gamenetworkingsockets_messages_certs.proto"
+	"common/gamenetworkingsockets_messages.proto"
+	"common/gamenetworkingsockets_messages_udp.proto"
 	)
 
 set(GNS_SRCS
 	"common/crypto.cpp"
 	"common/crypto_textencode.cpp"
 	"common/keypair.cpp"
-	"common/steamid.cpp"
-	"gamenetworkingsockets/clientlib/csteamnetworkingsockets.cpp"
-	"gamenetworkingsockets/clientlib/csteamnetworkingmessages.cpp"
-	"gamenetworkingsockets/clientlib/steamnetworkingsockets_flat.cpp"
-	"gamenetworkingsockets/clientlib/steamnetworkingsockets_connections.cpp"
-	"gamenetworkingsockets/clientlib/steamnetworkingsockets_lowlevel.cpp"
-	"gamenetworkingsockets/clientlib/steamnetworkingsockets_p2p.cpp"
-	"gamenetworkingsockets/clientlib/steamnetworkingsockets_p2p_ice.cpp"
-	"gamenetworkingsockets/clientlib/steamnetworkingsockets_snp.cpp"
-	"gamenetworkingsockets/clientlib/steamnetworkingsockets_udp.cpp"
-	"gamenetworkingsockets/steamnetworkingsockets_certs.cpp"
-	"gamenetworkingsockets/steamnetworkingsockets_certstore.cpp"
-	"gamenetworkingsockets/steamnetworkingsockets_shared.cpp"
-	"gamenetworkingsockets/steamnetworkingsockets_stats.cpp"
-	"gamenetworkingsockets/steamnetworkingsockets_thinker.cpp"
+	"common/gameid.cpp"
+	"gamenetworkingsockets/clientlib/cgamenetworkingsockets.cpp"
+	"gamenetworkingsockets/clientlib/cgamenetworkingmessages.cpp"
+	"gamenetworkingsockets/clientlib/gamenetworkingsockets_flat.cpp"
+	"gamenetworkingsockets/clientlib/gamenetworkingsockets_connections.cpp"
+	"gamenetworkingsockets/clientlib/gamenetworkingsockets_lowlevel.cpp"
+	"gamenetworkingsockets/clientlib/gamenetworkingsockets_p2p.cpp"
+	"gamenetworkingsockets/clientlib/gamenetworkingsockets_p2p_ice.cpp"
+	"gamenetworkingsockets/clientlib/gamenetworkingsockets_snp.cpp"
+	"gamenetworkingsockets/clientlib/gamenetworkingsockets_udp.cpp"
+	"gamenetworkingsockets/gamenetworkingsockets_certs.cpp"
+	"gamenetworkingsockets/gamenetworkingsockets_certstore.cpp"
+	"gamenetworkingsockets/gamenetworkingsockets_shared.cpp"
+	"gamenetworkingsockets/gamenetworkingsockets_stats.cpp"
+	"gamenetworkingsockets/gamenetworkingsockets_thinker.cpp"
 	"tier0/dbg.cpp"
 	"tier0/platformtime.cpp"
 	"tier1/netadr.cpp"
@@ -91,7 +91,7 @@ endif()
 
 # If WebRTC enabled, build the thin wrapper library
 if(USE_STEAMWEBRTC)
-	add_subdirectory(external/steamwebrtc)
+	add_subdirectory(external/gamewebrtc)
 endif(USE_STEAMWEBRTC)
 
 set(C99_FEATURES
@@ -189,7 +189,7 @@ macro(gamenetworkingsockets_common GNS_TARGET)
 			STEAMWEBRTC_USE_STATIC_LIBS
 			)
 		target_link_libraries(${GNS_TARGET} PUBLIC
-			steamwebrtc
+			gamewebrtc
 			)
 	endif()
 

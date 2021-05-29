@@ -2,7 +2,7 @@
 #include <time.h>
 #include <string>
 
-#include <gamenetworkingsockets/steamnetworkingsockets_certstore.h>
+#include <gamenetworkingsockets/gamenetworkingsockets_certstore.h>
 #include <google/protobuf/text_format.h>
 #include <common/crypto.h>
 #include <common/crypto_25519.h>

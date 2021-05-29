@@ -4,7 +4,7 @@
 #define KEYPAIR_H
 #pragma once
 
-#include <gns/steamuniverse.h>
+#include <gns/gameuniverse.h>
 #include <tier0/platform.h>
 #include <tier0/memdbgoff.h>
 #include <string>

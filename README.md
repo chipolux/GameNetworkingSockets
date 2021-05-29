@@ -26,7 +26,7 @@ GameNetworkingSockets is a basic transport layer for games.  The features are:
   * NAT traversal through google WebRTC's ICE implementation.
   * Plug in your own signaling service.
   * Unique "symmetric connect" mode.
-  * [``IGameNetworkingMessages``](include/gns/isteamnetworkingmessages.h) is an
+  * [``IGameNetworkingMessages``](include/gns/igamenetworkingmessages.h) is an
     interface designed to make it easy to port UDP-based code to P2P use cases.  (By
     UDP-based, we mean non-connection-oriented code, where each time you send a
     packet, you specify the recipient's address.)
@@ -42,10 +42,10 @@ What it does *not* do:
 
 To get an idea of what the API is like, here are a few things to check out:
 
-* The [include/steam](include/steam) folder has the public API headers.
-  * [``IGameNetworkingSockets``](include/gns/isteamnetworkingsockets.h) is the
+* The [include/game](include/game) folder has the public API headers.
+  * [``IGameNetworkingSockets``](include/gns/igamenetworkingsockets.h) is the
     most important interface.
-  * [``steamnetworkingtypes.h``](include/gns/steamnetworkingtypes.h) has misc
+  * [``gamenetworkingtypes.h``](include/gns/gamenetworkingtypes.h) has misc
     types and declarations.
 * The
   [Steamworks SDK documentation](https://partner.steamgames.com/doc/api/ISteamNetworkingSockets)
@@ -79,7 +79,7 @@ Third party language bindings:
 ## Why do I see "Steam" everywhere?
 
 The main interface class is named GameNetworkingSockets, and many files have
-"steam" in their name.  But *Steam is not needed*.  If you don't make games or
+"game" in their name.  But *Steam is not needed*.  If you don't make games or
 aren't on Steam, feel free to use this code for whatever purpose you want.
 
 The reason for "Steam" in the names is that this provides a subset of the

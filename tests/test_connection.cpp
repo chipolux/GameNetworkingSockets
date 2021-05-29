@@ -9,10 +9,10 @@
 #include <chrono>
 #include <thread>
 
-#include <gns/steamnetworkingsockets.h>
-#include <gns/isteamnetworkingutils.h>
+#include <gns/gamenetworkingsockets.h>
+#include <gns/igamenetworkingutils.h>
 #ifndef STEAMNETWORKINGSOCKETS_OPENSOURCE
-#include <gns/steam_api.h>
+#include <gns/game_api.h>
 #endif
 
 #define PORT_SERVER			27200	// Default server port, UDP/TCP
@@ -215,7 +215,7 @@ void OnGameNetConnectionStatusChanged( GameNetConnectionStatusChangedCallback_t 
 
 /*
 	case k_EGameNetworkingConnectionState_None:
-		TEST_Printf( "No steam Net connection %x (%s)\n", pInfo->m_hConn, pInfo->m_info.m_steamIDRemote.Render() );
+		TEST_Printf( "No game Net connection %x (%s)\n", pInfo->m_hConn, pInfo->m_info.m_gameIDRemote.Render() );
 
 		if ( g_hGameNetConnection == pInfo->m_hConn )
 		{
@@ -499,11 +499,11 @@ void TestGameNetworkingIdentity()
 	char tempBuf[ GameNetworkingIdentity::k_cchMaxString ];
 
 	{
-		CSteamID steamID( 1234, k_EUniversePublic, k_EAccountTypeIndividual );
-		id1.SetSteamID( steamID );
+		CSteamID gameID( 1234, k_EUniversePublic, k_EAccountTypeIndividual );
+		id1.SetSteamID( gameID );
 		id1.ToString( tempBuf, sizeof(tempBuf ) );
 		assert( id2.ParseString( tempBuf ) );
-		assert( id2.GetSteamID() == steamID );
+		assert( id2.GetSteamID() == gameID );
 	}
 
 	{

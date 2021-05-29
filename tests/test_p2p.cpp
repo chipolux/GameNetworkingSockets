@@ -9,8 +9,8 @@
 #include <thread>
 
 
-#include <gns/steamnetworkingsockets.h>
-#include <gns/isteamnetworkingutils.h>
+#include <gns/gamenetworkingsockets.h>
+#include <gns/igamenetworkingutils.h>
 #include "../examples/trivial_signaling_client.h"
 
 HSteamListenSocket g_hListenSock;
